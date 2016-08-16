@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="AttysPlot" />
+
+    </LinearLayout>
+
+    <uk.me.berndporr.www.attysplot.RealtimePlotView
+        android:id="@+id/realtimeplotview"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:layout_marginTop="10px"
+        android:layout_marginLeft="10px"
+        android:layout_marginRight="10px"
+        title="A/P/R History"
+        />
+
+<!--        <LinearLayout android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            -->
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+    <LinearLayout
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <CheckBox android:id="@+id/showacc"
+            android:text="Accelerometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <CheckBox android:id="@+id/showgyr"
+            android:text="Gyroscope"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <CheckBox android:id="@+id/showmag"
+            android:text="Magnetometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <CheckBox android:id="@+id/showadc1"
+            android:text="ADC Ch 1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <CheckBox android:id="@+id/showadc2"
+            android:text="ADC Ch 2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
+<!--    </LinearLayout> -->
