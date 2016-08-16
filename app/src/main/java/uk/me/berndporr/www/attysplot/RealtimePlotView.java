@@ -82,7 +82,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     }
 
     private void initYpos(int width) {
-        ypos = new float[nMaxChannels][width];
+        ypos = new float[nMaxChannels][width + gap + 1];
         xpos = 0;
     }
 
@@ -99,7 +99,12 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     }
 
     public void startAddSamples(int n) {
-        Rect rect = new Rect(xpos, 0, xpos + n + gap, getHeight());
+        int width = getWidth();
+        Rect rect = null;
+        if ((xpos >= (width - n))) {
+            xpos = 0;
+        }
+        rect = new Rect(xpos, 0, xpos + n + gap, getHeight());
         if (holder != null) {
             canvas = holder.lockCanvas(rect);
         } else {
@@ -132,21 +137,16 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         if (nMaxChannels == 0) return;
         Surface surface = holder.getSurface();
         if (surface.isValid()) {
-            Rect rect = new Rect(xpos, 0, xpos + gap, height);
+            Rect rect = new Rect(xpos, 0, xpos+gap, height);
             if (canvas != null) {
-                if (newData != null) {
-                    canvas.drawRect(rect, paintBlack);
-                    for (int i = 0; i < nCh; i++) {
-                        float yZero = base * (i + 1) - ((0 - minV) * dy);
-                        float yTmp = base * (i + 1) - ((newData[i] - minV) * dy);
-                        ypos[i][xpos + 1] = yTmp;
-                        canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
-                    }
-                    xpos = xpos + 1;
-                    if (xpos >= (width - gap)) {
-                        xpos = 0;
-                    }
+                canvas.drawRect(rect, paintBlack);
+                for (int i = 0; i < nCh; i++) {
+                    float yZero = base * (i + 1) - ((0 - minV) * dy);
+                    float yTmp = base * (i + 1) - ((newData[i] - minV) * dy);
+                    ypos[i][xpos + 1] = yTmp;
+                    canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
                 }
+                xpos = xpos + 1;
             }
         }
     }
