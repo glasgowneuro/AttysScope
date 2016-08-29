@@ -40,6 +40,20 @@ public class AttysComm extends Thread {
     public final static int BT_CONNECTED = 0;
     public final static int BT_ERROR = 1;
     public final static int BT_RETRY = 2;
+    public final static int RATE_125HZ = 0;
+    public final static int RATE_250HZ = 1;
+    public final static int RATE_500Hz = 2;
+    public final static int GAIN_6 = 0;
+    public final static int GAIN_1 = 1;
+    public final static int GAIN_2 = 2;
+    public final static int GAIN_3 = 3;
+    public final static int GAIN_4 = 4;
+    public final static int GAIN_8 = 5;
+    public final static int GAIN_12 = 6;
+    public final static int CURRENT_6NA = 0;
+    public final static int CURRENT_22NA = 1;
+    public final static int CURRENT_6UA = 2;
+    public final static int CURRENT_22UA = 3;
 
     private BluetoothSocket mmSocket;
     private Scanner inScanner = null;
@@ -58,6 +72,14 @@ public class AttysComm extends Thread {
     private boolean fatalError = false;
     private Handler parentHandler;
     private BluetoothDevice bluetoothDevice;
+    private boolean ecgMode;
+    private int samplingRate;
+    private int gain;
+    private boolean currNeg2;
+    private boolean currPos2;
+    private boolean currNeg1;
+    private boolean currPos1;
+    private int current;
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -168,6 +190,125 @@ public class AttysComm extends Thread {
 
     }
 
+
+    private void stopADC() {
+        String s = "\r\n\r\n\r\nx=0\r";
+        byte[] bytes = s.getBytes();
+        for(int j=0;j<100;j++) {
+            Log.d(TAG, "Trying to stop the data acquisition. Attempt #"+(j+1)+".");
+            try {
+                mmOutStream.write(bytes);
+                mmOutStream.flush();
+            } catch (IOException e) {
+                Log.e(TAG, "Could not send x=0 to the Attys.");
+            }
+            for (int i = 0; i < 100; i++) {
+                if (inScanner.hasNextLine()) {
+                    String l = inScanner.nextLine();
+                    if (l.equals("OK")) {
+                        Log.d(TAG, "ADC stopped. Now in command mode.");
+                        return;
+                    }
+                } else {
+                    yield();
+                }
+            }
+        }
+        Log.e(TAG, "Could not detect OK after x=0");
+    }
+
+
+    private void startADC() {
+        String s = "x=1\r";
+        byte[] bytes = s.getBytes();
+        try {
+            mmOutStream.write(13);
+            mmOutStream.write(10);
+            mmOutStream.write(bytes);
+            mmOutStream.flush();
+            Log.d(TAG, "ADC started. Now acquiring data.");
+        } catch (IOException e) {
+            Log.e(TAG, "Could not send x=1 to the Attys.");
+        }
+    }
+
+
+    private void sendSyncCommand(String s) {
+        byte[] bytes = s.getBytes();
+
+        try {
+            mmOutStream.write(10);
+            mmOutStream.write(13);
+            mmOutStream.write(bytes);
+            mmOutStream.write(13);
+            mmOutStream.flush();
+        } catch (IOException e) {
+            Log.e(TAG, "Could not write to stream.");
+        }
+        for (int j = 0; j < 100; j++) {
+            if (inScanner.hasNextLine()) {
+                String l = inScanner.nextLine();
+                if (l.equals("OK")) {
+                    Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
+                    return;
+                }
+            } else {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        Log.e(TAG, "ATTYS hasn't replied with OK after command: "+s+".");
+    }
+
+
+    private void sendAsyncCommand(String s) {
+        byte[] bytes = s.getBytes();
+
+        try {
+            mmOutStream.write(10);
+            mmOutStream.write(13);
+            mmOutStream.write(10);
+            mmOutStream.write(13);
+            mmOutStream.write(10);
+            mmOutStream.write(13);
+            mmOutStream.write(bytes);
+            mmOutStream.flush();
+        } catch (IOException e) {
+            Log.e(TAG, "Could not write to stream.");
+        }
+    }
+
+
+    public void setSamplingRate(int rate) {
+        samplingRate = rate;
+        sendSyncCommand("r="+rate);
+    }
+
+
+    public void setEcgMode(boolean isECGmode) {
+        ecgMode = isECGmode;
+        if (ecgMode) {
+            sendSyncCommand("a=6");
+            sendSyncCommand("b=6");
+        } else {
+            sendSyncCommand("a=0");
+            sendSyncCommand("b=0");
+        }
+    }
+
+
+    private boolean sendInit() {
+        stopADC();
+        setSamplingRate(RATE_250HZ);
+        setEcgMode(false);
+        startADC();
+        return true;
+    }
+
+
     public void run() {
 
         try {
@@ -207,6 +348,8 @@ public class AttysComm extends Thread {
         // we only enter in the main loop if we have connected
         doRun = isConnected;
 
+        sendInit();
+
         Log.d(TAG, "Starting main data acquistion loop");
         parentHandler.sendEmptyMessage(BT_CONNECTED);
         // Keep listening to the InputStream until an exception occurs
@@ -221,41 +364,44 @@ public class AttysComm extends Thread {
                     } else {
                         return;
                     }
-                    // Log.d(TAG, oneLine);
-                    // split up the CSV
-                    String[] fields = oneLine.split(",");
-                    // check that we have a full line:
-                    // number of channels plus 01 and the timestamp
-                    // Log.d(TAG, String.format("length = %d",fields.length));
-                    if (fields.length == nRawFieldsPerLine) {
-                        // the 1st field is always 0x01
-                        int marker = Integer.parseInt(fields[0], 16);
-                        // check if marker is 1
-                        // Log.d(TAG, String.format("%d",marker));
-                        if (marker == 1) {
-                            /// now we are sure we have a full line
-                            // timestamp = Integer.parseInt(fields[1], 16);
-                            for (int i = 0; i < nChannels; i++) {
-                                float norm = 0x8000;
-                                if (i > 8) {
-                                    norm = 0x800000;
+                    if (!oneLine.equals("OK")) {
+                        // Log.d(TAG, oneLine);
+                        // split up the CSV
+                        String[] fields = oneLine.split(",");
+                        // check that we have a full line:
+                        // number of channels plus 01 and the timestamp
+                        // Log.d(TAG, String.format("length = %d",fields.length));
+                        if (fields.length == nRawFieldsPerLine) {
+                            // the 1st field is always 0x01
+                            int marker = Integer.parseInt(fields[0], 16);
+                            // check if marker is 1
+                            // Log.d(TAG, String.format("%d",marker));
+                            if (marker == 1) {
+                                /// now we are sure we have a full line
+                                // timestamp = Integer.parseInt(fields[1], 16);
+                                for (int i = 0; i < nChannels; i++) {
+                                    float norm = 0x8000;
+                                    if (i > 8) {
+                                        norm = 0x800000;
+                                    }
+                                    try {
+                                        ringBuffer[inPtr][i] = ((float) Integer.parseInt(fields[2 + i], 16) - norm) / norm;
+                                    } catch (Exception e) {
+                                        ringBuffer[inPtr][i] = norm / 2;
+                                    }
+                                    ;
                                 }
-                                try {
-                                    ringBuffer[inPtr][i] = ((float) Integer.parseInt(fields[2 + i], 16) - norm) / norm;
-                                } catch (Exception e) {
-                                    ringBuffer[inPtr][i] = norm/2;
-                                };
+                                //Log.d(TAG,String.format("save:inPtr=%d,data=%f",inPtr,ringBuffer[inPtr][10]));
+                                inPtr++;
+                                if (inPtr == nMem) {
+                                    inPtr = 0;
+                                }
+                                // Log.d(TAG, String.format("%d", timestamp));
                             }
-                            //Log.d(TAG,String.format("save:inPtr=%d,data=%f",inPtr,ringBuffer[inPtr][10]));
-                            inPtr++;
-                            if (inPtr == nMem) {
-                                inPtr = 0;
-                            }
-                            // Log.d(TAG, String.format("%d", timestamp));
                         }
                     }
                 } else {
-                    //Log.d(TAG,"Caught up!");
+                    Log.d(TAG,"OK caught from the Attys");
                 }
             } catch (Exception e) {
                 Log.d(TAG, "System error message:" + e.getMessage());
@@ -302,14 +448,6 @@ public class AttysComm extends Thread {
         return nChannels;
     }
 
-
-    /* Call this from the main activity to send data to the remote device */
-    public void write(byte[] bytes) {
-        try {
-            mmOutStream.write(bytes);
-        } catch (IOException e) {
-        }
-    }
 
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
