@@ -24,6 +24,7 @@ package uk.me.berndporr.www.attysplot;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
+import android.util.Base64;
 import android.util.Log;
 
 import java.io.IOException;
@@ -197,6 +198,7 @@ public class AttysComm extends Thread {
         for(int j=0;j<100;j++) {
             Log.d(TAG, "Trying to stop the data acquisition. Attempt #"+(j+1)+".");
             try {
+                mmOutStream.flush();
                 mmOutStream.write(bytes);
                 mmOutStream.flush();
             } catch (IOException e) {
@@ -222,6 +224,7 @@ public class AttysComm extends Thread {
         String s = "x=1\r";
         byte[] bytes = s.getBytes();
         try {
+            mmOutStream.flush();
             mmOutStream.write(13);
             mmOutStream.write(10);
             mmOutStream.write(bytes);
@@ -237,6 +240,7 @@ public class AttysComm extends Thread {
         byte[] bytes = s.getBytes();
 
         try {
+            mmOutStream.flush();
             mmOutStream.write(10);
             mmOutStream.write(13);
             mmOutStream.write(bytes);
@@ -268,6 +272,7 @@ public class AttysComm extends Thread {
         byte[] bytes = s.getBytes();
 
         try {
+            mmOutStream.flush();
             mmOutStream.write(10);
             mmOutStream.write(13);
             mmOutStream.write(10);
@@ -302,6 +307,7 @@ public class AttysComm extends Thread {
 
     private boolean sendInit() {
         stopADC();
+        sendSyncCommand("d=1");
         setSamplingRate(RATE_250HZ);
         setEcgMode(false);
         startADC();
@@ -310,6 +316,9 @@ public class AttysComm extends Thread {
 
 
     public void run() {
+
+        long[] data = new long[12];
+        byte[] raw = null;
 
         try {
             // let's wait until we are connected
@@ -365,38 +374,46 @@ public class AttysComm extends Thread {
                         return;
                     }
                     if (!oneLine.equals("OK")) {
-                        // Log.d(TAG, oneLine);
-                        // split up the CSV
-                        String[] fields = oneLine.split(",");
-                        // check that we have a full line:
-                        // number of channels plus 01 and the timestamp
-                        // Log.d(TAG, String.format("length = %d",fields.length));
-                        if (fields.length == nRawFieldsPerLine) {
-                            // the 1st field is always 0x01
-                            int marker = Integer.parseInt(fields[0], 16);
-                            // check if marker is 1
-                            // Log.d(TAG, String.format("%d",marker));
-                            if (marker == 1) {
-                                /// now we are sure we have a full line
-                                // timestamp = Integer.parseInt(fields[1], 16);
-                                for (int i = 0; i < nChannels; i++) {
-                                    float norm = 0x8000;
-                                    if (i > 8) {
-                                        norm = 0x800000;
-                                    }
-                                    try {
-                                        ringBuffer[inPtr][i] = ((float) Integer.parseInt(fields[2 + i], 16) - norm) / norm;
-                                    } catch (Exception e) {
-                                        ringBuffer[inPtr][i] = norm / 2;
-                                    }
-                                    ;
+
+                        try {
+                            raw = Base64.decode(oneLine, Base64.DEFAULT);
+                        } catch (Exception e) {
+                            Log.d(TAG,"reception error: "+oneLine);
+                        };
+
+                        if (raw!=null) {
+
+                            if (raw.length>9) {
+                                for (int i = 0; i < 2; i++) {
+                                    long v = (raw[i * 4] & 0xff)
+                                            | ((raw[i * 4 + 1] & 0xff) << 8)
+                                            | ((raw[i * 4 + 2] & 0xff) << 16);
+                                    data[9 + i] = v;
                                 }
-                                //Log.d(TAG,String.format("save:inPtr=%d,data=%f",inPtr,ringBuffer[inPtr][10]));
-                                inPtr++;
-                                if (inPtr == nMem) {
-                                    inPtr = 0;
+                            }
+
+                            if (raw.length>27) {
+                                for (int i = 0; i < 9; i++) {
+                                    long v = (raw[10 + i * 2] & 0xff)
+                                            | ((raw[10 + i * 2 + 1] & 0xff) << 8);
+                                    data[i] = v;
                                 }
-                                // Log.d(TAG, String.format("%d", timestamp));
+                            }
+
+                            for (int i = 0; i < nChannels; i++) {
+                                float norm = 0x8000;
+                                if (i > 8) {
+                                    norm = 0x800000;
+                                }
+                                try {
+                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm;
+                                } catch (Exception e) {
+                                    ringBuffer[inPtr][i] = norm / 2;
+                                }
+                            }
+                            inPtr++;
+                            if (inPtr == nMem) {
+                                inPtr = 0;
                             }
                         }
                     }
