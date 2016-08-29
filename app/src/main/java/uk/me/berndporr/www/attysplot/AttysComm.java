@@ -41,20 +41,41 @@ public class AttysComm extends Thread {
     public final static int BT_CONNECTED = 0;
     public final static int BT_ERROR = 1;
     public final static int BT_RETRY = 2;
-    public final static int RATE_125HZ = 0;
-    public final static int RATE_250HZ = 1;
-    public final static int RATE_500Hz = 2;
-    public final static int GAIN_6 = 0;
-    public final static int GAIN_1 = 1;
-    public final static int GAIN_2 = 2;
-    public final static int GAIN_3 = 3;
-    public final static int GAIN_4 = 4;
-    public final static int GAIN_8 = 5;
-    public final static int GAIN_12 = 6;
-    public final static int CURRENT_6NA = 0;
-    public final static int CURRENT_22NA = 1;
-    public final static int CURRENT_6UA = 2;
-    public final static int CURRENT_22UA = 3;
+
+    public final static byte ADC_RATE_125HZ = 0;
+    public final static byte ADC_RATE_250HZ = 1;
+    public final static byte ADC_RATE_500Hz = 2;
+    public final static byte ADC_GAIN_6 = 0;
+    public final static byte ADC_GAIN_1 = 1;
+    public final static byte ADC_GAIN_2 = 2;
+    public final static byte ADC_GAIN_3 = 3;
+    public final static byte ADC_GAIN_4 = 4;
+    public final static byte ADC_GAIN_8 = 5;
+    public final static byte ADC_GAIN_12 = 6;
+    public final static float[] ADC_GAIN_FACTOR = {6.0F,1.0F,2.0F,3.0F,4.0F,8.0F,12.0F};
+    public final static byte ADC_CURRENT_6NA = 0;
+    public final static byte ADC_CURRENT_22NA = 1;
+    public final static byte ADC_CURRENT_6UA = 2;
+    public final static byte ADC_CURRENT_22UA = 3;
+    public final static byte ADC_MUX_NORMAL = 0;
+    public final static byte ADC_MUX_SHORT = 1;
+    public final static byte ADC_MUX_SUPPLY = 3;
+    public final static byte ADC_MUX_TEMPERATURE = 4;
+    public final static byte ADC_MUX_TEST_SIGNAL = 5;
+    public final static byte ADC_MUX_ECG_EINTHOVEN = 6;
+    public final static float ADC_REF = 2.42F; // Volt
+
+    public final static float[] ACCEL_FULL_SCALE = {2,4,8,16}; // G
+    public final static byte ACCEL_2G = 0;
+    public final static byte ACCEL_4G = 1;
+    public final static byte ACCEL_8G = 2;
+    public final static byte ACCEL_16G = 3;
+
+    public final static float[] GYRO_FULL_SCALE= {250,500,1000,2000}; //DPS
+    public final static byte GYRO_250DPS = 0;
+    public final static byte GYRO_500DPS = 1;
+    public final static byte GYRO_1000DPS = 2;
+    public final static byte GYRO_2000DPS = 3;
 
     private BluetoothSocket mmSocket;
     private Scanner inScanner = null;
@@ -73,14 +94,14 @@ public class AttysComm extends Thread {
     private boolean fatalError = false;
     private Handler parentHandler;
     private BluetoothDevice bluetoothDevice;
-    private boolean ecgMode;
-    private int samplingRate;
-    private int gain;
-    private boolean currNeg2;
-    private boolean currPos2;
-    private boolean currNeg1;
-    private boolean currPos1;
-    private int current;
+    private byte[] adcMuxRegister = null;
+    private int adcSamplingRate;
+    private byte[] adcGainRegister = null;
+    private boolean[] adcCurrNegOn = null;
+    private boolean[] adcCurrPosOn = null;
+    private byte adcCurrent;
+    private float gyroFullScaleRange;
+    private float accelFullScaleRange;
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -180,6 +201,19 @@ public class AttysComm extends Thread {
 
 
     public AttysComm(BluetoothDevice device, Handler handler) {
+
+        adcMuxRegister = new byte[2];
+        adcMuxRegister[0] = 0;
+        adcMuxRegister[1] = 0;
+        adcGainRegister = new byte[2];
+        adcGainRegister[0] = 0;
+        adcGainRegister[1] = 0;
+        adcCurrNegOn = new boolean[2];
+        adcCurrNegOn[0] = false;
+        adcCurrNegOn[1] = false;
+        adcCurrPosOn = new boolean[2];
+        adcCurrPosOn[0] = false;
+        adcCurrNegOn[1] = false;
 
         // transmits errors etc
         parentHandler = handler;
@@ -288,28 +322,61 @@ public class AttysComm extends Thread {
 
 
     public void setSamplingRate(int rate) {
-        samplingRate = rate;
+        adcSamplingRate = rate;
         sendSyncCommand("r="+rate);
     }
 
 
-    public void setEcgMode(boolean isECGmode) {
-        ecgMode = isECGmode;
-        if (ecgMode) {
-            sendSyncCommand("a=6");
-            sendSyncCommand("b=6");
-        } else {
-            sendSyncCommand("a=0");
-            sendSyncCommand("b=0");
+    public void setFullscaleGyroRange(int range) {
+        gyroFullScaleRange = GYRO_FULL_SCALE[range];
+    }
+
+    public void setFullscaleAccelRange(int range) {
+        accelFullScaleRange = ACCEL_FULL_SCALE[range];
+    }
+
+    public float getGyroFullScaleRange() {
+        return gyroFullScaleRange;
+    }
+
+    public float getAccelFullScaleRange() {
+        return accelFullScaleRange;
+    }
+
+    public float getADCFullScaleRange(int channel) {
+        return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
+    }
+
+    private void setGainMux(int channel, byte gain, byte mux) {
+        int v = (mux & 0x0f) | ((gain & 0x0f) << 4);
+        switch (channel) {
+            case 0:
+                sendSyncCommand("a=" + v);
+                break;
+            case 1:
+                sendSyncCommand("b=" + v);
+                break;
         }
     }
 
+    public void setADCGain(int channel,byte gain) {
+        setGainMux(channel,gain,adcMuxRegister[channel]);
+        adcGainRegister[channel] = gain;
+    }
+
+    public void setADCMux(int channel, byte mux) {
+        setGainMux(channel, adcGainRegister[channel],mux);
+        adcMuxRegister[channel] = mux;
+    }
 
     private boolean sendInit() {
         stopADC();
+        // switching to base64 binary format
         sendSyncCommand("d=1");
-        setSamplingRate(RATE_250HZ);
-        setEcgMode(false);
+        // 250Hz sampling rate
+        setSamplingRate(ADC_RATE_250HZ);
+        setFullscaleGyroRange(GYRO_2000DPS);
+        setFullscaleAccelRange(ACCEL_16G);
         startADC();
         return true;
     }
@@ -370,6 +437,7 @@ public class AttysComm extends Thread {
                     String oneLine;
                     if (inScanner != null) {
                         oneLine = inScanner.nextLine();
+                        //Log.d(TAG,oneLine);
                     } else {
                         return;
                     }
@@ -400,17 +468,48 @@ public class AttysComm extends Thread {
                                 }
                             }
 
-                            for (int i = 0; i < nChannels; i++) {
+                            // acceleration
+                            for (int i = 0; i < 3; i++) {
                                 float norm = 0x8000;
-                                if (i > 8) {
-                                    norm = 0x800000;
+                                try {
+                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                            accelFullScaleRange * 2;
+                                } catch (Exception e) {
+                                    ringBuffer[inPtr][i] = 0;
                                 }
+                            }
+
+                            // gyroscope
+                            for (int i = 3; i < 6; i++) {
+                                float norm = 0x8000;
+                                try {
+                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                            gyroFullScaleRange * 2;
+                                } catch (Exception e) {
+                                    ringBuffer[inPtr][i] = 0;
+                                }
+                            }
+
+                            // magnetometer (just normalise)
+                            for (int i = 6; i < 9; i++) {
+                                float norm = 0x8000;
                                 try {
                                     ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm;
                                 } catch (Exception e) {
-                                    ringBuffer[inPtr][i] = norm / 2;
+                                    ringBuffer[inPtr][i] = 0;
                                 }
                             }
+
+                            for (int i = 9; i < 11; i++) {
+                                float norm = 0x800000;
+                                try {
+                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                            ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i-9]] * 2;
+                                } catch (Exception e) {
+                                    ringBuffer[inPtr][i] = 0;
+                                }
+                            }
+
                             inPtr++;
                             if (inPtr == nMem) {
                                 inPtr = 0;

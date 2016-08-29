@@ -44,7 +44,7 @@ public class AttysPlot extends Activity {
 
     private RealtimePlotView realtimePlotView = null;
 
-    private CheckBox showAccelerobter, showGyroscope, showMagnetometer, showADC1, showADC2;
+    private CheckBox showAccelerometer, showGyroscope, showMagnetometer, showADC1, showADC2;
 
     private BluetoothAdapter BA;
     private AttysComm attysComm = null;
@@ -142,6 +142,8 @@ public class AttysPlot extends Activity {
             //long t0 = System.currentTimeMillis();
             if (attysComm != null) {
                 float[] tmpSample = new float[nCh];
+                float[] tmpMin = new float[nCh];
+                float[] tmpMax = new float[nCh];
                 int n = attysComm.getNumSamplesAvilable();
                 if (realtimePlotView != null) {
                     realtimePlotView.startAddSamples(n);
@@ -156,28 +158,47 @@ public class AttysPlot extends Activity {
                             sample[j] = v;
                         }
                         int nRealChN = 0;
-                        if (showAccelerobter.isChecked()) {
-                            tmpSample[nRealChN++] = sample[0];
-                            tmpSample[nRealChN++] = sample[1];
-                            tmpSample[nRealChN++] = sample[2];
+                        int sn = 0;
+                        if (showAccelerometer.isChecked()) {
+                            float min = -attysComm.getAccelFullScaleRange();
+                            float max = attysComm.getAccelFullScaleRange();
+                            for(int k=0; k<3;k++) {
+                                tmpMin[nRealChN] = min;
+                                tmpMax[nRealChN] = max;
+                                tmpSample[nRealChN++] = sample[sn++];
+                            }
                         }
                         if (showGyroscope.isChecked()) {
-                            tmpSample[nRealChN++] = sample[3];
-                            tmpSample[nRealChN++] = sample[4];
-                            tmpSample[nRealChN++] = sample[5];
+                            float min = -attysComm.getGyroFullScaleRange();
+                            float max = attysComm.getGyroFullScaleRange();
+                            for(int k=0; k<3;k++) {
+                                tmpMin[nRealChN] = min;
+                                tmpMax[nRealChN] = max;
+                                tmpSample[nRealChN++] = sample[sn++];
+                            }
                         }
                         if (showMagnetometer.isChecked()) {
-                            tmpSample[nRealChN++] = sample[6];
-                            tmpSample[nRealChN++] = sample[7];
-                            tmpSample[nRealChN++] = sample[8];
+                            float min = -1;
+                            float max = 1;
+                            for(int k=0; k<3;k++) {
+                                tmpMin[nRealChN] = min;
+                                tmpMax[nRealChN] = max;
+                                tmpSample[nRealChN++] = sample[sn++];
+                            }
                         }
                         if (showADC1.isChecked()) {
+                            tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
+                            tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
                             tmpSample[nRealChN++] = sample[9];
                         }
                         if (showADC2.isChecked()) {
+                            tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
+                            tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
                             tmpSample[nRealChN++] = sample[10];
                         }
-                        realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample,0,nRealChN));
+                        realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample,0,nRealChN),
+                                Arrays.copyOfRange(tmpMin,0,nRealChN),
+                                Arrays.copyOfRange(tmpMax,0,nRealChN));
                         // Log.d(TAG,String.format("data = %f",sample[10]));
                         //long t1 = System.currentTimeMillis();
                         //Log.i(TAG, "Timing: " + ( t1 - t0) );
@@ -241,8 +262,8 @@ public class AttysPlot extends Activity {
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
 
-        showAccelerobter = (CheckBox) findViewById(R.id.showacc);
-        showAccelerobter.setChecked(true);
+        showAccelerometer = (CheckBox) findViewById(R.id.showacc);
+        showAccelerometer.setChecked(true);
         showGyroscope = (CheckBox) findViewById(R.id.showgyr);
         showGyroscope.setChecked(true);
         showMagnetometer = (CheckBox) findViewById(R.id.showmag);
@@ -254,7 +275,7 @@ public class AttysPlot extends Activity {
 
         timer = new Timer();
         UpdatePlotTask updatePlotTask = new UpdatePlotTask();
-        timer.schedule(updatePlotTask,0,200);
+        timer.schedule(updatePlotTask,0,300);
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.

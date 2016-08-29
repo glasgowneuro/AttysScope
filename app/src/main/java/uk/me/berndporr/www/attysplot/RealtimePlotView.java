@@ -120,17 +120,14 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         }
     }
 
-    public void addSamples(float[] newData) {
+    public void addSamples(float[] newData, float[] minV, float[] maxV) {
         int width = getWidth();
         int height = getHeight();
-        float minV = -1;
-        float maxV = 1;
 
         int nCh = newData.length;
         if (nCh == 0) return;
 
         float base = height / nCh;
-        float dy = (float) base / (float) (maxV - minV);
 
         if (ypos == null) initYpos(width);
 
@@ -141,8 +138,9 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
             if (canvas != null) {
                 canvas.drawRect(rect, paintBlack);
                 for (int i = 0; i < nCh; i++) {
-                    float yZero = base * (i + 1) - ((0 - minV) * dy);
-                    float yTmp = base * (i + 1) - ((newData[i] - minV) * dy);
+                    float dy = (float) base / (float) (maxV[i] - minV[i]);
+                    float yZero = base * (i + 1) - ((0 - minV[i]) * dy);
+                    float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
                     canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
                 }
