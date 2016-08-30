@@ -21,17 +21,14 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
@@ -60,12 +57,15 @@ public class AttysPlot extends AppCompatActivity {
 
     private Highpass [] highpass = null;
     private float [] gain;
+    private IIRnotch[] iirNotch;
+    private boolean[] invert;
 
     private boolean showAcc = true;
     private boolean showGyr = true;
     private boolean showMag = true;
     private boolean showCh1 = true;
     private boolean showCh2 = true;
+
 
     Handler handler = new Handler() {
         @Override
@@ -164,9 +164,14 @@ public class AttysPlot extends AppCompatActivity {
                             float v = sample[j];
                             if (j > 8) {
                                 v = highpass[j].filter(v);
+                                v = iirNotch[j].filter(v);
                             }
                             v = v * gain[j];
-                            sample[j] = v;
+                            if (invert[j]) {
+                                sample[j] = -v;
+                            } else {
+                                sample[j] = v;
+                            }
                         }
                         int nRealChN = 0;
                         int sn = 0;
@@ -263,15 +268,24 @@ public class AttysPlot extends AppCompatActivity {
         int nChannels = attysComm.getnChannels();
         highpass = new Highpass[nChannels];
         gain = new float[nChannels];
+        iirNotch = new IIRnotch[nChannels];
+        invert = new boolean[nChannels];
         for(int i = 0;i<nChannels;i++) {
             highpass[i] = new Highpass();
             highpass[i].setAlpha(0.01F);
+            iirNotch[i] = new IIRnotch();
             gain[i] = 1;
             if (i > 5) gain[i] = 50;
             if (i > 8) gain[i] = 200;
         }
 
         attysComm.start();
+
+        for(int i = 0;i<nChannels;i++) {
+            iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
+            iirNotch[i].setIsActive(true);
+            highpass[i].setAlpha(1.0F/attysComm.getSamplingRateInHz());
+        }
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
@@ -335,6 +349,34 @@ public class AttysPlot extends AppCompatActivity {
                 a = !a;
                 item.setChecked(a);
                 highpass[10].setActive(a);
+                return true;
+
+            case R.id.Ch1notch:
+                a = iirNotch[9].getIsActive();
+                a = !a;
+                item.setChecked(a);
+                iirNotch[9].setIsActive(a);
+                return true;
+
+            case R.id.Ch2notch:
+                a = iirNotch[10].getIsActive();
+                a = !a;
+                item.setChecked(a);
+                iirNotch[10].setIsActive(a);
+                return true;
+
+            case R.id.Ch1invert:
+                a = invert[9];
+                a = !a;
+                invert[9] = a;
+                item.setChecked(a);
+                return true;
+
+            case R.id.Ch2invert:
+                a = invert[10];
+                a = !a;
+                invert[10] = a;
+                item.setChecked(a);
                 return true;
 
             case R.id.Ch1gain1:

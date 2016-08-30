@@ -23,7 +23,7 @@ package uk.me.berndporr.www.attysplot;
 public class Highpass {
 
     private float dc = 0;
-    private float a = 0.1F;
+    private float a = 0.05F;
     private boolean isActive = true;
 
     public void setAlpha(float alpha) {

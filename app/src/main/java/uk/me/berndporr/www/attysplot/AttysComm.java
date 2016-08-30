@@ -45,6 +45,8 @@ public class AttysComm extends Thread {
     public final static byte ADC_RATE_125HZ = 0;
     public final static byte ADC_RATE_250HZ = 1;
     public final static byte ADC_RATE_500Hz = 2;
+    public final static byte ADC_DEFAULT_RATE = ADC_RATE_250HZ;
+    public final static float[] ADC_SAMPLINGRATE = {125F,250F,500F,1000F};
     public final static byte ADC_GAIN_6 = 0;
     public final static byte ADC_GAIN_1 = 1;
     public final static byte ADC_GAIN_2 = 2;
@@ -95,7 +97,7 @@ public class AttysComm extends Thread {
     private Handler parentHandler;
     private BluetoothDevice bluetoothDevice;
     private byte[] adcMuxRegister = null;
-    private int adcSamplingRate;
+    private int adcSamplingRate = ADC_DEFAULT_RATE;
     private byte[] adcGainRegister = null;
     private boolean[] adcCurrNegOn = null;
     private boolean[] adcCurrPosOn = null;
@@ -327,6 +329,11 @@ public class AttysComm extends Thread {
     }
 
 
+    public float getSamplingRateInHz() {
+        return ADC_SAMPLINGRATE[adcSamplingRate];
+    }
+
+
     public void setFullscaleGyroRange(int range) {
         gyroFullScaleRange = GYRO_FULL_SCALE[range];
     }
@@ -374,7 +381,8 @@ public class AttysComm extends Thread {
         // switching to base64 binary format
         sendSyncCommand("d=1");
         // 250Hz sampling rate
-        setSamplingRate(ADC_RATE_250HZ);
+        setSamplingRate(ADC_DEFAULT_RATE);
+        setSamplingRate(ADC_DEFAULT_RATE);
         setFullscaleGyroRange(GYRO_2000DPS);
         setFullscaleAccelRange(ACCEL_16G);
         startADC();
