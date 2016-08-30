@@ -57,7 +57,7 @@ public class AttysPlot extends AppCompatActivity {
 
     private Highpass [] highpass = null;
     private float [] gain;
-    private IIRnotch[] iirNotch;
+    private IIR_notch[] iirNotch;
     private boolean[] invert;
 
     private boolean showAcc = true;
@@ -78,11 +78,16 @@ public class AttysPlot extends AppCompatActivity {
                     break;
                 case AttysComm.BT_CONNECTED:
                     Toast.makeText(getApplicationContext(),
-                            "Bluetooth connected", Toast.LENGTH_LONG).show();
+                            "Bluetooth connected", Toast.LENGTH_SHORT).show();
+                    break;
+                case AttysComm.BT_CONFIGURE:
+                    Toast.makeText(getApplicationContext(),
+                            "Configuring Attys", Toast.LENGTH_SHORT).show();
                     break;
                 case AttysComm.BT_RETRY:
                     Toast.makeText(getApplicationContext(),
-                            "Bluetooth connection problems - trying again. Please be patient.", Toast.LENGTH_LONG).show();
+                            "Bluetooth connection problems - trying again. Please be patient.",
+                            Toast.LENGTH_LONG).show();
                     break;
             }
         }
@@ -268,12 +273,12 @@ public class AttysPlot extends AppCompatActivity {
         int nChannels = attysComm.getnChannels();
         highpass = new Highpass[nChannels];
         gain = new float[nChannels];
-        iirNotch = new IIRnotch[nChannels];
+        iirNotch = new IIR_notch[nChannels];
         invert = new boolean[nChannels];
         for(int i = 0;i<nChannels;i++) {
             highpass[i] = new Highpass();
             highpass[i].setAlpha(0.01F);
-            iirNotch[i] = new IIRnotch();
+            iirNotch[i] = new IIR_notch();
             gain[i] = 1;
             if (i > 5) gain[i] = 50;
             if (i > 8) gain[i] = 200;
@@ -392,6 +397,8 @@ public class AttysPlot extends AppCompatActivity {
                 int g = Integer.parseInt(t);
                 Log.d(TAG, String.format("g=%d",g));
                 gain[9] = (float)g;
+                Toast.makeText(getApplicationContext(),
+                        String.format("Channel 1 gain set to x%d",g),Toast.LENGTH_LONG).show();
                 return true;
 
             case R.id.Ch2gain1:
@@ -405,7 +412,8 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch2gain500:
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
-                Log.d(TAG, String.format("g=%d",g));
+                Toast.makeText(getApplicationContext(),
+                        String.format("Channel 2 gain set to x%d",g),Toast.LENGTH_LONG).show();
                 gain[10] = (float)g;
                 return true;
 

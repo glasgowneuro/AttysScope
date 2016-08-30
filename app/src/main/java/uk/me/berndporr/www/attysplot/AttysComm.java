@@ -41,6 +41,7 @@ public class AttysComm extends Thread {
     public final static int BT_CONNECTED = 0;
     public final static int BT_ERROR = 1;
     public final static int BT_RETRY = 2;
+    public final static int BT_CONFIGURE = 3;
 
     public final static byte ADC_RATE_125HZ = 0;
     public final static byte ADC_RATE_250HZ = 1;
@@ -104,6 +105,7 @@ public class AttysComm extends Thread {
     private byte adcCurrent;
     private float gyroFullScaleRange;
     private float accelFullScaleRange;
+    private byte expectedTimestamp = 0;
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -432,6 +434,7 @@ public class AttysComm extends Thread {
         // we only enter in the main loop if we have connected
         doRun = isConnected;
 
+        parentHandler.sendEmptyMessage(BT_CONFIGURE);
         sendInit();
 
         Log.d(TAG, "Starting main data acquistion loop");
@@ -450,16 +453,12 @@ public class AttysComm extends Thread {
                         return;
                     }
                     if (!oneLine.equals("OK")) {
-
+                        // we have a real sample
                         try {
                             raw = Base64.decode(oneLine, Base64.DEFAULT);
-                        } catch (Exception e) {
-                            Log.d(TAG,"reception error: "+oneLine);
-                        };
 
-                        if (raw!=null) {
-
-                            if (raw.length>9) {
+                            // adc data def there
+                            if (raw.length > 9) {
                                 for (int i = 0; i < 2; i++) {
                                     long v = (raw[i * 4] & 0xff)
                                             | ((raw[i * 4 + 1] & 0xff) << 8)
@@ -468,7 +467,8 @@ public class AttysComm extends Thread {
                                 }
                             }
 
-                            if (raw.length>27) {
+                            // all data def there
+                            if (raw.length > 27) {
                                 for (int i = 0; i < 9; i++) {
                                     long v = (raw[10 + i * 2] & 0xff)
                                             | ((raw[10 + i * 2 + 1] & 0xff) << 8);
@@ -476,56 +476,74 @@ public class AttysComm extends Thread {
                                 }
                             }
 
-                            // acceleration
-                            for (int i = 0; i < 3; i++) {
-                                float norm = 0x8000;
-                                try {
-                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
-                                            accelFullScaleRange * 2;
-                                } catch (Exception e) {
-                                    ringBuffer[inPtr][i] = 0;
+                            // check that the timestamp is the expected one
+                            byte timestamp = 0;
+                            if (raw.length > 8) {
+                                timestamp = raw[9];
+                                if (Math.abs(timestamp-expectedTimestamp)==1) {
+                                    Log.d(TAG, String.format("sample lost"));
                                 }
                             }
+                            // update timestamp
+                            expectedTimestamp = ++timestamp;
 
-                            // gyroscope
-                            for (int i = 3; i < 6; i++) {
-                                float norm = 0x8000;
-                                try {
-                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
-                                            gyroFullScaleRange * 2;
-                                } catch (Exception e) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
-                            }
+                        } catch (Exception e) {
+                            // this is triggered if the base64 is too short or any data is too short
+                            // this leads to data processed from the previous sample instead
+                            Log.d(TAG, "reception error: " + oneLine);
+                            expectedTimestamp++;
+                        }
 
-                            // magnetometer (just normalise)
-                            for (int i = 6; i < 9; i++) {
-                                float norm = 0x8000;
-                                try {
-                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm;
-                                } catch (Exception e) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
-                            }
-
-                            for (int i = 9; i < 11; i++) {
-                                float norm = 0x800000;
-                                try {
-                                    ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
-                                            ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i-9]] * 2;
-                                } catch (Exception e) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
-                            }
-
-                            inPtr++;
-                            if (inPtr == nMem) {
-                                inPtr = 0;
+                        // acceleration
+                        for (int i = 0; i < 3; i++) {
+                            float norm = 0x8000;
+                            try {
+                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                        accelFullScaleRange * 2;
+                            } catch (Exception e) {
+                                ringBuffer[inPtr][i] = 0;
                             }
                         }
+
+                        // gyroscope
+                        for (int i = 3; i < 6; i++) {
+                            float norm = 0x8000;
+                            try {
+                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                        gyroFullScaleRange * 2;
+                            } catch (Exception e) {
+                                ringBuffer[inPtr][i] = 0;
+                            }
+                        }
+
+                        // magnetometer (just normalise)
+                        for (int i = 6; i < 9; i++) {
+                            float norm = 0x8000;
+                            try {
+                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm;
+                            } catch (Exception e) {
+                                ringBuffer[inPtr][i] = 0;
+                            }
+                        }
+
+                        for (int i = 9; i < 11; i++) {
+                            float norm = 0x800000;
+                            try {
+                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                        ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]] * 2;
+                            } catch (Exception e) {
+                                ringBuffer[inPtr][i] = 0;
+                            }
+                        }
+
+                        inPtr++;
+                        if (inPtr == nMem) {
+                            inPtr = 0;
+                        }
+
+                    } else {
+                        Log.d(TAG, "OK caught from the Attys");
                     }
-                } else {
-                    Log.d(TAG,"OK caught from the Attys");
                 }
             } catch (Exception e) {
                 Log.d(TAG, "System error message:" + e.getMessage());
