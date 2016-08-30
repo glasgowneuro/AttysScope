@@ -26,10 +26,12 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
@@ -335,26 +337,34 @@ public class AttysPlot extends AppCompatActivity {
                 highpass[10].setActive(a);
                 return true;
 
-            case R.id.Ch1toggleGAIN:
-                boolean g = item.isChecked();
-                g = !g;
-                item.setChecked(g);
-                if (g) {
-                    gain[9] = 200;
-                } else {
-                    gain[9] = 1;
-                }
+            case R.id.Ch1gain1:
+            case R.id.Ch1gain2:
+            case R.id.Ch1gain5:
+            case R.id.Ch1gain10:
+            case R.id.Ch1gain20:
+            case R.id.Ch1gain50:
+            case R.id.Ch1gain100:
+            case R.id.Ch1gain200:
+            case R.id.Ch1gain500:
+                String t = item.getTitle().toString();
+                int g = Integer.parseInt(t);
+                Log.d(TAG, String.format("g=%d",g));
+                gain[9] = (float)g;
                 return true;
 
-            case R.id.Ch2toggleGAIN:
-                g = item.isChecked();
-                g = !g;
-                item.setChecked(g);
-                if (g) {
-                    gain[10] = 200;
-                } else {
-                    gain[10] = 1;
-                }
+            case R.id.Ch2gain1:
+            case R.id.Ch2gain2:
+            case R.id.Ch2gain5:
+            case R.id.Ch2gain10:
+            case R.id.Ch2gain20:
+            case R.id.Ch2gain50:
+            case R.id.Ch2gain100:
+            case R.id.Ch2gain200:
+            case R.id.Ch2gain500:
+                t = item.getTitle().toString();
+                g = Integer.parseInt(t);
+                Log.d(TAG, String.format("g=%d",g));
+                gain[10] = (float)g;
                 return true;
 
             default:

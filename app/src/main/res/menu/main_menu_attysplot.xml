@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:yourapp="http://schemas.android.com/tools">
+
+    <item
+        android:id="@+id/channelSelection"
+        app:showAsAction="ifRoom|withText"
+        android:title="Channels">
+
+        <menu>
+        <group
+            android:checkableBehavior="all">
+            <item
+                android:id="@+id/toggleAcc"
+                android:title="Accelerometer"
+                android:checked="true"/>
+            <item
+                android:id="@+id/toggleGyr"
+                android:title="Gyroscope"
+                android:checked="true"/>
+            <item
+                android:id="@+id/toggleMag"
+                android:title="Magnetometer"
+                android:checked="true"/>
+            <item
+                android:id="@+id/toggleCh1"
+                android:title="Channel 1"
+                android:checked="true" />
+            <item
+                android:id="@+id/toggleCh2"
+                android:title="Channel 2"
+                android:checked="true"/>
+        </group>
+        </menu>
+
+    </item>
+
+
+    <item
+        app:showAsAction="ifRoom|withText"
+        android:title="ADC options">
+
+        <menu>
+        <group
+            android:id="@+id/adc_checkboxes"
+            android:checkableBehavior="all">
+            <item
+                android:id="@+id/Ch1toggleDC"
+                android:title="Ch1 DC filter"
+                android:checked="true" />
+            <item
+                android:id="@+id/Ch1invert"
+                android:title="Ch1 invert"
+                android:checked="false" />
+            <item
+                android:id="@+id/Ch1notch"
+                android:title="Ch1 notch"
+                android:checked="true" />
+            <item
+                android:id="@+id/Ch2toggleDC"
+                android:title="Ch2 DC filter"
+                android:checked="true" />
+            <item
+                android:id="@+id/Ch2invert"
+                android:title="Ch2 invert"
+                android:checked="false" />
+            <item
+                android:id="@+id/Ch2notch"
+                android:title="Ch2 notch"
+                android:checked="true" />
+        </group>
+
+            <item
+                android:id="@+id/Ch1setGain"
+                android:title="Channel 1 Gain"
+                android:checked="true">
+
+                <menu>
+                    <item
+                        android:id="@+id/Ch1gain1"
+                        android:title="1" />
+                    <item
+                        android:id="@+id/Ch1gain2"
+                        android:title="2" />
+                    <item
+                        android:id="@+id/Ch1gain5"
+                        android:title="5" />
+                    <item
+                        android:id="@+id/Ch1gain10"
+                        android:title="10" />
+                    <item
+                        android:id="@+id/Ch1gain20"
+                        android:title="20" />
+                    <item
+                        android:id="@+id/Ch1gain50"
+                        android:title="50" />
+                    <item
+                        android:id="@+id/Ch1gain100"
+                        android:title="100" />
+                    <item
+                        android:id="@+id/Ch1gain200"
+                        android:title="200" />
+                    <item
+                        android:id="@+id/Ch1gain500"
+                        android:title="500" />
+                </menu>
+
+            </item>
+
+            <item
+                android:id="@+id/Ch2setGain"
+                android:title="Channel 2 Gain"
+                android:checked="true">
+
+                <menu>
+                    <item
+                        android:id="@+id/Ch2gain1"
+                        android:title="1" />
+                    <item
+                        android:id="@+id/Ch2gain2"
+                        android:title="2" />
+                    <item
+                        android:id="@+id/Ch2gain5"
+                        android:title="5" />
+                    <item
+                        android:id="@+id/Ch2gain10"
+                        android:title="10" />
+                    <item
+                        android:id="@+id/Ch2gain20"
+                        android:title="20" />
+                    <item
+                        android:id="@+id/Ch2gain50"
+                        android:title="50" />
+                    <item
+                        android:id="@+id/Ch2gain100"
+                        android:title="100" />
+                    <item
+                        android:id="@+id/Ch2gain200"
+                        android:title="200" />
+                    <item
+                        android:id="@+id/Ch2gain500"
+                        android:title="500" />
+                </menu>
+
+            </item>
+
+        </menu>
+
+    </item>
+
+
+
+
+</menu>
