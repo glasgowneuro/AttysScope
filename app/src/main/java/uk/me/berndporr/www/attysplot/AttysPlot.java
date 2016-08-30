@@ -25,7 +25,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
@@ -38,7 +42,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AttysPlot extends Activity {
+public class AttysPlot extends AppCompatActivity {
 
     private Timer timer = null;
 
@@ -55,6 +59,11 @@ public class AttysPlot extends Activity {
     private Highpass [] highpass = null;
     private float [] gain;
 
+    private boolean showAcc = true;
+    private boolean showGyr = true;
+    private boolean showMag = true;
+    private boolean showCh1 = true;
+    private boolean showCh2 = true;
 
     Handler handler = new Handler() {
         @Override
@@ -159,7 +168,7 @@ public class AttysPlot extends Activity {
                         }
                         int nRealChN = 0;
                         int sn = 0;
-                        if (showAccelerometer.isChecked()) {
+                        if (showAcc) {
                             float min = -attysComm.getAccelFullScaleRange();
                             float max = attysComm.getAccelFullScaleRange();
                             for(int k=0; k<3;k++) {
@@ -168,7 +177,7 @@ public class AttysPlot extends Activity {
                                 tmpSample[nRealChN++] = sample[sn++];
                             }
                         }
-                        if (showGyroscope.isChecked()) {
+                        if (showGyr) {
                             float min = -attysComm.getGyroFullScaleRange();
                             float max = attysComm.getGyroFullScaleRange();
                             for(int k=0; k<3;k++) {
@@ -177,7 +186,7 @@ public class AttysPlot extends Activity {
                                 tmpSample[nRealChN++] = sample[sn++];
                             }
                         }
-                        if (showMagnetometer.isChecked()) {
+                        if (showMag) {
                             float min = -1;
                             float max = 1;
                             for(int k=0; k<3;k++) {
@@ -186,12 +195,12 @@ public class AttysPlot extends Activity {
                                 tmpSample[nRealChN++] = sample[sn++];
                             }
                         }
-                        if (showADC1.isChecked()) {
+                        if (showCh1) {
                             tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                             tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
                             tmpSample[nRealChN++] = sample[9];
                         }
-                        if (showADC2.isChecked()) {
+                        if (showCh2) {
                             tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                             tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
                             tmpSample[nRealChN++] = sample[10];
@@ -234,6 +243,9 @@ public class AttysPlot extends Activity {
 
         setContentView(R.layout.activity_plot_window);
 
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
+
         btAttysDevice = connect2Bluetooth();
         if (btAttysDevice == null) {
             Context context = getApplicationContext();
@@ -262,17 +274,6 @@ public class AttysPlot extends Activity {
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
 
-        showAccelerometer = (CheckBox) findViewById(R.id.showacc);
-        showAccelerometer.setChecked(true);
-        showGyroscope = (CheckBox) findViewById(R.id.showgyr);
-        showGyroscope.setChecked(true);
-        showMagnetometer = (CheckBox) findViewById(R.id.showmag);
-        showMagnetometer.setChecked(true);
-        showADC1 = (CheckBox) findViewById(R.id.showadc1);
-        showADC1.setChecked(true);
-        showADC2 = (CheckBox) findViewById(R.id.showadc2);
-        showADC2.setChecked(true);
-
         timer = new Timer();
         UpdatePlotTask updatePlotTask = new UpdatePlotTask();
         timer.schedule(updatePlotTask,0,300);
@@ -281,6 +282,89 @@ public class AttysPlot extends Activity {
         // See https://g.co/AppIndexing/AndroidStudio for more information.
 //        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main_menu_attysplot, menu);
+
+        return true;
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.toggleAcc:
+                showAcc = !showAcc;
+                item.setChecked(showAcc);
+                return true;
+
+            case R.id.toggleGyr:
+                showGyr = !showGyr;
+                item.setChecked(showGyr);
+                return true;
+
+            case R.id.toggleMag:
+                showMag = !showMag;
+                item.setChecked(showMag);
+                return true;
+
+            case R.id.toggleCh1:
+                showCh1 = !showCh1;
+                item.setChecked(showCh1);
+                return true;
+
+            case R.id.toggleCh2:
+                showCh2 = !showCh2;
+                item.setChecked(showCh2);
+                return true;
+
+            case R.id.Ch1toggleDC:
+                boolean a = highpass[9].getIsActive();
+                a = !a;
+                item.setChecked(a);
+                highpass[9].setActive(a);
+                return true;
+
+            case R.id.Ch2toggleDC:
+                a = highpass[10].getIsActive();
+                a = !a;
+                item.setChecked(a);
+                highpass[10].setActive(a);
+                return true;
+
+            case R.id.Ch1toggleGAIN:
+                boolean g = item.isChecked();
+                g = !g;
+                item.setChecked(g);
+                if (g) {
+                    gain[9] = 200;
+                } else {
+                    gain[9] = 1;
+                }
+                return true;
+
+            case R.id.Ch2toggleGAIN:
+                g = item.isChecked();
+                g = !g;
+                item.setChecked(g);
+                if (g) {
+                    gain[10] = 200;
+                } else {
+                    gain[10] = 1;
+                }
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
+    }
+
 
 
     @Override

@@ -22,16 +22,25 @@ package uk.me.berndporr.www.attysplot;
  */
 public class Highpass {
 
-    float dc = 0;
-    float a = 0.1F;
+    private float dc = 0;
+    private float a = 0.1F;
+    private boolean isActive = true;
 
     public void setAlpha(float alpha) {
         a = alpha;
     }
 
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+    public boolean getIsActive() {return isActive;}
+
     public float filter(float v) {
         dc = a * v + (1 - a) * dc;
-        v = v - dc;
+        if (isActive) {
+            v = v - dc;
+        }
         return v;
     }
 }
