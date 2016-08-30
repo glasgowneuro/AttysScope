@@ -42,14 +42,17 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     private float[][] ypos = null;
     Paint paint = new Paint();
     Paint paintBlack = new Paint();
+    Paint paintCoord = new Paint();
     Canvas canvas;
     private int gap = 10;
+    private int xtic = 250;
 
     private void init() {
         xpos = 0;
         holder = getHolder();
-        paint.setColor(Color.WHITE);
+        paint.setColor(Color.YELLOW);
         paintBlack.setColor(Color.BLACK);
+        paintCoord.setColor(Color.argb(128,64,64,64));
     }
 
     public void resetX() {
@@ -102,8 +105,13 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         int width = getWidth();
         Rect rect = null;
         if ((xpos >= (width - n))) {
+            rect = new Rect(xpos, 0, width-1, getHeight());
+            canvas = holder.lockCanvas(rect);
+            canvas.drawRect(rect, paintBlack);
+            holder.unlockCanvasAndPost(canvas);
             xpos = 0;
         }
+        int xr = xpos + n + gap;
         rect = new Rect(xpos, 0, xpos + n + gap, getHeight());
         if (holder != null) {
             canvas = holder.lockCanvas(rect);
@@ -142,6 +150,10 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     float yZero = base * (i + 1) - ((0 - minV[i]) * dy);
                     float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
+                    canvas.drawPoint(xpos, yZero, paintCoord);
+                    if ((xpos%xtic) == 0) {
+                        canvas.drawLine(xpos,0,xpos,height,paintCoord);
+                    }
                     canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
                 }
                 xpos = xpos + 1;
