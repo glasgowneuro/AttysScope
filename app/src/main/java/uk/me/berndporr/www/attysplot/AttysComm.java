@@ -80,6 +80,8 @@ public class AttysComm extends Thread {
     public final static byte GYRO_1000DPS = 2;
     public final static byte GYRO_2000DPS = 3;
 
+    public final static float MAG_FULL_SCALE = 4800.0E-6F; // TESLA
+
     private BluetoothSocket mmSocket;
     private Scanner inScanner = null;
     private boolean doRun;
@@ -337,10 +339,14 @@ public class AttysComm extends Thread {
 
 
     public void setFullscaleGyroRange(int range) {
+
+        sendSyncCommand("g="+range);
         gyroFullScaleRange = GYRO_FULL_SCALE[range];
     }
 
     public void setFullscaleAccelRange(int range) {
+
+        sendSyncCommand("t="+range);
         accelFullScaleRange = ACCEL_FULL_SCALE[range];
     }
 
@@ -351,6 +357,8 @@ public class AttysComm extends Thread {
     public float getAccelFullScaleRange() {
         return accelFullScaleRange;
     }
+
+    public float getMagFullScaleRange() { return MAG_FULL_SCALE; }
 
     public float getADCFullScaleRange(int channel) {
         return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
@@ -499,7 +507,7 @@ public class AttysComm extends Thread {
                             float norm = 0x8000;
                             try {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
-                                        accelFullScaleRange * 2;
+                                        accelFullScaleRange;
                             } catch (Exception e) {
                                 ringBuffer[inPtr][i] = 0;
                             }
@@ -510,17 +518,18 @@ public class AttysComm extends Thread {
                             float norm = 0x8000;
                             try {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
-                                        gyroFullScaleRange * 2;
+                                        gyroFullScaleRange;
                             } catch (Exception e) {
                                 ringBuffer[inPtr][i] = 0;
                             }
                         }
 
-                        // magnetometer (just normalise)
+                        // magnetometer
                         for (int i = 6; i < 9; i++) {
                             float norm = 0x8000;
                             try {
-                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm;
+                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                        MAG_FULL_SCALE;
                             } catch (Exception e) {
                                 ringBuffer[inPtr][i] = 0;
                             }

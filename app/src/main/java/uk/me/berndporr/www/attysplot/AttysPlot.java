@@ -160,6 +160,7 @@ public class AttysPlot extends AppCompatActivity {
                 float[] tmpSample = new float[nCh];
                 float[] tmpMin = new float[nCh];
                 float[] tmpMax = new float[nCh];
+                float[] tmpTick = new float[nCh];
                 int n = attysComm.getNumSamplesAvilable();
                 if (realtimePlotView != null) {
                     realtimePlotView.startAddSamples(n);
@@ -186,7 +187,8 @@ public class AttysPlot extends AppCompatActivity {
                             for(int k=0; k<3;k++) {
                                 tmpMin[nRealChN] = min;
                                 tmpMax[nRealChN] = max;
-                                tmpSample[nRealChN++] = sample[sn++];
+                                tmpTick[nRealChN] = gain[k] * 1.0F; // 1G
+                                tmpSample[nRealChN++] = sample[k];
                             }
                         }
                         if (showGyr) {
@@ -195,31 +197,34 @@ public class AttysPlot extends AppCompatActivity {
                             for(int k=0; k<3;k++) {
                                 tmpMin[nRealChN] = min;
                                 tmpMax[nRealChN] = max;
-                                tmpSample[nRealChN++] = sample[sn++];
+                                tmpTick[nRealChN] = gain[k+3] * 1000.0F; // 1000DPS
+                                tmpSample[nRealChN++] = sample[k+3];
                             }
                         }
                         if (showMag) {
-                            float min = -1;
-                            float max = 1;
                             for(int k=0; k<3;k++) {
-                                tmpMin[nRealChN] = min;
-                                tmpMax[nRealChN] = max;
-                                tmpSample[nRealChN++] = sample[sn++];
+                                tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
+                                tmpMax[nRealChN] = attysComm.getMagFullScaleRange();;
+                                tmpTick[nRealChN] = gain[k+6] * 1000.0E-6F; //1000uT
+                                tmpSample[nRealChN++] = sample[k+6];
                             }
                         }
                         if (showCh1) {
                             tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                             tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
+                            tmpTick[nRealChN] = 0.001F * gain[9]; // 1mV
                             tmpSample[nRealChN++] = sample[9];
                         }
                         if (showCh2) {
                             tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                             tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
+                            tmpTick[nRealChN] = 0.001F * gain[10]; // 1mV
                             tmpSample[nRealChN++] = sample[10];
                         }
                         realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample,0,nRealChN),
                                 Arrays.copyOfRange(tmpMin,0,nRealChN),
-                                Arrays.copyOfRange(tmpMax,0,nRealChN));
+                                Arrays.copyOfRange(tmpMax,0,nRealChN),
+                                Arrays.copyOfRange(tmpTick,0,nRealChN));
                         // Log.d(TAG,String.format("data = %f",sample[10]));
                         //long t1 = System.currentTimeMillis();
                         //Log.i(TAG, "Timing: " + ( t1 - t0) );
@@ -280,7 +285,9 @@ public class AttysPlot extends AppCompatActivity {
             highpass[i].setAlpha(0.01F);
             iirNotch[i] = new IIR_notch();
             gain[i] = 1;
+            // for magnetomter
             if (i > 5) gain[i] = 50;
+            // initial gain for AD channels
             if (i > 8) gain[i] = 200;
         }
 

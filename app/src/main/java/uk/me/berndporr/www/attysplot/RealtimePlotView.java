@@ -42,7 +42,8 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     private float[][] ypos = null;
     Paint paint = new Paint();
     Paint paintBlack = new Paint();
-    Paint paintCoord = new Paint();
+    Paint paintXCoord = new Paint();
+    Paint paintYCoord = new Paint();
     Canvas canvas;
     private int gap = 10;
     private int xtic = 250;
@@ -50,9 +51,10 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     private void init() {
         xpos = 0;
         holder = getHolder();
-        paint.setColor(Color.YELLOW);
+        paint.setColor(Color.WHITE);
         paintBlack.setColor(Color.BLACK);
-        paintCoord.setColor(Color.argb(128,64,64,64));
+        paintXCoord.setColor(Color.argb(128,0,255,0));
+        paintYCoord.setColor(Color.argb(64,0,128,0));
     }
 
     public void resetX() {
@@ -128,7 +130,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         }
     }
 
-    public void addSamples(float[] newData, float[] minV, float[] maxV) {
+    public void addSamples(float[] newData, float[] minV, float[] maxV, float[] ytick) {
         int width = getWidth();
         int height = getHeight();
 
@@ -149,10 +151,16 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     float dy = (float) base / (float) (maxV[i] - minV[i]);
                     float yZero = base * (i + 1) - ((0 - minV[i]) * dy);
                     float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
+                    float yTmpTicPos = base * (i + 1) - ((ytick[i] - minV[i]) * dy);
+                    float yTmpTicNeg = base * (i + 1) - ((-ytick[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
-                    canvas.drawPoint(xpos, yZero, paintCoord);
+                    canvas.drawPoint(xpos, yZero, paintXCoord);
+                    if ((xpos%2)==0) {
+                        canvas.drawPoint(xpos, yTmpTicPos, paintXCoord);
+                        canvas.drawPoint(xpos, yTmpTicNeg, paintXCoord);
+                    }
                     if ((xpos%xtic) == 0) {
-                        canvas.drawLine(xpos,0,xpos,height,paintCoord);
+                        canvas.drawLine(xpos,0,xpos,height,paintYCoord);
                     }
                     canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
                 }

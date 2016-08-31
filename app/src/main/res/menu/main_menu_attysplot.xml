@@ -25,11 +25,11 @@
                 android:checked="true"/>
             <item
                 android:id="@+id/toggleCh1"
-                android:title="Channel 1"
+                android:title="ADC Channel 1"
                 android:checked="true" />
             <item
                 android:id="@+id/toggleCh2"
-                android:title="Channel 2"
+                android:title="ADC Channel 2"
                 android:checked="true"/>
         </group>
         </menu>
