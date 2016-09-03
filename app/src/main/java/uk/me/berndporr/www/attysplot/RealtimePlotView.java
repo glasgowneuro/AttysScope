@@ -45,6 +45,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     Paint paintBlack = new Paint();
     Paint paintXCoord = new Paint();
     Paint paintYCoord = new Paint();
+    Paint paintLabel = new Paint();
     Canvas canvas;
     private int gap = 10;
     private int xtic = 250;
@@ -54,8 +55,10 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         holder = getHolder();
         paint.setColor(Color.WHITE);
         paintBlack.setColor(Color.BLACK);
-        paintXCoord.setColor(Color.argb(128,0,255,0));
-        paintYCoord.setColor(Color.argb(64,0,128,0));
+        paintXCoord.setColor(Color.argb(128, 0, 255, 0));
+        paintYCoord.setColor(Color.argb(64, 0, 128, 0));
+        paintLabel.setColor(Color.argb(128, 0, 255, 0));
+        paintLabel.setTextSize(24);
     }
 
     public void resetX() {
@@ -81,7 +84,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         nMaxChannels = n;
         minData = new float[n];
         maxData = new float[n];
-        for(int i=0;i<n;i++) {
+        for (int i = 0; i < n; i++) {
             minData[i] = -1;
             maxData[i] = 1;
         }
@@ -109,7 +112,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         nLeft = n;
         Rect rect = null;
         int xr = xpos + n + gap;
-        if (xr>(width-1)) {
+        if (xr > (width - 1)) {
             xr = width - 1;
         }
         rect = new Rect(xpos, 0, xr, getHeight());
@@ -128,7 +131,9 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         }
     }
 
-    public void addSamples(float[] newData, float[] minV, float[] maxV, float[] ytick) {
+
+    public void addSamples(float[] newData, float[] minV, float[] maxV, float[] ytick,
+                           String[] label) {
         int width = getWidth();
         int height = getHeight();
 
@@ -142,7 +147,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         if (nMaxChannels == 0) return;
         Surface surface = holder.getSurface();
         if (surface.isValid()) {
-            Rect rect = new Rect(xpos, 0, xpos+gap, height);
+            Rect rect = new Rect(xpos, 0, xpos + gap, height);
             if (canvas != null) {
                 canvas.drawRect(rect, paintBlack);
                 for (int i = 0; i < nCh; i++) {
@@ -153,31 +158,33 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     float yTmpTicNeg = base * (i + 1) - ((-ytick[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
                     canvas.drawPoint(xpos, yZero, paintXCoord);
-                    if ((xpos%2)==0) {
+                    if ((xpos % 2) == 0) {
                         canvas.drawPoint(xpos, yTmpTicPos, paintXCoord);
                         canvas.drawPoint(xpos, yTmpTicNeg, paintXCoord);
                     }
-                    if ((xpos%xtic) == 0) {
-                        canvas.drawLine(xpos,0,xpos,height,paintYCoord);
+                    if ((xpos % xtic) == 0) {
+                        canvas.drawLine(xpos, 0, xpos, height, paintYCoord);
                     }
                     canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
+                    canvas.drawText(label[i], 0F, yZero-1, paintLabel);
                 }
-                xpos++;
-                nLeft--;
-                if (xpos >= (width-1)) {
-                    xpos = 0;
-                    if (holder != null) {
-                        if (canvas != null) {
-                            holder.unlockCanvasAndPost(canvas);
-                            canvas = null;
-                        }
-                    }
-                    rect = new Rect(xpos, 0, nLeft + gap, getHeight());
-                    if (holder != null) {
-                        canvas = holder.lockCanvas(rect);
-                    } else {
+            }
+            xpos++;
+            nLeft--;
+            if (xpos >= (width - 1)) {
+                xpos = 0;
+                if (holder != null) {
+                    if (canvas != null) {
+                        holder.unlockCanvasAndPost(canvas);
                         canvas = null;
                     }
+                }
+                rect = new Rect(xpos, 0, nLeft + gap, getHeight());
+                if (holder != null) {
+                    canvas = holder.lockCanvas(rect);
+                    canvas.drawText("ccbvcbbvcbcbcb", 0F, 100, paint);
+                } else {
+                    canvas = null;
                 }
             }
         }

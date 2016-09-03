@@ -66,6 +66,9 @@ public class AttysPlot extends AppCompatActivity {
     private boolean showCh1 = true;
     private boolean showCh2 = true;
 
+    String[] labels = {"Acc x","Acc y","Acc z","Gyr x","Gyr y","Gyr z","Mag x","Mag y","Mag z",
+            "ADC 1","ADC 2"};
+
 
     Handler handler = new Handler() {
         @Override
@@ -158,6 +161,7 @@ public class AttysPlot extends AppCompatActivity {
                 float[] tmpMin = new float[nCh];
                 float[] tmpMax = new float[nCh];
                 float[] tmpTick = new float[nCh];
+                String[] tmpLabels = new String[nCh];
                 int n = attysComm.getNumSamplesAvilable();
                 if (realtimePlotView != null) {
                     realtimePlotView.startAddSamples(n);
@@ -187,6 +191,7 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpMin[nRealChN] = min;
                                     tmpMax[nRealChN] = max;
                                     tmpTick[nRealChN] = gain[k] * 1.0F; // 1G
+                                    tmpLabels[nRealChN] = labels[k];
                                     tmpSample[nRealChN++] = sample[k];
                                 }
                             }
@@ -199,6 +204,7 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpMin[nRealChN] = min;
                                     tmpMax[nRealChN] = max;
                                     tmpTick[nRealChN] = gain[k + 3] * 1000.0F; // 1000DPS
+                                    tmpLabels[nRealChN] = labels[k + 3];
                                     tmpSample[nRealChN++] = sample[k + 3];
                                 }
                             }
@@ -208,7 +214,7 @@ public class AttysPlot extends AppCompatActivity {
                                 for (int k = 0; k < 3; k++) {
                                     tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
                                     tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
-                                    ;
+                                    tmpLabels[nRealChN] = labels[ k + 6];
                                     tmpTick[nRealChN] = gain[k + 6] * 1000.0E-6F; //1000uT
                                     tmpSample[nRealChN++] = sample[k + 6];
                                 }
@@ -219,6 +225,7 @@ public class AttysPlot extends AppCompatActivity {
                                 tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                                 tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
                                 tmpTick[nRealChN] = 0.001F * gain[9]; // 1mV
+                                tmpLabels[nRealChN] = labels[9];
                                 tmpSample[nRealChN++] = sample[9];
                             }
                         }
@@ -227,13 +234,15 @@ public class AttysPlot extends AppCompatActivity {
                                 tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                                 tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
                                 tmpTick[nRealChN] = 0.001F * gain[10]; // 1mV
+                                tmpLabels[nRealChN] = labels[10];
                                 tmpSample[nRealChN++] = sample[10];
                             }
                         }
                         realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample,0,nRealChN),
                                 Arrays.copyOfRange(tmpMin,0,nRealChN),
                                 Arrays.copyOfRange(tmpMax,0,nRealChN),
-                                Arrays.copyOfRange(tmpTick,0,nRealChN));
+                                Arrays.copyOfRange(tmpTick,0,nRealChN),
+                                Arrays.copyOfRange(tmpLabels,0,nRealChN));
                     }
                     if (realtimePlotView != null) {
                         realtimePlotView.stopAddSamples();
