@@ -35,6 +35,7 @@ import android.view.View;
 public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callback {
 
     private int xpos = 0;
+    private int nLeft = 0;
     private SurfaceHolder holder;
     private float[] minData = null;
     private float[] maxData = null;
@@ -105,16 +106,13 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
 
     public void startAddSamples(int n) {
         int width = getWidth();
+        nLeft = n;
         Rect rect = null;
-        if ((xpos >= (width - n))) {
-            rect = new Rect(xpos, 0, width-1, getHeight());
-            canvas = holder.lockCanvas(rect);
-            canvas.drawRect(rect, paintBlack);
-            holder.unlockCanvasAndPost(canvas);
-            xpos = 0;
-        }
         int xr = xpos + n + gap;
-        rect = new Rect(xpos, 0, xpos + n + gap, getHeight());
+        if (xr>(width-1)) {
+            xr = width - 1;
+        }
+        rect = new Rect(xpos, 0, xr, getHeight());
         if (holder != null) {
             canvas = holder.lockCanvas(rect);
         } else {
@@ -164,7 +162,23 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     }
                     canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
                 }
-                xpos = xpos + 1;
+                xpos++;
+                nLeft--;
+                if (xpos >= (width-1)) {
+                    xpos = 0;
+                    if (holder != null) {
+                        if (canvas != null) {
+                            holder.unlockCanvasAndPost(canvas);
+                            canvas = null;
+                        }
+                    }
+                    rect = new Rect(xpos, 0, nLeft + gap, getHeight());
+                    if (holder != null) {
+                        canvas = holder.lockCanvas(rect);
+                    } else {
+                        canvas = null;
+                    }
+                }
             }
         }
     }
