@@ -337,6 +337,9 @@ public class AttysPlot extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
+        realtimePlotView.resetX();
+
         switch (item.getItemId()) {
             case R.id.toggleAcc:
                 showAcc = !showAcc;
