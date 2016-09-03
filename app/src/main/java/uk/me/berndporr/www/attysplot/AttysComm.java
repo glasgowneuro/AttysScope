@@ -145,44 +145,44 @@ public class AttysComm extends Thread {
 
             if (mmSocket != null) {
                 try {
-                    mmSocket.connect();
+                    if (mmSocket != null) {
+                        mmSocket.connect();
+                    }
                 } catch (IOException connectException) {
 
                     parentHandler.sendEmptyMessage(BT_RETRY);
 
                     try {
-                        Thread.sleep(3000);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
+                        sleep(3000);
+                    } catch (InterruptedException e1) {}
 
                     try {
-                        mmSocket.connect();
+                        if (mmSocket != null) {
+                            mmSocket.connect();
+                        }
                     } catch (IOException e2) {
 
                         try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException e3) {
-                            e3.printStackTrace();
-                        }
+                            sleep(5000);
+                        } catch (InterruptedException e3) {}
 
                         try {
-                            mmSocket.connect();
+                            if (mmSocket != null) {
+                                mmSocket.connect();
+                            }
                         } catch (IOException e4) {
-
-                            e4.printStackTrace();
 
                             connectionEstablished = false;
                             fatalError = true;
                             Log.d(TAG, "Could not establish connection");
-                            Log.d(TAG, connectException.getMessage());
+                            Log.d(TAG, e4.getMessage());
                             parentHandler.sendEmptyMessage(BT_ERROR);
 
                             try {
-                                mmSocket.close();
-                            } catch (IOException closeException) {
-                                Log.d(TAG, "Could not close connection");
-                            }
+                                if (mmSocket != null) {
+                                    mmSocket.close();
+                                }
+                            } catch (IOException closeException) {}
                             mmSocket = null;
                             return;
                         }
@@ -196,8 +196,11 @@ public class AttysComm extends Thread {
         /** Will cancel an in-progress connection, and close the socket */
         public void cancel() {
             try {
-                mmSocket.close();
+                if (mmSocket != null) {
+                    mmSocket.close();
+                }
             } catch (IOException e) { }
+            mmSocket = null;
         }
     }
 
@@ -407,14 +410,20 @@ public class AttysComm extends Thread {
 
         try {
             // let's wait until we are connected
-            connectThread.join();
+            if (connectThread != null) {
+                connectThread.join();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
             isConnected = false;
         }
 
-        if (!connectThread.hasActiveConnection()) {
-            isConnected = false;
+        if (connectThread != null) {
+            if (!connectThread.hasActiveConnection()) {
+                isConnected = false;
+                return;
+            }
+        } else {
             return;
         }
 
@@ -602,6 +611,7 @@ public class AttysComm extends Thread {
 
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
+        connectThread.cancel();
         doRun = false;
         if (inScanner != null) {
             inScanner.close();
@@ -630,5 +640,6 @@ public class AttysComm extends Thread {
         mmOutStream = null;
         inScanner = null;
         ringBuffer = null;
+        connectThread = null;
     }
 }
