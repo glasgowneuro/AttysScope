@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:key="acc"
+        android:summary="Show accelerometer channels"
+        android:defaultValue="true"
+        android:title="Accelerometer" />
+    <CheckBoxPreference
+        android:key="gyr"
+        android:summary="Show gyroscope channels"
+        android:defaultValue="true"
+        android:title="Gyroscope" />
+    <CheckBoxPreference
+        android:key="mag"
+        android:summary="Show magnetometer channels"
+        android:defaultValue="true"
+        android:title="Magnetometer" />
+    <CheckBoxPreference
+        android:key="ch1"
+        android:defaultValue="true"
+        android:summary="Show the ADC 1 channel"
+        android:title="ADC 1" />
+    <CheckBoxPreference
+        android:key="ch2"
+        android:defaultValue="true"
+        android:summary="Show the ADC 2 channel"
+        android:title="ADC 2" />
     <ListPreference
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"

@@ -4,39 +4,6 @@
     xmlns:yourapp="http://schemas.android.com/tools">
 
     <item
-        android:id="@+id/channelSelection"
-        android:title="Channels"
-        app:showAsAction="ifRoom|withText">
-
-        <menu>
-            <group android:checkableBehavior="all">
-                <item
-                    android:id="@+id/toggleAcc"
-                    android:checked="true"
-                    android:title="Accelerometer" />
-                <item
-                    android:id="@+id/toggleGyr"
-                    android:checked="true"
-                    android:title="Gyroscope" />
-                <item
-                    android:id="@+id/toggleMag"
-                    android:checked="true"
-                    android:title="Magnetometer" />
-                <item
-                    android:id="@+id/toggleCh1"
-                    android:checked="true"
-                    android:title="ADC Channel 1" />
-                <item
-                    android:id="@+id/toggleCh2"
-                    android:checked="true"
-                    android:title="ADC Channel 2" />
-            </group>
-        </menu>
-
-    </item>
-
-
-    <item
         android:title="ADC"
         app:showAsAction="ifRoom|withText">
 
@@ -169,11 +136,12 @@
             android:id="@+id/enterFilename"
             android:title="Enter Filename" />
 
-        <item
-            android:id="@+id/preferences"
-            android:title="Preferences" />
-
     </item>
+
+    <item
+        android:id="@+id/preferences"
+        android:title="Preferences"
+        app:showAsAction="ifRoom|withText" />
 
 </menu>
 

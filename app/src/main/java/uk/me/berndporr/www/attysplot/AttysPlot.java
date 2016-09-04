@@ -443,31 +443,6 @@ public class AttysPlot extends AppCompatActivity {
                 enterFilename();
                 return true;
 
-            case R.id.toggleAcc:
-                showAcc = !showAcc;
-                item.setChecked(showAcc);
-                return true;
-
-            case R.id.toggleGyr:
-                showGyr = !showGyr;
-                item.setChecked(showGyr);
-                return true;
-
-            case R.id.toggleMag:
-                showMag = !showMag;
-                item.setChecked(showMag);
-                return true;
-
-            case R.id.toggleCh1:
-                showCh1 = !showCh1;
-                item.setChecked(showCh1);
-                return true;
-
-            case R.id.toggleCh2:
-                showCh2 = !showCh2;
-                item.setChecked(showCh2);
-                return true;
-
             case R.id.Ch1toggleDC:
                 boolean a = highpass[9].getIsActive();
                 a = !a;
@@ -615,6 +590,12 @@ public class AttysPlot extends AppCompatActivity {
         byte gain1 = (byte)(Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
         attysComm.setAdc1_gain_index(gain1);
         attysComm.setAdc1_mux_index(mux);
+
+        showAcc = prefs.getBoolean("acc",true);
+        showGyr = prefs.getBoolean("gyr",true);
+        showMag = prefs.getBoolean("mag",true);
+        showCh1 = prefs.getBoolean("ch1",true);
+        showCh2 = prefs.getBoolean("ch2",true);
     }
 
     @Override
