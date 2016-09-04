@@ -16,19 +16,24 @@
 
 package uk.me.berndporr.www.attysplot;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.CheckBox;
@@ -39,6 +44,7 @@ import android.widget.Toast;
 //import com.google.android.gms.appindexing.AppIndex;
 //import com.google.android.gms.common.api.GoogleApiClient;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.Timer;
@@ -74,7 +80,6 @@ public class AttysPlot extends AppCompatActivity {
 
     private String csvFilename = null;
 
-
     Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -96,6 +101,11 @@ public class AttysPlot extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth connection problems - trying again. Please be patient.",
                             Toast.LENGTH_LONG).show();
+                    break;
+                case AttysComm.BT_CSV_RECORDING:
+                    Toast.makeText(getApplicationContext(),
+                            "Recording CSV data to external storage.",
+                            Toast.LENGTH_SHORT).show();
                     break;
             }
         }
@@ -321,9 +331,44 @@ public class AttysPlot extends AppCompatActivity {
     }
 
 
+    class EditFilename extends EditText
+    {
+
+        EditFilename(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onKeyDown(int keyCode, KeyEvent event)
+        {
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_ENTER:
+                case KeyEvent.KEYCODE_SPACE:
+                case KeyEvent.KEYCODE_TAB:
+                return true;
+            }
+            return super.onKeyDown(keyCode, event);
+        }
+    }
+
     private void enterFilename() {
 
-        final EditText filenameEditText = new EditText(this);
+        final EditFilename filenameEditText = new EditFilename(this);
+
+        final int REQUEST_EXTERNAL_STORAGE = 1;
+        String[] PERMISSIONS_STORAGE = {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+        };
+
+        int permission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
 
         filenameEditText.setHint("");
 
@@ -334,6 +379,9 @@ public class AttysPlot extends AppCompatActivity {
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         csvFilename = filenameEditText.getText().toString();
+                        if (!csvFilename.contains(".")) {
+                            csvFilename = csvFilename + ".csv";
+                        }
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -359,6 +407,27 @@ public class AttysPlot extends AppCompatActivity {
         realtimePlotView.resetX();
 
         switch (item.getItemId()) {
+            case R.id.toggleRec:
+                if (attysComm.isRecording()) {
+                    attysComm.stopRec();
+                    item.setChecked(false);
+                } else {
+                    if (csvFilename != null) {
+                        File file = new File(Environment.getExternalStorageDirectory().getPath(),
+                                csvFilename.trim());
+                        java.io.FileNotFoundException e = attysComm.startRec(file);
+                        if (e != null) {
+                            Log.d(TAG, "Could not open CSV file: "+e.getMessage());
+                            return true;
+                        }
+                        if (attysComm.isRecording()) {
+                            Log.d(TAG,"Saving to "+file.getAbsolutePath());
+                            item.setChecked(true);
+                        }
+                    }
+                }
+                return true;
+
             case R.id.enterFilename:
                 enterFilename();
                 return true;

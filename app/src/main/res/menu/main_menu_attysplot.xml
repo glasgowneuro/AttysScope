@@ -160,7 +160,7 @@
             android:id="@+id/rec_checkboxes"
             android:checkableBehavior="all">
             <item
-                android:id="@+id/toogleRec"
+                android:id="@+id/toggleRec"
                 android:checked="false"
                 android:title="Recording" />
         </group>

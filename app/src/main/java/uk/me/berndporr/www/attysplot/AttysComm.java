@@ -23,13 +23,17 @@ package uk.me.berndporr.www.attysplot;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -42,6 +46,7 @@ public class AttysComm extends Thread {
     public final static int BT_ERROR = 1;
     public final static int BT_RETRY = 2;
     public final static int BT_CONFIGURE = 3;
+    public final static int BT_CSV_RECORDING = 4;
 
     public final static byte ADC_RATE_125HZ = 0;
     public final static byte ADC_RATE_250HZ = 1;
@@ -108,6 +113,9 @@ public class AttysComm extends Thread {
     private float gyroFullScaleRange;
     private float accelFullScaleRange;
     private byte expectedTimestamp = 0;
+
+    private PrintWriter csvFileStream = null;
+    private float timestamp = 0.0F;
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -403,6 +411,49 @@ public class AttysComm extends Thread {
     }
 
 
+
+    public java.io.FileNotFoundException startRec(File file) {
+        timestamp = 0;
+        try {
+            csvFileStream = new PrintWriter(file);
+            parentHandler.sendEmptyMessage(BT_CSV_RECORDING);
+        } catch (java.io.FileNotFoundException e) {
+            csvFileStream = null;
+            return e;
+        }
+        return null;
+    }
+
+
+    public void stopRec() {
+        if (csvFileStream != null) {
+            csvFileStream.close();
+            csvFileStream = null;
+        }
+    }
+
+
+    public boolean isRecording() {
+        return (csvFileStream != null);
+    }
+
+
+    public void saveData(float[] data) {
+        if (csvFileStream != null) {
+            csvFileStream.format("%f,", timestamp);
+            for (int i = 0; i < (data.length - 1); i++) {
+                if (csvFileStream != null) {
+                    csvFileStream.format("%f,", data[i]);
+                }
+            }
+            if (csvFileStream != null) {
+                csvFileStream.format("%f\n", data[data.length - 1]);
+            }
+            timestamp = timestamp + 1.0F / getSamplingRateInHz();
+        }
+    }
+
+
     public void run() {
 
         long[] data = new long[12];
@@ -552,6 +603,10 @@ public class AttysComm extends Thread {
                             } catch (Exception e) {
                                 ringBuffer[inPtr][i] = 0;
                             }
+                        }
+
+                        if (csvFileStream != null) {
+                            saveData(ringBuffer[inPtr]);
                         }
 
                         inPtr++;
