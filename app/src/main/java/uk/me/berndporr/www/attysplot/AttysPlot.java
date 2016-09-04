@@ -18,18 +18,21 @@ package uk.me.berndporr.www.attysplot;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.Toast;
 
 //import com.google.android.gms.appindexing.Action;
@@ -55,8 +58,8 @@ public class AttysPlot extends AppCompatActivity {
 
     private static final String TAG = "AttysPlot";
 
-    private Highpass [] highpass = null;
-    private float [] gain;
+    private Highpass[] highpass = null;
+    private float[] gain;
     private IIR_notch[] iirNotch;
     private boolean[] invert;
 
@@ -66,8 +69,10 @@ public class AttysPlot extends AppCompatActivity {
     private boolean showCh1 = true;
     private boolean showCh2 = true;
 
-    String[] labels = {"Acc x","Acc y","Acc z","Gyr x","Gyr y","Gyr z","Mag x","Mag y","Mag z",
-            "ADC 1","ADC 2"};
+    String[] labels = {"Acc x", "Acc y", "Acc z", "Gyr x", "Gyr y", "Gyr z", "Mag x", "Mag y", "Mag z",
+            "ADC 1", "ADC 2"};
+
+    private String csvFilename = null;
 
 
     Handler handler = new Handler() {
@@ -102,12 +107,6 @@ public class AttysPlot extends AppCompatActivity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     // private GoogleApiClient client;
-
-
-
-
-
-
     private BluetoothDevice connect2Bluetooth() {
 
         Intent turnOn = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -132,7 +131,7 @@ public class AttysPlot extends AppCompatActivity {
             String b = bt.getName();
             Log.d(TAG, b);
             if (b.startsWith("GN-ATTYS")) {
-                Log.d(TAG,"Found an Attys");
+                Log.d(TAG, "Found an Attys");
                 return bt;
             }
         }
@@ -214,7 +213,7 @@ public class AttysPlot extends AppCompatActivity {
                                 for (int k = 0; k < 3; k++) {
                                     tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
                                     tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
-                                    tmpLabels[nRealChN] = labels[ k + 6];
+                                    tmpLabels[nRealChN] = labels[k + 6];
                                     tmpTick[nRealChN] = gain[k + 6] * 1000.0E-6F; //1000uT
                                     tmpSample[nRealChN++] = sample[k + 6];
                                 }
@@ -238,11 +237,11 @@ public class AttysPlot extends AppCompatActivity {
                                 tmpSample[nRealChN++] = sample[10];
                             }
                         }
-                        realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample,0,nRealChN),
-                                Arrays.copyOfRange(tmpMin,0,nRealChN),
-                                Arrays.copyOfRange(tmpMax,0,nRealChN),
-                                Arrays.copyOfRange(tmpTick,0,nRealChN),
-                                Arrays.copyOfRange(tmpLabels,0,nRealChN));
+                        realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
+                                Arrays.copyOfRange(tmpMin, 0, nRealChN),
+                                Arrays.copyOfRange(tmpMax, 0, nRealChN),
+                                Arrays.copyOfRange(tmpTick, 0, nRealChN),
+                                Arrays.copyOfRange(tmpLabels, 0, nRealChN));
                     }
                     if (realtimePlotView != null) {
                         realtimePlotView.stopAddSamples();
@@ -255,7 +254,7 @@ public class AttysPlot extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        Log.d(TAG,String.format("Back button pressed"));
+        Log.d(TAG, String.format("Back button pressed"));
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -287,30 +286,26 @@ public class AttysPlot extends AppCompatActivity {
             finish();
         }
 
-        attysComm = new AttysComm(btAttysDevice,handler);
+        attysComm = new AttysComm(btAttysDevice, handler);
 
         int nChannels = attysComm.getnChannels();
         highpass = new Highpass[nChannels];
         gain = new float[nChannels];
         iirNotch = new IIR_notch[nChannels];
         invert = new boolean[nChannels];
-        for(int i = 0;i<nChannels;i++) {
+        for (int i = 0; i < nChannels; i++) {
             highpass[i] = new Highpass();
             highpass[i].setAlpha(0.01F);
             iirNotch[i] = new IIR_notch();
             gain[i] = 1;
-            // for magnetomter
-            if (i > 5) gain[i] = 50;
-            // initial gain for AD channels
-            if (i > 8) gain[i] = 200;
         }
 
         attysComm.start();
 
-        for(int i = 0;i<nChannels;i++) {
+        for (int i = 0; i < nChannels; i++) {
             iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
             iirNotch[i].setIsActive(true);
-            highpass[i].setAlpha(1.0F/attysComm.getSamplingRateInHz());
+            highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
         }
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
@@ -318,11 +313,34 @@ public class AttysPlot extends AppCompatActivity {
 
         timer = new Timer();
         UpdatePlotTask updatePlotTask = new UpdatePlotTask();
-        timer.schedule(updatePlotTask,0,300);
+        timer.schedule(updatePlotTask, 0, 300);
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
 //        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    }
+
+
+    private void enterFilename() {
+
+        final EditText filenameEditText = new EditText(this);
+
+        filenameEditText.setHint("");
+
+        new AlertDialog.Builder(this)
+                .setTitle("Enter filename")
+                .setMessage("Enter the filename of the CSV file")
+                .setView(filenameEditText)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        csvFilename = filenameEditText.getText().toString();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                    }
+                })
+                .show();
     }
 
 
@@ -341,6 +359,10 @@ public class AttysPlot extends AppCompatActivity {
         realtimePlotView.resetX();
 
         switch (item.getItemId()) {
+            case R.id.enterFilename:
+                enterFilename();
+                return true;
+
             case R.id.toggleAcc:
                 showAcc = !showAcc;
                 item.setChecked(showAcc);

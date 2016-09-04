@@ -27,6 +27,5 @@ dependencies {
 }
 
 dependencies {
-    compile "com.androidplot:androidplot-core:0.9.8"
     compile 'com.google.android.gms:play-services-appindexing:9.4.0'
 }

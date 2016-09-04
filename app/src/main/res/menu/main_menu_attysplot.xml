@@ -5,76 +5,64 @@
 
     <item
         android:id="@+id/channelSelection"
-        app:showAsAction="ifRoom|withText"
-        android:title="Channels">
+        android:title="Channels"
+        app:showAsAction="ifRoom|withText">
 
         <menu>
-        <group
-            android:checkableBehavior="all">
-            <item
-                android:id="@+id/toggleAcc"
-                android:title="Accelerometer"
-                android:checked="true"/>
-            <item
-                android:id="@+id/toggleGyr"
-                android:title="Gyroscope"
-                android:checked="true"/>
-            <item
-                android:id="@+id/toggleMag"
-                android:title="Magnetometer"
-                android:checked="true"/>
-            <item
-                android:id="@+id/toggleCh1"
-                android:title="ADC Channel 1"
-                android:checked="true" />
-            <item
-                android:id="@+id/toggleCh2"
-                android:title="ADC Channel 2"
-                android:checked="true"/>
-        </group>
+            <group android:checkableBehavior="all">
+                <item
+                    android:id="@+id/toggleAcc"
+                    android:checked="true"
+                    android:title="Accelerometer" />
+                <item
+                    android:id="@+id/toggleGyr"
+                    android:checked="true"
+                    android:title="Gyroscope" />
+                <item
+                    android:id="@+id/toggleMag"
+                    android:checked="true"
+                    android:title="Magnetometer" />
+                <item
+                    android:id="@+id/toggleCh1"
+                    android:checked="true"
+                    android:title="ADC Channel 1" />
+                <item
+                    android:id="@+id/toggleCh2"
+                    android:checked="true"
+                    android:title="ADC Channel 2" />
+            </group>
         </menu>
 
     </item>
 
 
     <item
-        app:showAsAction="ifRoom|withText"
-        android:title="ADC options">
+        android:title="ADC"
+        app:showAsAction="ifRoom|withText">
 
         <menu>
-        <group
-            android:id="@+id/adc_checkboxes"
-            android:checkableBehavior="all">
-            <item
-                android:id="@+id/Ch1toggleDC"
-                android:title="Ch1 DC filter"
-                android:checked="true" />
-            <item
-                android:id="@+id/Ch1invert"
-                android:title="Ch1 invert"
-                android:checked="false" />
-            <item
-                android:id="@+id/Ch1notch"
-                android:title="Ch1 notch"
-                android:checked="true" />
-            <item
-                android:id="@+id/Ch2toggleDC"
-                android:title="Ch2 DC filter"
-                android:checked="true" />
-            <item
-                android:id="@+id/Ch2invert"
-                android:title="Ch2 invert"
-                android:checked="false" />
-            <item
-                android:id="@+id/Ch2notch"
-                android:title="Ch2 notch"
-                android:checked="true" />
-        </group>
+
+            <group
+                android:id="@+id/adc1_checkboxes"
+                android:checkableBehavior="all">
+                <item
+                    android:id="@+id/Ch1toggleDC"
+                    android:checked="true"
+                    android:title="Ch1 DC filter" />
+                <item
+                    android:id="@+id/Ch1invert"
+                    android:checked="false"
+                    android:title="Ch1 invert" />
+                <item
+                    android:id="@+id/Ch1notch"
+                    android:checked="true"
+                    android:title="Ch1 notch" />
+            </group>
 
             <item
                 android:id="@+id/Ch1setGain"
-                android:title="Channel 1 Gain"
-                android:checked="true">
+                android:checked="true"
+                android:title="Set Channel 1 gain">
 
                 <menu>
                     <item
@@ -108,10 +96,27 @@
 
             </item>
 
+            <group
+                android:id="@+id/adc2_checkboxes"
+                android:checkableBehavior="all">
+                <item
+                    android:id="@+id/Ch2toggleDC"
+                    android:checked="true"
+                    android:title="Ch2 DC filter" />
+                <item
+                    android:id="@+id/Ch2invert"
+                    android:checked="false"
+                    android:title="Ch2 invert" />
+                <item
+                    android:id="@+id/Ch2notch"
+                    android:checked="true"
+                    android:title="Ch2 notch" />
+            </group>
+
             <item
                 android:id="@+id/Ch2setGain"
-                android:title="Channel 2 Gain"
-                android:checked="true">
+                android:checked="true"
+                android:title="Set channel 2 gain">
 
                 <menu>
                     <item
@@ -142,14 +147,28 @@
                         android:id="@+id/Ch2gain500"
                         android:title="500" />
                 </menu>
-
             </item>
-
         </menu>
-
     </item>
 
+    <item
+        android:id="@+id/record"
+        android:title="Record"
+        app:showAsAction="ifRoom|withText">
 
+        <group
+            android:id="@+id/rec_checkboxes"
+            android:checkableBehavior="all">
+            <item
+                android:id="@+id/toogleRec"
+                android:checked="false"
+                android:title="Recording" />
+        </group>
 
+        <item
+            android:id="@+id/enterFilename"
+            android:title="Enter Filename" />
+    </item>
 
 </menu>
+
