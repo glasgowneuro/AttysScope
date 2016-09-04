@@ -321,17 +321,19 @@ public class AttysComm extends Thread {
             Log.e(TAG, "Could not write to stream.");
         }
         for (int j = 0; j < 100; j++) {
-            if (inScanner.hasNextLine()) {
-                String l = inScanner.nextLine();
-                if (l.equals("OK")) {
-                    Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
-                    return;
-                }
-            } else {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            if (inScanner != null) {
+                if (inScanner.hasNextLine()) {
+                    String l = inScanner.nextLine();
+                    if (l.equals("OK")) {
+                        Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
+                        return;
+                    }
+                } else {
+                    try {
+                        sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -343,15 +345,17 @@ public class AttysComm extends Thread {
         byte[] bytes = s.getBytes();
 
         try {
-            mmOutStream.flush();
-            mmOutStream.write(10);
-            mmOutStream.write(13);
-            mmOutStream.write(10);
-            mmOutStream.write(13);
-            mmOutStream.write(10);
-            mmOutStream.write(13);
-            mmOutStream.write(bytes);
-            mmOutStream.flush();
+            if (mmOutStream != null) {
+                mmOutStream.flush();
+                mmOutStream.write(10);
+                mmOutStream.write(13);
+                mmOutStream.write(10);
+                mmOutStream.write(13);
+                mmOutStream.write(10);
+                mmOutStream.write(13);
+                mmOutStream.write(bytes);
+                mmOutStream.flush();
+            }
         } catch (IOException e) {
             Log.e(TAG, "Could not write to stream.");
         }
