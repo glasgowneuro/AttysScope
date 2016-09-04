@@ -21,6 +21,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -28,6 +29,7 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -308,7 +310,10 @@ public class AttysPlot extends AppCompatActivity {
             highpass[i].setAlpha(0.01F);
             iirNotch[i] = new IIR_notch();
             gain[i] = 1;
+            if ((i>5) && (i<9)) {gain[i] = 50;}
         }
+
+        getsetAttysPrefs();
 
         attysComm.start();
 
@@ -407,6 +412,12 @@ public class AttysPlot extends AppCompatActivity {
         realtimePlotView.resetX();
 
         switch (item.getItemId()) {
+
+            case R.id.preferences:
+                Intent intent = new Intent(this,PrefsActivity.class);
+                startActivity(intent);
+                return true;
+
             case R.id.toggleRec:
                 if (attysComm.isRecording()) {
                     attysComm.stopRec();
@@ -585,6 +596,27 @@ public class AttysPlot extends AppCompatActivity {
         killAttysComm();
     }
 
+
+    private void getsetAttysPrefs() {
+        byte mux=0;
+
+        Log.d(TAG, String.format("Setting preferences"));
+        SharedPreferences prefs = PreferenceManager
+                .getDefaultSharedPreferences(this);
+        boolean ecg_mode = prefs.getBoolean("ECG_mode",false);
+        if (ecg_mode) {
+            mux = AttysComm.ADC_MUX_ECG_EINTHOVEN;
+        } else {
+            mux = AttysComm.ADC_MUX_NORMAL;
+        }
+        byte gain0 = (byte)(Integer.parseInt(prefs.getString("ch1_gainpref", "0")));
+        attysComm.setAdc0_gain_index(gain0);
+        attysComm.setAdc0_mux_index(mux);
+        byte gain1 = (byte)(Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
+        attysComm.setAdc1_gain_index(gain1);
+        attysComm.setAdc1_mux_index(mux);
+    }
+
     @Override
     protected void onRestart() {
         super.onRestart();
@@ -593,6 +625,7 @@ public class AttysPlot extends AppCompatActivity {
         realtimePlotView.resetX();
         killAttysComm();
         attysComm = new AttysComm(btAttysDevice, handler);
+        getsetAttysPrefs();
         attysComm.start();
     }
 

@@ -168,6 +168,11 @@
         <item
             android:id="@+id/enterFilename"
             android:title="Enter Filename" />
+
+        <item
+            android:id="@+id/preferences"
+            android:title="Preferences" />
+
     </item>
 
 </menu>

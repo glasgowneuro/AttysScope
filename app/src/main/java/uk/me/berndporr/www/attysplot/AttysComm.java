@@ -53,6 +53,8 @@ public class AttysComm extends Thread {
     public final static byte ADC_RATE_500Hz = 2;
     public final static byte ADC_DEFAULT_RATE = ADC_RATE_250HZ;
     public final static float[] ADC_SAMPLINGRATE = {125F,250F,500F,1000F};
+    private byte adc_rate_index = ADC_DEFAULT_RATE;
+
     public final static byte ADC_GAIN_6 = 0;
     public final static byte ADC_GAIN_1 = 1;
     public final static byte ADC_GAIN_2 = 2;
@@ -61,16 +63,24 @@ public class AttysComm extends Thread {
     public final static byte ADC_GAIN_8 = 5;
     public final static byte ADC_GAIN_12 = 6;
     public final static float[] ADC_GAIN_FACTOR = {6.0F,1.0F,2.0F,3.0F,4.0F,8.0F,12.0F};
+    private byte adc0_gain_index = 0;
+    private byte adc1_gain_index = 0;
+
     public final static byte ADC_CURRENT_6NA = 0;
     public final static byte ADC_CURRENT_22NA = 1;
     public final static byte ADC_CURRENT_6UA = 2;
     public final static byte ADC_CURRENT_22UA = 3;
+    private byte adc_current_index = 0;
+
     public final static byte ADC_MUX_NORMAL = 0;
     public final static byte ADC_MUX_SHORT = 1;
     public final static byte ADC_MUX_SUPPLY = 3;
     public final static byte ADC_MUX_TEMPERATURE = 4;
     public final static byte ADC_MUX_TEST_SIGNAL = 5;
     public final static byte ADC_MUX_ECG_EINTHOVEN = 6;
+    private byte adc0_mux_index = ADC_MUX_NORMAL;
+    private byte adc1_mux_index = ADC_MUX_NORMAL;
+
     public final static float ADC_REF = 2.42F; // Volt
 
     public final static float[] ACCEL_FULL_SCALE = {2,4,8,16}; // G
@@ -78,12 +88,14 @@ public class AttysComm extends Thread {
     public final static byte ACCEL_4G = 1;
     public final static byte ACCEL_8G = 2;
     public final static byte ACCEL_16G = 3;
+    private byte accel_full_scale_index = ACCEL_16G;
 
     public final static float[] GYRO_FULL_SCALE= {250,500,1000,2000}; //DPS
     public final static byte GYRO_250DPS = 0;
     public final static byte GYRO_500DPS = 1;
     public final static byte GYRO_1000DPS = 2;
     public final static byte GYRO_2000DPS = 3;
+    private byte gyro_full_scale_index = GYRO_2000DPS;
 
     public final static float MAG_FULL_SCALE = 4800.0E-6F; // TESLA
 
@@ -249,21 +261,25 @@ public class AttysComm extends Thread {
         for(int j=0;j<100;j++) {
             Log.d(TAG, "Trying to stop the data acquisition. Attempt #"+(j+1)+".");
             try {
-                mmOutStream.flush();
-                mmOutStream.write(bytes);
-                mmOutStream.flush();
+                if (mmOutStream != null) {
+                    mmOutStream.flush();
+                    mmOutStream.write(bytes);
+                    mmOutStream.flush();
+                }
             } catch (IOException e) {
                 Log.e(TAG, "Could not send x=0 to the Attys.");
             }
             for (int i = 0; i < 100; i++) {
-                if (inScanner.hasNextLine()) {
-                    String l = inScanner.nextLine();
-                    if (l.equals("OK")) {
-                        Log.d(TAG, "ADC stopped. Now in command mode.");
-                        return;
+                if (inScanner != null) {
+                    if (inScanner.hasNextLine()) {
+                        String l = inScanner.nextLine();
+                        if (l.equals("OK")) {
+                            Log.d(TAG, "ADC stopped. Now in command mode.");
+                            return;
+                        }
+                    } else {
+                        yield();
                     }
-                } else {
-                    yield();
                 }
             }
         }
@@ -291,12 +307,16 @@ public class AttysComm extends Thread {
         byte[] bytes = s.getBytes();
 
         try {
-            mmOutStream.flush();
-            mmOutStream.write(10);
-            mmOutStream.write(13);
-            mmOutStream.write(bytes);
-            mmOutStream.write(13);
-            mmOutStream.flush();
+            if (mmOutStream != null) {
+                mmOutStream.flush();
+                mmOutStream.write(10);
+                mmOutStream.write(13);
+                mmOutStream.write(bytes);
+                mmOutStream.write(13);
+                mmOutStream.flush();
+            } else {
+                return;
+            }
         } catch (IOException e) {
             Log.e(TAG, "Could not write to stream.");
         }
@@ -338,7 +358,7 @@ public class AttysComm extends Thread {
     }
 
 
-    public void setSamplingRate(int rate) {
+    private void setSamplingRate(int rate) {
         adcSamplingRate = rate;
         sendSyncCommand("r="+rate);
     }
@@ -349,13 +369,12 @@ public class AttysComm extends Thread {
     }
 
 
-    public void setFullscaleGyroRange(int range) {
-
+    private void setFullscaleGyroRange(int range) {
         sendSyncCommand("g="+range);
         gyroFullScaleRange = GYRO_FULL_SCALE[range];
     }
 
-    public void setFullscaleAccelRange(int range) {
+    private void setFullscaleAccelRange(int range) {
 
         sendSyncCommand("t="+range);
         accelFullScaleRange = ACCEL_FULL_SCALE[range];
@@ -385,32 +404,38 @@ public class AttysComm extends Thread {
                 sendSyncCommand("b=" + v);
                 break;
         }
-    }
-
-    public void setADCGain(int channel,byte gain) {
-        setGainMux(channel,gain,adcMuxRegister[channel]);
         adcGainRegister[channel] = gain;
-    }
-
-    public void setADCMux(int channel, byte mux) {
-        setGainMux(channel, adcGainRegister[channel],mux);
         adcMuxRegister[channel] = mux;
     }
+
+    private void setADCGain(int channel,byte gain) {
+        setGainMux(channel,gain,adcMuxRegister[channel]);
+    }
+
+    private void setADCMux(int channel, byte mux) {
+        setGainMux(channel, adcGainRegister[channel],mux);
+    }
+
+    public void setAccel_full_scale_index(byte idx) { accel_full_scale_index = idx; }
+    public void setGyro_full_scale_index(byte idx) { gyro_full_scale_index = idx; }
+    public void setAdc_samplingrate_index(byte idx) { adc_rate_index = idx; }
+    public void setAdc0_gain_index(byte idx) { adc0_gain_index = idx; }
+    public void setAdc1_gain_index(byte idx) { adc1_gain_index = idx; }
+    public void setAdc0_mux_index(byte idx) { adc0_mux_index = idx; }
+    public void setAdc1_mux_index(byte idx) { adc1_mux_index = idx; }
 
     private boolean sendInit() {
         stopADC();
         // switching to base64 binary format
         sendSyncCommand("d=1");
-        // 250Hz sampling rate
-        setSamplingRate(ADC_DEFAULT_RATE);
-        setSamplingRate(ADC_DEFAULT_RATE);
-        setFullscaleGyroRange(GYRO_2000DPS);
-        setFullscaleAccelRange(ACCEL_16G);
+        setSamplingRate(adc_rate_index);
+        setFullscaleGyroRange(gyro_full_scale_index);
+        setFullscaleAccelRange(accel_full_scale_index);
+        setGainMux(0,adc0_gain_index,adc0_mux_index);
+        setGainMux(1,adc1_gain_index,adc1_mux_index);
         startADC();
         return true;
     }
-
-
 
     public java.io.FileNotFoundException startRec(File file) {
         timestamp = 0;

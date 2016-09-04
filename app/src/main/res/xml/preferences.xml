@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:entries="@array/gainOptions"
+        android:entryValues="@array/gainValues"
+        android:key="ch1_gainpref"
+        android:summary="Channel 1 full scale range in Volts"
+        android:title="Channel 1 range" />
+    <ListPreference
+        android:entries="@array/gainOptions"
+        android:entryValues="@array/gainValues"
+        android:key="ch2_gainpref"
+        android:summary="Channel 2 full scanel range in Volts"
+        android:title="Channel 2 range" />
+    <CheckBoxPreference
+        android:key="ECG_mode"
+        android:summary="Ch1+ and Ch2 internally connected for ECG Einthoven I,II"
+        android:title="Connect Ch1+ with Ch2" />
+</PreferenceScreen>
