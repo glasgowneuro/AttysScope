@@ -57,6 +57,7 @@ public class AttysPlot extends AppCompatActivity {
     private Timer timer = null;
 
     private RealtimePlotView realtimePlotView = null;
+    private InfoView infoView = null;
 
     private CheckBox showAccelerometer, showGyroscope, showMagnetometer, showADC1, showADC2;
 
@@ -76,6 +77,23 @@ public class AttysPlot extends AppCompatActivity {
     private boolean showMag = true;
     private boolean showCh1 = true;
     private boolean showCh2 = true;
+
+    public enum DataAnalysis {
+        NONE,
+        AC,
+        DC,
+        ECG
+    }
+
+    private DataAnalysis dataAnalysis = DataAnalysis.NONE;
+
+    // for data analysis
+    private double max,min;
+    private float t2 = 0;
+    private int timestamp = 0;
+    private int doNotDetect = 0;
+
+    Highpass ecgHighpass = new Highpass();
 
     String[] labels = {"Acc x", "Acc y", "Acc z", "Gyr x", "Gyr y", "Gyr z", "Mag x", "Mag y", "Mag z",
             "ADC 1", "ADC 2"};
@@ -151,7 +169,81 @@ public class AttysPlot extends AppCompatActivity {
     }
 
 
+
     private class UpdatePlotTask extends TimerTask {
+
+
+        private void showLargeText(String s) {
+            if (infoView != null) {
+                if (attysComm != null) {
+                    infoView.drawLargeText(s);
+                }
+            }
+        }
+
+
+        private void doAnalysis(float v) {
+
+            switch (dataAnalysis) {
+                case ECG:
+                    double h = ecgHighpass.filter(v*1000);
+                    if (h<0) h=0;
+                    h = h * h;
+                    if (h > max) {
+                        max = h;
+                    }
+                    max = max - 0.1 * max / attysComm.getSamplingRateInHz();
+                    //Log.d(TAG,String.format("h=%f,max=%f",h,max));
+                    if (doNotDetect > 0) {
+                        doNotDetect--;
+                    } else {
+                        if (h > (max/2)) {
+                            float t = (float)(timestamp - t2)/attysComm.getSamplingRateInHz();
+                            float bpm = 1/t*60;
+                            if ((bpm > 40) && (bpm<300)) {
+                                showLargeText(String.format("%03d BPM",(int)bpm));
+                            }
+                            t2 = timestamp;
+                            // do not detect for 100ms
+                            doNotDetect = 100;
+                        }
+                    }
+                    break;
+                case NONE:
+                    break;
+                case DC:
+                    double a = 1.0/attysComm.getSamplingRateInHz();
+                    max = v*a - (1-a) * max;
+                    int interval = (int) attysComm.getSamplingRateInHz();
+                    if ((timestamp % interval) == 0) {
+                        if (max < 0.01) {
+                            showLargeText(String.format("%fmV", max*1000.0));
+                        } else {
+                            showLargeText(String.format("%fV", max));
+                        }
+                    }
+                    break;
+                case AC:
+                    max = max - 1 * max / attysComm.getSamplingRateInHz();
+                    if (v > max) {
+                        max = v;
+                    }
+                    min = min - 1 * min / attysComm.getSamplingRateInHz();
+                    if (v < min) {
+                        min = v;
+                    }
+                    interval = (int) attysComm.getSamplingRateInHz();
+                    double diff = max-min;
+                    if ((timestamp % interval) == 0) {
+                        if (diff < 0.01) {
+                            showLargeText(String.format("%fmVpp", diff*1000));
+                        } else {
+                            showLargeText(String.format("%fVpp", diff));
+                        }
+                    }
+                    break;
+            }
+        }
 
         public void run() {
 
@@ -166,6 +258,7 @@ public class AttysPlot extends AppCompatActivity {
                 if (!attysComm.hasActiveConnection()) return;
             }
             int nCh = 0;
+            if (attysComm != null) ecgHighpass.setAlpha(100.0F / attysComm.getSamplingRateInHz());
             if (attysComm != null) nCh = attysComm.getnChannels();
             if (attysComm != null) {
                 float[] tmpSample = new float[nCh];
@@ -178,6 +271,8 @@ public class AttysPlot extends AppCompatActivity {
                     realtimePlotView.startAddSamples(n);
                     for (int i = 0; ((i < n) && (attysComm != null)); i++) {
                         float[] sample = attysComm.getSampleFromBuffer();
+                        doAnalysis(sample[9]);
+                        timestamp++;
                         for (int j = 0; j < nCh; j++) {
                             float v = sample[j];
                             if (j > 8) {
@@ -307,7 +402,6 @@ public class AttysPlot extends AppCompatActivity {
         invert = new boolean[nChannels];
         for (int i = 0; i < nChannels; i++) {
             highpass[i] = new Highpass();
-            highpass[i].setAlpha(0.01F);
             iirNotch[i] = new IIR_notch();
             gain[i] = 1;
             if ((i>5) && (i<9)) {gain[i] = 50;}
@@ -321,10 +415,15 @@ public class AttysPlot extends AppCompatActivity {
             iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
             iirNotch[i].setIsActive(true);
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
+            // highpass[i].setAlpha(100.0F / attysComm.getSamplingRateInHz()); // xxx
         }
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
+
+        infoView = (InfoView) findViewById(R.id.infoview);
+        infoView.setZOrderOnTop(true);
+        infoView.setZOrderMediaOverlay(true);
 
         timer = new Timer();
         UpdatePlotTask updatePlotTask = new UpdatePlotTask();
@@ -409,7 +508,6 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-        realtimePlotView.resetX();
 
         switch (item.getItemId()) {
 
@@ -516,6 +614,22 @@ public class AttysPlot extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),
                         String.format("Channel 2 gain set to x%d",g),Toast.LENGTH_LONG).show();
                 gain[10] = (float)g;
+                return true;
+
+            case R.id.largeStatusOff:
+                dataAnalysis = DataAnalysis.NONE;
+                return true;
+
+            case R.id.largeStatusAC:
+                dataAnalysis = DataAnalysis.AC;
+                return true;
+
+            case R.id.largeStatusDC:
+                dataAnalysis = DataAnalysis.DC;
+                return true;
+
+            case R.id.largeStatusBPM:
+                dataAnalysis = DataAnalysis.ECG;
                 return true;
 
             default:

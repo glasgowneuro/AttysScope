@@ -115,6 +115,29 @@
                         android:title="500" />
                 </menu>
             </item>
+
+            <item
+                android:id="@+id/largeStatus"
+                android:checked="true"
+                android:title="Status display">
+
+                <menu>
+                    <item
+                        android:id="@+id/largeStatusOff"
+                        android:title="off" />
+                    <item
+                        android:id="@+id/largeStatusAC"
+                        android:title="Vpp" />
+                    <item
+                        android:id="@+id/largeStatusDC"
+                        android:title="Vdc" />
+                    <item
+                        android:id="@+id/largeStatusBPM"
+                        android:title="ECG/bpm" />
+                </menu>
+            </item>
+
+
         </menu>
     </item>
 
