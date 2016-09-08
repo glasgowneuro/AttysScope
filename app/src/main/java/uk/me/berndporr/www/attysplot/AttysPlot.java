@@ -78,6 +78,9 @@ public class AttysPlot extends AppCompatActivity {
     private boolean showCh1 = true;
     private boolean showCh2 = true;
 
+    private float ch1Div = 1;
+    private float ch2Div = 1;
+
     public enum DataAnalysis {
         NONE,
         AC,
@@ -92,6 +95,8 @@ public class AttysPlot extends AppCompatActivity {
     private float t2 = 0;
     private int timestamp = 0;
     private int doNotDetect = 0;
+    private float[] analysisBuffer;
+    private int analysisPtr = 0;
 
     Highpass ecgHighpass = new Highpass();
 
@@ -174,9 +179,19 @@ public class AttysPlot extends AppCompatActivity {
 
 
         private void showLargeText(String s) {
+            String small = new String();
+            if (showCh1) {
+                small = small + new String().format("ADC1 = %fV/div", ch1Div);
+            }
+            if (showCh1 && showCh2) {
+                small = small + ", ";
+            }
+            if (showCh2) {
+                small = small + new String().format("ADC2 = %fV/div", ch2Div);
+            }
             if (infoView != null) {
                 if (attysComm != null) {
-                    infoView.drawLargeText(s);
+                    infoView.drawText(s,small);
                 }
             }
         }
@@ -224,21 +239,26 @@ public class AttysPlot extends AppCompatActivity {
                     }
                     break;
                 case AC:
-                    max = max - 1 * max / attysComm.getSamplingRateInHz();
-                    if (v > max) {
-                        max = v;
-                    }
-                    min = min - 1 * min / attysComm.getSamplingRateInHz();
-                    if (v < min) {
-                        min = v;
-                    }
-                    interval = (int) attysComm.getSamplingRateInHz();
-                    double diff = max-min;
-                    if ((timestamp % interval) == 0) {
+                    analysisBuffer[analysisPtr] = v;
+                    analysisPtr++;
+                    //Log.d(TAG,String.format("ana=%d",analysisPtr));
+                    if (!(analysisPtr < analysisBuffer.length)) {
+                        analysisPtr = 0;
+                        min = 2;
+                        max = -2;
+                        for (int i = 0; i < analysisBuffer.length; i++) {
+                            if (analysisBuffer[i] > max) {
+                                max = analysisBuffer[i];
+                            }
+                            if (analysisBuffer[i] < min) {
+                                min = analysisBuffer[i];
+                            }
+                        }
+                        double diff = max - min;
                         if (diff < 0.01) {
-                            showLargeText(String.format("%fmVpp", diff*1000));
+                            showLargeText(String.format("%1.03fmVpp", diff * 1000));
                         } else {
-                            showLargeText(String.format("%fVpp", diff));
+                            showLargeText(String.format("%1.03fVpp", diff));
                         }
                     }
                     break;
@@ -330,7 +350,7 @@ public class AttysPlot extends AppCompatActivity {
                             if (attysComm != null) {
                                 tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                                 tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
-                                tmpTick[nRealChN] = 0.001F * gain[9]; // 1mV
+                                tmpTick[nRealChN] = ch1Div * gain[9];
                                 tmpLabels[nRealChN] = labels[9];
                                 tmpSample[nRealChN++] = sample[9];
                             }
@@ -339,7 +359,7 @@ public class AttysPlot extends AppCompatActivity {
                             if (attysComm != null) {
                                 tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                                 tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
-                                tmpTick[nRealChN] = 0.001F * gain[10]; // 1mV
+                                tmpTick[nRealChN] = ch2Div * gain[10];
                                 tmpLabels[nRealChN] = labels[10];
                                 tmpSample[nRealChN++] = sample[10];
                             }
@@ -406,6 +426,8 @@ public class AttysPlot extends AppCompatActivity {
             gain[i] = 1;
             if ((i>5) && (i<9)) {gain[i] = 50;}
         }
+        // 1sec
+        analysisBuffer = new float[(int)attysComm.getSamplingRateInHz()];
 
         getsetAttysPrefs();
 
@@ -415,7 +437,6 @@ public class AttysPlot extends AppCompatActivity {
             iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
             iirNotch[i].setIsActive(true);
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
-            // highpass[i].setAlpha(100.0F / attysComm.getSamplingRateInHz()); // xxx
         }
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
@@ -594,8 +615,12 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch1gain500:
                 String t = item.getTitle().toString();
                 int g = Integer.parseInt(t);
-                Log.d(TAG, String.format("g=%d",g));
                 gain[9] = (float)g;
+                if (g<20) {
+                    ch1Div = 1;
+                } else {
+                    ch1Div = 1E-3F;
+                }
                 Toast.makeText(getApplicationContext(),
                         String.format("Channel 1 gain set to x%d",g),Toast.LENGTH_LONG).show();
                 return true;
@@ -614,6 +639,11 @@ public class AttysPlot extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),
                         String.format("Channel 2 gain set to x%d",g),Toast.LENGTH_LONG).show();
                 gain[10] = (float)g;
+                if (g<20) {
+                    ch2Div = 1;
+                } else {
+                    ch2Div = 1E-3F;
+                }
                 return true;
 
             case R.id.largeStatusOff:

@@ -56,7 +56,6 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         paintXCoord.setColor(Color.argb(128, 0, 255, 0));
         paintYCoord.setColor(Color.argb(64, 0, 128, 0));
         paintLabel.setColor(Color.argb(128, 0, 255, 0));
-        paintLabel.setTextSize(24);
     }
 
     public void resetX() {
@@ -147,6 +146,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         if (surface.isValid()) {
             Rect rect = new Rect(xpos, 0, xpos + gap, height);
             if (canvas != null) {
+                paintLabel.setTextSize(canvas.getHeight()/30);
                 canvas.drawRect(rect, paintBlack);
                 for (int i = 0; i < nCh; i++) {
                     float dy = (float) base / (float) (maxV[i] - minV[i]);

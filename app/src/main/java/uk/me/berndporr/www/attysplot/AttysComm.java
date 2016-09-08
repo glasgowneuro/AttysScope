@@ -55,13 +55,6 @@ public class AttysComm extends Thread {
     public final static float[] ADC_SAMPLINGRATE = {125F,250F,500F,1000F};
     private byte adc_rate_index = ADC_DEFAULT_RATE;
 
-    public final static byte ADC_GAIN_6 = 0;
-    public final static byte ADC_GAIN_1 = 1;
-    public final static byte ADC_GAIN_2 = 2;
-    public final static byte ADC_GAIN_3 = 3;
-    public final static byte ADC_GAIN_4 = 4;
-    public final static byte ADC_GAIN_8 = 5;
-    public final static byte ADC_GAIN_12 = 6;
     public final static float[] ADC_GAIN_FACTOR = {6.0F,1.0F,2.0F,3.0F,4.0F,8.0F,12.0F};
     private byte adc0_gain_index = 0;
     private byte adc1_gain_index = 0;
@@ -628,7 +621,7 @@ public class AttysComm extends Thread {
                             float norm = 0x800000;
                             try {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
-                                        ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]] * 2;
+                                        ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]];
                             } catch (Exception e) {
                                 ringBuffer[inPtr][i] = 0;
                             }
@@ -659,8 +652,10 @@ public class AttysComm extends Thread {
 
     public float[] getSampleFromBuffer() {
         if (inPtr != outPtr) {
-            // Log.d(TAG,String.format("get:outPtr=%d,data =%f",outPtr,ringBuffer[outPtr][10]));
-            float[] sample = ringBuffer[outPtr];
+            float[] sample = null;
+            if (ringBuffer != null) {
+                sample = ringBuffer[outPtr];
+            }
             outPtr++;
             if (outPtr == nMem) {
                 outPtr = 0;
