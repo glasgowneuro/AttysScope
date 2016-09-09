@@ -59,8 +59,6 @@ public class AttysPlot extends AppCompatActivity {
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
 
-    private CheckBox showAccelerometer, showGyroscope, showMagnetometer, showADC1, showADC2;
-
     private BluetoothAdapter BA;
     private AttysComm attysComm = null;
     private BluetoothDevice btAttysDevice = null;
@@ -124,8 +122,8 @@ public class AttysPlot extends AppCompatActivity {
                     break;
                 case AttysComm.BT_RETRY:
                     Toast.makeText(getApplicationContext(),
-                            "Bluetooth connection problems - trying again. Please be patient.",
-                            Toast.LENGTH_LONG).show();
+                            "Bluetooth - trying to connect. Please be patient.",
+                            Toast.LENGTH_SHORT).show();
                     break;
                 case AttysComm.BT_CSV_RECORDING:
                     Toast.makeText(getApplicationContext(),
@@ -291,84 +289,86 @@ public class AttysPlot extends AppCompatActivity {
                     realtimePlotView.startAddSamples(n);
                     for (int i = 0; ((i < n) && (attysComm != null)); i++) {
                         float[] sample = attysComm.getSampleFromBuffer();
-                        doAnalysis(sample[9]);
-                        timestamp++;
-                        for (int j = 0; j < nCh; j++) {
-                            float v = sample[j];
-                            if (j > 8) {
-                                v = highpass[j].filter(v);
-                                v = iirNotch[j].filter(v);
+                        if (sample != null) {
+                            doAnalysis(sample[9]);
+                            timestamp++;
+                            for (int j = 0; j < nCh; j++) {
+                                float v = sample[j];
+                                if (j > 8) {
+                                    v = highpass[j].filter(v);
+                                    v = iirNotch[j].filter(v);
+                                }
+                                v = v * gain[j];
+                                if (invert[j]) {
+                                    sample[j] = -v;
+                                } else {
+                                    sample[j] = v;
+                                }
                             }
-                            v = v * gain[j];
-                            if (invert[j]) {
-                                sample[j] = -v;
-                            } else {
-                                sample[j] = v;
-                            }
-                        }
-                        int nRealChN = 0;
-                        int sn = 0;
-                        if (showAcc) {
-                            if (attysComm != null) {
-                                float min = -attysComm.getAccelFullScaleRange();
-                                float max = attysComm.getAccelFullScaleRange();
+                            int nRealChN = 0;
+                            int sn = 0;
+                            if (showAcc) {
+                                if (attysComm != null) {
+                                    float min = -attysComm.getAccelFullScaleRange();
+                                    float max = attysComm.getAccelFullScaleRange();
 
-                                for (int k = 0; k < 3; k++) {
-                                    tmpMin[nRealChN] = min;
-                                    tmpMax[nRealChN] = max;
-                                    tmpTick[nRealChN] = gain[k] * 1.0F; // 1G
-                                    tmpLabels[nRealChN] = labels[k];
-                                    tmpSample[nRealChN++] = sample[k];
+                                    for (int k = 0; k < 3; k++) {
+                                        tmpMin[nRealChN] = min;
+                                        tmpMax[nRealChN] = max;
+                                        tmpTick[nRealChN] = gain[k] * 1.0F; // 1G
+                                        tmpLabels[nRealChN] = labels[k];
+                                        tmpSample[nRealChN++] = sample[k];
+                                    }
                                 }
                             }
-                        }
-                        if (showGyr) {
-                            if (attysComm != null) {
-                                float min = -attysComm.getGyroFullScaleRange();
-                                float max = attysComm.getGyroFullScaleRange();
-                                for (int k = 0; k < 3; k++) {
-                                    tmpMin[nRealChN] = min;
-                                    tmpMax[nRealChN] = max;
-                                    tmpTick[nRealChN] = gain[k + 3] * 1000.0F; // 1000DPS
-                                    tmpLabels[nRealChN] = labels[k + 3];
-                                    tmpSample[nRealChN++] = sample[k + 3];
+                            if (showGyr) {
+                                if (attysComm != null) {
+                                    float min = -attysComm.getGyroFullScaleRange();
+                                    float max = attysComm.getGyroFullScaleRange();
+                                    for (int k = 0; k < 3; k++) {
+                                        tmpMin[nRealChN] = min;
+                                        tmpMax[nRealChN] = max;
+                                        tmpTick[nRealChN] = gain[k + 3] * 1000.0F; // 1000DPS
+                                        tmpLabels[nRealChN] = labels[k + 3];
+                                        tmpSample[nRealChN++] = sample[k + 3];
+                                    }
                                 }
                             }
-                        }
-                        if (showMag) {
-                            if (attysComm != null) {
-                                for (int k = 0; k < 3; k++) {
-                                    tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
-                                    tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
-                                    tmpLabels[nRealChN] = labels[k + 6];
-                                    tmpTick[nRealChN] = gain[k + 6] * 1000.0E-6F; //1000uT
-                                    tmpSample[nRealChN++] = sample[k + 6];
+                            if (showMag) {
+                                if (attysComm != null) {
+                                    for (int k = 0; k < 3; k++) {
+                                        tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
+                                        tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
+                                        tmpLabels[nRealChN] = labels[k + 6];
+                                        tmpTick[nRealChN] = gain[k + 6] * 1000.0E-6F; //1000uT
+                                        tmpSample[nRealChN++] = sample[k + 6];
+                                    }
                                 }
                             }
-                        }
-                        if (showCh1) {
-                            if (attysComm != null) {
-                                tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
-                                tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
-                                tmpTick[nRealChN] = ch1Div * gain[9];
-                                tmpLabels[nRealChN] = labels[9];
-                                tmpSample[nRealChN++] = sample[9];
+                            if (showCh1) {
+                                if (attysComm != null) {
+                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
+                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
+                                    tmpTick[nRealChN] = ch1Div * gain[9];
+                                    tmpLabels[nRealChN] = labels[9];
+                                    tmpSample[nRealChN++] = sample[9];
+                                }
                             }
-                        }
-                        if (showCh2) {
-                            if (attysComm != null) {
-                                tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
-                                tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
-                                tmpTick[nRealChN] = ch2Div * gain[10];
-                                tmpLabels[nRealChN] = labels[10];
-                                tmpSample[nRealChN++] = sample[10];
+                            if (showCh2) {
+                                if (attysComm != null) {
+                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
+                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
+                                    tmpTick[nRealChN] = ch2Div * gain[10];
+                                    tmpLabels[nRealChN] = labels[10];
+                                    tmpSample[nRealChN++] = sample[10];
+                                }
                             }
+                            realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
+                                    Arrays.copyOfRange(tmpMin, 0, nRealChN),
+                                    Arrays.copyOfRange(tmpMax, 0, nRealChN),
+                                    Arrays.copyOfRange(tmpTick, 0, nRealChN),
+                                    Arrays.copyOfRange(tmpLabels, 0, nRealChN));
                         }
-                        realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
-                                Arrays.copyOfRange(tmpMin, 0, nRealChN),
-                                Arrays.copyOfRange(tmpMax, 0, nRealChN),
-                                Arrays.copyOfRange(tmpTick, 0, nRealChN),
-                                Arrays.copyOfRange(tmpLabels, 0, nRealChN));
                     }
                     if (realtimePlotView != null) {
                         realtimePlotView.stopAddSamples();
@@ -382,6 +382,9 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Log.d(TAG, String.format("Back button pressed"));
+        if (!attysComm.hasActiveConnection()) {
+            attysComm.cancel();
+        }
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

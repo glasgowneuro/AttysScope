@@ -166,7 +166,7 @@ public class AttysComm extends Thread {
                     parentHandler.sendEmptyMessage(BT_RETRY);
 
                     try {
-                        sleep(3000);
+                        sleep(100);
                     } catch (InterruptedException e1) {}
 
                     try {
@@ -176,7 +176,7 @@ public class AttysComm extends Thread {
                     } catch (IOException e2) {
 
                         try {
-                            sleep(5000);
+                            sleep(100);
                         } catch (InterruptedException e3) {}
 
                         try {
@@ -187,8 +187,7 @@ public class AttysComm extends Thread {
 
                             connectionEstablished = false;
                             fatalError = true;
-                            Log.d(TAG, "Could not establish connection");
-                            Log.d(TAG, e4.getMessage());
+                            Log.d(TAG, "Could not establish connection: "+e4.getMessage());
                             parentHandler.sendEmptyMessage(BT_ERROR);
 
                             try {
@@ -260,23 +259,25 @@ public class AttysComm extends Thread {
                     mmOutStream.flush();
                 }
             } catch (IOException e) {
-                Log.e(TAG, "Could not send x=0 to the Attys.");
+                Log.e(TAG, "Could not send 'x=0' to the Attys:"+e.getMessage());
             }
             for (int i = 0; i < 100; i++) {
                 if (inScanner != null) {
                     if (inScanner.hasNextLine()) {
-                        String l = inScanner.nextLine();
-                        if (l.equals("OK")) {
-                            Log.d(TAG, "ADC stopped. Now in command mode.");
-                            return;
+                        if (inScanner != null) {
+                            String l = inScanner.nextLine();
+                            if (l.equals("OK")) {
+                                Log.d(TAG, "ADC stopped. Now in command mode.");
+                                return;
+                            } else {
+                                yield();
+                            }
                         }
-                    } else {
-                        yield();
                     }
                 }
             }
         }
-        Log.e(TAG, "Could not detect OK after x=0");
+        Log.e(TAG, "Could not detect OK after x=0!");
     }
 
 
@@ -284,12 +285,14 @@ public class AttysComm extends Thread {
         String s = "x=1\r";
         byte[] bytes = s.getBytes();
         try {
-            mmOutStream.flush();
-            mmOutStream.write(13);
-            mmOutStream.write(10);
-            mmOutStream.write(bytes);
-            mmOutStream.flush();
-            Log.d(TAG, "ADC started. Now acquiring data.");
+            if (mmOutStream != null) {
+                mmOutStream.flush();
+                mmOutStream.write(13);
+                mmOutStream.write(10);
+                mmOutStream.write(bytes);
+                mmOutStream.flush();
+                Log.d(TAG, "ADC started. Now acquiring data.");
+            }
         } catch (IOException e) {
             Log.e(TAG, "Could not send x=1 to the Attys.");
         }
@@ -316,42 +319,21 @@ public class AttysComm extends Thread {
         for (int j = 0; j < 100; j++) {
             if (inScanner != null) {
                 if (inScanner.hasNextLine()) {
-                    String l = inScanner.nextLine();
-                    if (l.equals("OK")) {
-                        Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
-                        return;
-                    }
-                } else {
-                    try {
-                        sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                    if (inScanner != null) {
+                        String l = inScanner.nextLine();
+                        if (l.equals("OK")) {
+                            Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
+                            return;
+                        } else {
+                            try {
+                                sleep(10);
+                            } catch (InterruptedException e) {}
+                        }
                     }
                 }
             }
         }
         Log.e(TAG, "ATTYS hasn't replied with OK after command: "+s+".");
-    }
-
-
-    private void sendAsyncCommand(String s) {
-        byte[] bytes = s.getBytes();
-
-        try {
-            if (mmOutStream != null) {
-                mmOutStream.flush();
-                mmOutStream.write(10);
-                mmOutStream.write(13);
-                mmOutStream.write(10);
-                mmOutStream.write(13);
-                mmOutStream.write(10);
-                mmOutStream.write(13);
-                mmOutStream.write(bytes);
-                mmOutStream.flush();
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Could not write to stream.");
-        }
     }
 
 
@@ -423,7 +405,7 @@ public class AttysComm extends Thread {
 
     private boolean sendInit() {
         stopADC();
-        // switching to base64 binary format
+        // switching to base64 encoding
         sendSyncCommand("d=1");
         setSamplingRate(adc_rate_index);
         setFullscaleGyroRange(gyro_full_scale_index);
@@ -690,7 +672,9 @@ public class AttysComm extends Thread {
 
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
-        connectThread.cancel();
+        if (connectThread != null) {
+            connectThread.cancel();
+        }
         doRun = false;
         if (inScanner != null) {
             inScanner.close();
