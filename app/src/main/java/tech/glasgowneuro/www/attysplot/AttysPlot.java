@@ -116,7 +116,7 @@ public class AttysPlot extends AppCompatActivity {
             switch (msg.what) {
                 case AttysComm.BT_ERROR:
                     Toast.makeText(getApplicationContext(),
-                            "Bluetooth error", Toast.LENGTH_LONG).show();
+                            "Bluetooth connection problem", Toast.LENGTH_LONG).show();
                     finish();
                     break;
                 case AttysComm.BT_CONNECTED:
