@@ -1,4 +1,4 @@
-package uk.me.berndporr.www.attysplot;
+package tech.glasgowneuro.www.attysplot;
 
 import android.content.Context;
 import android.graphics.Canvas;

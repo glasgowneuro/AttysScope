@@ -5,7 +5,7 @@ android {
     buildToolsVersion "24.0.1"
 
     defaultConfig {
-        applicationId "uk.me.berndporr.www.attysplot"
+        applicationId "tech.glasgowneuro.www.attysplot"
         minSdkVersion 16
         targetSdkVersion 23
         versionCode 1

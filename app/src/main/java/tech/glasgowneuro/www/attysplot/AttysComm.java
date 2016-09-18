@@ -19,12 +19,10 @@
  * https://developer.android.com/guide/topics/connectivity/bluetooth.html
  */
 
-package uk.me.berndporr.www.attysplot;
+package tech.glasgowneuro.www.attysplot;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;

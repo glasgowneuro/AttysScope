@@ -14,7 +14,7 @@
  limitations under the License.
  **/
 
-package uk.me.berndporr.www.attysplot;
+package tech.glasgowneuro.www.attysplot;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
@@ -38,7 +38,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -692,7 +691,7 @@ public class AttysPlot extends AppCompatActivity {
                 // Otherwise, set the URL to null.
                 Uri.parse("http://www.berndporr.me.uk"),
                 // TODO: Make sure this auto-generated app URL is correct.
-                Uri.parse("android-app://uk.me.berndporr.www.attysplot/http/host/path")
+                Uri.parse("android-app://tech.glasgowneuro.www.attysplot/http/host/path")
         );
         AppIndex.AppIndexApi.start(client, viewAction);
         **/
@@ -777,7 +776,7 @@ public class AttysPlot extends AppCompatActivity {
                 // Otherwise, set the URL to null.
                 Uri.parse("http://host/path"),
                 // TODO: Make sure this auto-generated app URL is correct.
-                Uri.parse("android-app://uk.me.berndporr.www.attysplot/http/host/path")
+                Uri.parse("android-app://tech.glasgowneuro.www.attysplot/http/host/path")
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();

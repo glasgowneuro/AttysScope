@@ -15,7 +15,7 @@
  **/
 
 
-package uk.me.berndporr.www.attysplot;
+package tech.glasgowneuro.www.attysplot;
 
 /**
  * Created by bp1 on 13/08/16.
