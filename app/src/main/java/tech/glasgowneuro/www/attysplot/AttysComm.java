@@ -23,7 +23,6 @@ package tech.glasgowneuro.www.attysplot;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
 
@@ -129,7 +128,6 @@ public class AttysComm extends Thread {
     private OutputStream mmOutStream = null;
     private static final String TAG = "AttysComm";
     private boolean fatalError = false;
-    private Handler parentHandler;
     private BluetoothDevice bluetoothDevice;
     private byte[] adcMuxRegister = null;
     private int adcSamplingRate = ADC_DEFAULT_RATE;
@@ -151,15 +149,21 @@ public class AttysComm extends Thread {
     public long getSampleNumber() {return sampleNumber;}
     public void setSampleNumber(long sn) { sampleNumber = sn;}
 
+    // data listener
     public interface DataListener {
         void gotData(long samplenumber,float[] data);
     }
-
     private DataListener dataListener = null;
-
     public void registerDataListener(DataListener l) { dataListener = l;};
-
     public void unregisterDataListener() {dataListener = null;};
+
+    // message listener
+    public interface MessageListener {
+        void haveMessage(int msg);
+    }
+    private MessageListener messageListener = null;
+    public void registerMessageListener(MessageListener m) {messageListener = m;}
+    public void unregisterMessageListener() {messageListener = null;};
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -192,7 +196,7 @@ public class AttysComm extends Thread {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Could not get rfComm socket:", e);
                 }
-                parentHandler.sendEmptyMessage(BT_ERROR);
+                messageListener.haveMessage(BT_ERROR);
             }
             mmSocket = tmp;
             if (tmp != null) {
@@ -213,7 +217,7 @@ public class AttysComm extends Thread {
                     }
                 } catch (IOException connectException) {
 
-                    parentHandler.sendEmptyMessage(BT_RETRY);
+                    messageListener.haveMessage(BT_RETRY);
 
                     try {
                         sleep(100);
@@ -240,7 +244,7 @@ public class AttysComm extends Thread {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not establish connection: " + e4.getMessage());
                             }
-                            parentHandler.sendEmptyMessage(BT_ERROR);
+                            messageListener.haveMessage(BT_ERROR);
 
                             try {
                                 if (mmSocket != null) {
@@ -275,7 +279,7 @@ public class AttysComm extends Thread {
 
 
 
-    public AttysComm(BluetoothDevice device, Handler handler) {
+    public AttysComm(BluetoothDevice device) {
 
         adcMuxRegister = new byte[2];
         adcMuxRegister[0] = 0;
@@ -289,9 +293,6 @@ public class AttysComm extends Thread {
         adcCurrPosOn = new boolean[2];
         adcCurrPosOn[0] = false;
         adcCurrNegOn[1] = false;
-
-        // transmits errors etc
-        parentHandler = handler;
 
         connectThread = new ConnectThread(device);
         // let's try to connect
@@ -489,7 +490,7 @@ public class AttysComm extends Thread {
     public java.io.FileNotFoundException startRec(File file) {
         try {
             csvFileStream = new PrintWriter(file);
-            parentHandler.sendEmptyMessage(BT_CSV_RECORDING);
+            messageListener.haveMessage(BT_CSV_RECORDING);
         } catch (java.io.FileNotFoundException e) {
             csvFileStream = null;
             return e;
@@ -572,19 +573,19 @@ public class AttysComm extends Thread {
             mmOutStream = null;
             inScanner = null;
             ringBuffer = null;
-            parentHandler.sendEmptyMessage(BT_ERROR);
+            messageListener.haveMessage(BT_ERROR);
         }
 
         // we only enter in the main loop if we have connected
         doRun = isConnected;
 
-        parentHandler.sendEmptyMessage(BT_CONFIGURE);
+        messageListener.haveMessage(BT_CONFIGURE);
         sendInit();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Starting main data acquistion loop");
         }
-        parentHandler.sendEmptyMessage(BT_CONNECTED);
+        messageListener.haveMessage(BT_CONNECTED);
         // Keep listening to the InputStream until an exception occurs
         while (doRun) {
             try {

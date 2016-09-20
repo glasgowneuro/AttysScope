@@ -142,6 +142,14 @@ public class AttysPlot extends AppCompatActivity {
     };
 
 
+    AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
+        @Override
+        public void haveMessage(int msg) {
+           handler.sendEmptyMessage(msg);
+        }
+    };
+
+
     private BluetoothDevice connect2Bluetooth() {
 
         Intent turnOn = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -418,7 +426,8 @@ public class AttysPlot extends AppCompatActivity {
             finish();
         }
 
-        attysComm = new AttysComm(btAttysDevice, handler);
+        attysComm = new AttysComm(btAttysDevice);
+        attysComm.registerMessageListener(messageListener);
 
         int nChannels = attysComm.NCHANNELS;
         highpass = new Highpass[nChannels];
@@ -747,7 +756,8 @@ public class AttysPlot extends AppCompatActivity {
         Log.d(TAG, String.format("Restarting"));
         realtimePlotView.resetX();
         killAttysComm();
-        attysComm = new AttysComm(btAttysDevice, handler);
+        attysComm = new AttysComm(btAttysDevice);
+        attysComm.registerMessageListener(messageListener);
         getsetAttysPrefs();
         attysComm.start();
     }

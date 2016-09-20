@@ -21,62 +21,12 @@ import java.util.Set;
 
 public class Attys2ScienceJournal extends Service {
     public static final String DEVICE_ID = "AttysDevice";
-    private static final String TAG = "AttysSensorProvider";
+    private static final String TAG = "Attys2ScienceJournal";
     private static AttysComm attysComm = null;
     private static ISensorObserver[] observer = null;
     private static ISensorStatusListener[] listener = null;
     private static BluetoothDevice bluetoothDevice = null;
     private static long timestamp = 0;
-
-    // this handler is called from AttysComm to that the listeners can then
-    // be told what has happend to the bluetooth connection
-    static Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case AttysComm.BT_ERROR:
-                    for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                        try {
-                            if (listener[i] != null) {
-                                listener[i].onSensorError("Attys connection problem");
-                            }
-                        } catch (RemoteException e) {
-                            if (Log.isLoggable(TAG, Log.ERROR)) {
-                                Log.e(TAG, "Cannot report BT error to open science journal", e);
-                            }
-                        }
-                    }
-                    break;
-                case AttysComm.BT_CONNECTED:
-                    for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                        try {
-                            if (listener[i] != null) {
-                                listener[i].onSensorConnected();
-                            }
-                        } catch (RemoteException e) {
-                            if (Log.isLoggable(TAG, Log.ERROR)) {
-                                Log.e(TAG, "Cannot announce connect", e);
-                            }
-                        }
-                    }
-                    if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                        Log.v(TAG, "Connected");
-                    }
-                    break;
-                case AttysComm.BT_CONFIGURE:
-                    if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                        Log.v(TAG, "Configuring Attys");
-                    }
-                    break;
-                case AttysComm.BT_RETRY:
-                    if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                        Log.v(TAG, "Retrying to connect");
-                    }
-                    break;
-            }
-        }
-    };
-
 
     @Override
     public void onCreate() {
@@ -217,7 +167,7 @@ public class Attys2ScienceJournal extends Service {
 
                         // are we the first sensor? Then let's start a proper connection
                         if (attysComm == null) {
-                            attysComm = new AttysComm(bluetoothDevice, handler);
+                            attysComm = new AttysComm(bluetoothDevice);
                             attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
                             attysComm.setGyro_full_scale_index(AttysComm.GYRO_2000DPS);
                             attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
@@ -246,6 +196,56 @@ public class Attys2ScienceJournal extends Service {
                         };
 
                         attysComm.registerDataListener(dataListener);
+
+                        AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
+                            @Override
+                            public void haveMessage(int msg) {
+                                switch (msg) {
+                                    case AttysComm.BT_ERROR:
+                                        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                            try {
+                                                if (listener[i] != null) {
+                                                    listener[i].onSensorError("Attys connection problem");
+                                                }
+                                            } catch (RemoteException e) {
+                                                if (Log.isLoggable(TAG, Log.ERROR)) {
+                                                    Log.e(TAG, "Cannot report BT error to open science journal", e);
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    case AttysComm.BT_CONNECTED:
+                                        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                            try {
+                                                if (listener[i] != null) {
+                                                    listener[i].onSensorConnected();
+                                                }
+                                            } catch (RemoteException e) {
+                                                if (Log.isLoggable(TAG, Log.ERROR)) {
+                                                    Log.e(TAG, "Cannot announce connect", e);
+                                                }
+                                            }
+                                        }
+                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                            Log.d(TAG, "Connected");
+                                        }
+                                        break;
+                                    case AttysComm.BT_CONFIGURE:
+                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                            Log.d(TAG, "Configuring Attys");
+                                        }
+                                        break;
+                                    case AttysComm.BT_RETRY:
+                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                            Log.d(TAG, "Retrying to connect");
+                                        }
+                                        break;
+                                }
+
+                            }
+                        };
+
+                        attysComm.registerMessageListener(messageListener);
 
                         // this is async in the background and might take a second or two
                         attysComm.start();
