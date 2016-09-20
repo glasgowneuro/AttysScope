@@ -54,14 +54,14 @@
         jar="/home/bp1/sandbox/AttysPlot/app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"
         jumboMode="true"
         revision="24.0.1"
-        sha1="8e04c8e87525aec67bd845c212b7ee29e4395b0a">
+        sha1="7d6a62ed7ef0adb0b48455502081a95c60e0511a">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_df1026115f4efaf472ec1a89fd844c020a7f2567/classes.dex" />
     </item>
     <item
         jar="/home/bp1/sandbox/AttysPlot/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
         jumboMode="true"
         revision="24.0.1"
-        sha1="8463b6b2e722c7a61f50e71c9ada932e827a6ffb">
+        sha1="10ce226c137212fab963a09c1645331eaee1d27b">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_3a6f21391e140280a2fea0347ee609d97c1c5fd1/classes.dex" />
     </item>
     <item

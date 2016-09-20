@@ -279,7 +279,7 @@ public class AttysPlot extends AppCompatActivity {
             }
             int nCh = 0;
             if (attysComm != null) ecgHighpass.setAlpha(100.0F / attysComm.getSamplingRateInHz());
-            if (attysComm != null) nCh = attysComm.getnChannels();
+            if (attysComm != null) nCh = attysComm.NCHANNELS;
             if (attysComm != null) {
                 float[] tmpSample = new float[nCh];
                 float[] tmpMin = new float[nCh];
@@ -420,7 +420,7 @@ public class AttysPlot extends AppCompatActivity {
 
         attysComm = new AttysComm(btAttysDevice, handler);
 
-        int nChannels = attysComm.getnChannels();
+        int nChannels = attysComm.NCHANNELS;
         highpass = new Highpass[nChannels];
         gain = new float[nChannels];
         iirNotch = new IIR_notch[nChannels];

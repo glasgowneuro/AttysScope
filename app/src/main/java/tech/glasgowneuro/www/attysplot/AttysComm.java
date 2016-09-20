@@ -40,6 +40,22 @@ import java.util.UUID;
  * Created by bp1 on 14/08/16.
  */
 public class AttysComm extends Thread {
+    public final static String[] CHANNEL_DESCRIPTION = {
+            "Acceleration X",
+            "Acceleration Y",
+            "Acceleration Z",
+            "Rotation X",
+            "Rotation Y",
+            "Rotation Z",
+            "Magnetic field X",
+            "Magnetic field Y",
+            "Magnetic field Z",
+            "Analogue channel 1",
+            "Analogue channel 2"
+    };
+
+    public final static int NCHANNELS = 11;
+
     public final static int BT_CONNECTED = 0;
     public final static int BT_ERROR = 1;
     public final static int BT_RETRY = 2;
@@ -50,10 +66,19 @@ public class AttysComm extends Thread {
     public final static byte ADC_RATE_250HZ = 1;
     public final static byte ADC_RATE_500Hz = 2;
     public final static byte ADC_DEFAULT_RATE = ADC_RATE_250HZ;
-    public final static float[] ADC_SAMPLINGRATE = {125F,250F,500F,1000F};
+    public final static int[] ADC_SAMPLINGRATE = {125,250,500,1000};
     private byte adc_rate_index = ADC_DEFAULT_RATE;
 
+    public final static byte ADC_GAIN_6 = 0;
+    public final static byte ADC_GAIN_1 = 1;
+    public final static byte ADC_GAIN_2 = 2;
+    public final static byte ADC_GAIN_3 = 3;
+    public final static byte ADC_GAIN_4 = 4;
+    public final static byte ADC_GAIN_8 = 5;
+    public final static byte ADC_GAIN_12 = 6;
+
     public final static float[] ADC_GAIN_FACTOR = {6.0F,1.0F,2.0F,3.0F,4.0F,8.0F,12.0F};
+
     private byte adc0_gain_index = 0;
     private byte adc1_gain_index = 0;
 
@@ -100,7 +125,6 @@ public class AttysComm extends Thread {
     final private int nRawFieldsPerLine = 14;
     private ConnectThread connectThread = null;
     private boolean isConnected = false;
-    final private int nChannels = 11;
     private InputStream mmInStream = null;
     private OutputStream mmOutStream = null;
     private static final String TAG = "AttysComm";
@@ -118,7 +142,24 @@ public class AttysComm extends Thread {
     private byte expectedTimestamp = 0;
 
     private PrintWriter csvFileStream = null;
-    private float timestamp = 0.0F;
+    private double timestamp = 0.0; // in secs
+
+    public void setTimestamp(double ts) { timestamp = ts;};
+    public double getTimestamp() {return timestamp;};
+
+    private long sampleNumber = 0;
+    public long getSampleNumber() {return sampleNumber;}
+    public void setSampleNumber(long sn) { sampleNumber = sn;}
+
+    public interface DataListener {
+        void gotData(long samplenumber,float[] data);
+    }
+
+    private DataListener dataListener = null;
+
+    public void registerDataListener(DataListener l) { dataListener = l;};
+
+    public void unregisterDataListener() {dataListener = null;};
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -137,17 +178,28 @@ public class AttysComm extends Thread {
             BluetoothSocket tmp = null;
             connectionEstablished = false;
 
+            if (device == null) {
+                if (Log.isLoggable(TAG, Log.ERROR)) {
+                    Log.e(TAG, "Bluetooth device is null. Cannot connect to Attys.");
+                }
+                return;
+            }
             // Get a BluetoothSocket to connect with the given BluetoothDevice
             try {
                 UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-                //tmp = device.createRfcommSocketToServiceRecord(uuid);
                 tmp = device.createInsecureRfcommSocketToServiceRecord(uuid);
             } catch (Exception e) {
-                Log.d(TAG,"Could not get rfComm socket");
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Could not get rfComm socket:", e);
+                }
                 parentHandler.sendEmptyMessage(BT_ERROR);
             }
             mmSocket = tmp;
-            if (tmp != null) Log.d(TAG,"Got rfComm socket");
+            if (tmp != null) {
+                if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                    Log.v(TAG, "Got rfComm socket!");
+                }
+            }
         }
 
         public void run() {
@@ -185,7 +237,9 @@ public class AttysComm extends Thread {
 
                             connectionEstablished = false;
                             fatalError = true;
-                            Log.d(TAG, "Could not establish connection: "+e4.getMessage());
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Could not establish connection: " + e4.getMessage());
+                            }
                             parentHandler.sendEmptyMessage(BT_ERROR);
 
                             try {
@@ -199,7 +253,9 @@ public class AttysComm extends Thread {
                     }
                 }
                 connectionEstablished = true;
-                Log.d(TAG, "Connected to socket");
+                if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                    Log.v(TAG, "Connected to socket!");
+                }
             }
         }
 
@@ -249,7 +305,9 @@ public class AttysComm extends Thread {
         String s = "\r\n\r\n\r\nx=0\r";
         byte[] bytes = s.getBytes();
         for(int j=0;j<100;j++) {
-            Log.d(TAG, "Trying to stop the data acquisition. Attempt #"+(j+1)+".");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "Trying to stop the data acquisition. Attempt #" + (j + 1) + ".");
+            }
             try {
                 if (mmOutStream != null) {
                     mmOutStream.flush();
@@ -257,7 +315,9 @@ public class AttysComm extends Thread {
                     mmOutStream.flush();
                 }
             } catch (IOException e) {
-                Log.e(TAG, "Could not send 'x=0' to the Attys:"+e.getMessage());
+                if (Log.isLoggable(TAG, Log.ERROR)) {
+                    Log.e(TAG, "Could not send 'x=0' (=stop requ) to the Attys:" + e.getMessage());
+                }
             }
             for (int i = 0; i < 100; i++) {
                 if (inScanner != null) {
@@ -265,7 +325,9 @@ public class AttysComm extends Thread {
                         if (inScanner != null) {
                             String l = inScanner.nextLine();
                             if (l.equals("OK")) {
-                                Log.d(TAG, "ADC stopped. Now in command mode.");
+                                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                    Log.d(TAG, "ADC stopped. Now in command mode.");
+                                }
                                 return;
                             } else {
                                 yield();
@@ -275,7 +337,9 @@ public class AttysComm extends Thread {
                 }
             }
         }
-        Log.e(TAG, "Could not detect OK after x=0!");
+        if (Log.isLoggable(TAG, Log.ERROR)) {
+            Log.e(TAG, "Could not detect OK after x=0!");
+        }
     }
 
 
@@ -289,10 +353,14 @@ public class AttysComm extends Thread {
                 mmOutStream.write(10);
                 mmOutStream.write(bytes);
                 mmOutStream.flush();
-                Log.d(TAG, "ADC started. Now acquiring data.");
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "ADC started. Now acquiring data.");
+                }
             }
         } catch (IOException e) {
-            Log.e(TAG, "Could not send x=1 to the Attys.");
+            if (Log.isLoggable(TAG, Log.ERROR)) {
+                Log.e(TAG, "Could not send x=1 to the Attys.");
+            }
         }
     }
 
@@ -312,7 +380,9 @@ public class AttysComm extends Thread {
                 return;
             }
         } catch (IOException e) {
-            Log.e(TAG, "Could not write to stream.");
+            if (Log.isLoggable(TAG, Log.ERROR)) {
+                Log.e(TAG, "Could not write to stream.");
+            }
         }
         for (int j = 0; j < 100; j++) {
             if (inScanner != null) {
@@ -320,7 +390,9 @@ public class AttysComm extends Thread {
                     if (inScanner != null) {
                         String l = inScanner.nextLine();
                         if (l.equals("OK")) {
-                            Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Sent successfully '" + s + "' to the Attys.");
+                            }
                             return;
                         } else {
                             try {
@@ -331,7 +403,9 @@ public class AttysComm extends Thread {
                 }
             }
         }
-        Log.e(TAG, "ATTYS hasn't replied with OK after command: "+s+".");
+        if (Log.isLoggable(TAG, Log.ERROR)) {
+            Log.e(TAG, "ATTYS hasn't replied with OK after command: " + s + ".");
+        }
     }
 
 
@@ -340,11 +414,9 @@ public class AttysComm extends Thread {
         sendSyncCommand("r="+rate);
     }
 
-
-    public float getSamplingRateInHz() {
+    public int getSamplingRateInHz() {
         return ADC_SAMPLINGRATE[adcSamplingRate];
     }
-
 
     private void setFullscaleGyroRange(int range) {
         sendSyncCommand("g="+range);
@@ -415,7 +487,6 @@ public class AttysComm extends Thread {
     }
 
     public java.io.FileNotFoundException startRec(File file) {
-        timestamp = 0;
         try {
             csvFileStream = new PrintWriter(file);
             parentHandler.sendEmptyMessage(BT_CSV_RECORDING);
@@ -451,7 +522,6 @@ public class AttysComm extends Thread {
             if (csvFileStream != null) {
                 csvFileStream.format("%f\n", data[data.length - 1]);
             }
-            timestamp = timestamp + 1.0F / getSamplingRateInHz();
         }
     }
 
@@ -481,17 +551,21 @@ public class AttysComm extends Thread {
         }
 
         try {
-            Log.d(TAG, "Getting streams");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "Getting streams");
+            }
             mmSocket = connectThread.getBluetoothSocket();
             if (mmSocket != null) {
                 mmInStream = mmSocket.getInputStream();
                 mmOutStream = mmSocket.getOutputStream();
                 inScanner = new Scanner(mmInStream);
-                ringBuffer = new float[nMem][nChannels];
+                ringBuffer = new float[nMem][NCHANNELS];
                 isConnected = true;
             }
         } catch (IOException e) {
-            Log.d(TAG, "Could not get streams");
+            if (Log.isLoggable(TAG, Log.ERROR)) {
+                Log.e(TAG, "Could not get streams");
+            }
             isConnected = false;
             fatalError = true;
             mmInStream = null;
@@ -507,7 +581,9 @@ public class AttysComm extends Thread {
         parentHandler.sendEmptyMessage(BT_CONFIGURE);
         sendInit();
 
-        Log.d(TAG, "Starting main data acquistion loop");
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Starting main data acquistion loop");
+        }
         parentHandler.sendEmptyMessage(BT_CONNECTED);
         // Keep listening to the InputStream until an exception occurs
         while (doRun) {
@@ -518,7 +594,6 @@ public class AttysComm extends Thread {
                     String oneLine;
                     if (inScanner != null) {
                         oneLine = inScanner.nextLine();
-                        //Log.d(TAG,oneLine);
                     } else {
                         return;
                     }
@@ -547,20 +622,23 @@ public class AttysComm extends Thread {
                             }
 
                             // check that the timestamp is the expected one
-                            byte timestamp = 0;
+                            byte ts = 0;
                             if (raw.length > 8) {
-                                timestamp = raw[9];
-                                if (Math.abs(timestamp-expectedTimestamp)==1) {
+                                ts = raw[9];
+                                if (Math.abs(ts-expectedTimestamp)==1) {
                                     Log.d(TAG, String.format("sample lost"));
+                                    ts++;
                                 }
                             }
                             // update timestamp
-                            expectedTimestamp = ++timestamp;
+                            expectedTimestamp = ++ts;
 
                         } catch (Exception e) {
                             // this is triggered if the base64 is too short or any data is too short
                             // this leads to data processed from the previous sample instead
-                            Log.d(TAG, "reception error: " + oneLine);
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "reception error: " + oneLine);
+                            }
                             expectedTimestamp++;
                         }
 
@@ -611,18 +689,27 @@ public class AttysComm extends Thread {
                             saveData(ringBuffer[inPtr]);
                         }
 
+                        if (dataListener != null) {
+                            dataListener.gotData(sampleNumber,ringBuffer[inPtr]);
+                        }
+
+                        timestamp = timestamp + 1.0 / getSamplingRateInHz();
+                        sampleNumber++;
                         inPtr++;
                         if (inPtr == nMem) {
                             inPtr = 0;
                         }
 
                     } else {
-                        Log.d(TAG, "OK caught from the Attys");
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "OK caught from the Attys");
+                        }
                     }
                 }
             } catch (Exception e) {
-                Log.d(TAG, "System error message:" + e.getMessage());
-                Log.d(TAG, "Could not read from stream. Closing down.");
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Stream lost or closing.");
+                }
                 break;
             }
         }
@@ -663,11 +750,6 @@ public class AttysComm extends Thread {
         return n;
     }
 
-    public int getnChannels() {
-        return nChannels;
-    }
-
-
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
         if (connectThread != null) {
@@ -702,5 +784,8 @@ public class AttysComm extends Thread {
         inScanner = null;
         ringBuffer = null;
         connectThread = null;
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Stopped data acquisition. All streams have been shut down successfully.");
+        }
     }
 }
