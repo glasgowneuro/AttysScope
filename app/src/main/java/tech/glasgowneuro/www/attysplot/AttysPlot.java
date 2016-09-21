@@ -35,6 +35,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -55,6 +57,8 @@ import java.util.TimerTask;
 public class AttysPlot extends AppCompatActivity {
 
     private Timer timer = null;
+    // screen refresh rate
+    private final int REFRESH_IN_MS = 150;
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
@@ -462,7 +466,7 @@ public class AttysPlot extends AppCompatActivity {
 
         timer = new Timer();
         UpdatePlotTask updatePlotTask = new UpdatePlotTask();
-        timer.schedule(updatePlotTask, 0, 300);
+        timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -470,29 +474,10 @@ public class AttysPlot extends AppCompatActivity {
     }
 
 
-    class EditFilename extends EditText
-    {
-
-        EditFilename(Context context) {
-            super(context);
-        }
-
-        @Override
-        public boolean onKeyDown(int keyCode, KeyEvent event)
-        {
-            switch (keyCode) {
-                case KeyEvent.KEYCODE_ENTER:
-                case KeyEvent.KEYCODE_SPACE:
-                case KeyEvent.KEYCODE_TAB:
-                return true;
-            }
-            return super.onKeyDown(keyCode, event);
-        }
-    }
-
     private void enterFilename() {
 
-        final EditFilename filenameEditText = new EditFilename(this);
+        final EditText filenameEditText = new EditText(this);
+        filenameEditText.setSingleLine(true);
 
         final int REQUEST_EXTERNAL_STORAGE = 1;
         String[] PERMISSIONS_STORAGE = {
@@ -510,6 +495,7 @@ public class AttysPlot extends AppCompatActivity {
         }
 
         filenameEditText.setHint("");
+        filenameEditText.setText(csvFilename);
 
         new AlertDialog.Builder(this)
                 .setTitle("Enter filename")
@@ -518,6 +504,7 @@ public class AttysPlot extends AppCompatActivity {
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         csvFilename = filenameEditText.getText().toString();
+                        csvFilename = csvFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
                         if (!csvFilename.contains(".")) {
                             csvFilename = csvFilename + ".csv";
                         }
