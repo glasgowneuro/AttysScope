@@ -55,11 +55,13 @@ public class AttysComm extends Thread {
 
     public final static int NCHANNELS = 11;
 
-    public final static int BT_CONNECTED = 0;
-    public final static int BT_ERROR = 1;
-    public final static int BT_RETRY = 2;
-    public final static int BT_CONFIGURE = 3;
-    public final static int BT_CSV_RECORDING = 4;
+    // for the handler
+    public final static int MESSAGE_CONNECTED = 0;
+    public final static int MESSAGE_ERROR = 1;
+    public final static int MESSAGE_RETRY = 2;
+    public final static int MESSAGE_CONFIGURE = 3;
+    public final static int MESSAGE_STARTED_RECORDING = 4;
+    public final static int MESSAGE_STOPPED_RECORDING = 5;
 
     public final static byte ADC_RATE_125HZ = 0;
     public final static byte ADC_RATE_250HZ = 1;
@@ -196,7 +198,7 @@ public class AttysComm extends Thread {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Could not get rfComm socket:", e);
                 }
-                messageListener.haveMessage(BT_ERROR);
+                messageListener.haveMessage(MESSAGE_ERROR);
             }
             mmSocket = tmp;
             if (tmp != null) {
@@ -217,7 +219,7 @@ public class AttysComm extends Thread {
                     }
                 } catch (IOException connectException) {
 
-                    messageListener.haveMessage(BT_RETRY);
+                    messageListener.haveMessage(MESSAGE_RETRY);
 
                     try {
                         sleep(100);
@@ -244,7 +246,7 @@ public class AttysComm extends Thread {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not establish connection: " + e4.getMessage());
                             }
-                            messageListener.haveMessage(BT_ERROR);
+                            messageListener.haveMessage(MESSAGE_ERROR);
 
                             try {
                                 if (mmSocket != null) {
@@ -490,7 +492,7 @@ public class AttysComm extends Thread {
     public java.io.FileNotFoundException startRec(File file) {
         try {
             csvFileStream = new PrintWriter(file);
-            messageListener.haveMessage(BT_CSV_RECORDING);
+            messageListener.haveMessage(MESSAGE_STARTED_RECORDING);
         } catch (java.io.FileNotFoundException e) {
             csvFileStream = null;
             return e;
@@ -502,6 +504,7 @@ public class AttysComm extends Thread {
     public void stopRec() {
         if (csvFileStream != null) {
             csvFileStream.close();
+            messageListener.haveMessage(MESSAGE_STOPPED_RECORDING);
             csvFileStream = null;
         }
     }
@@ -573,19 +576,19 @@ public class AttysComm extends Thread {
             mmOutStream = null;
             inScanner = null;
             ringBuffer = null;
-            messageListener.haveMessage(BT_ERROR);
+            messageListener.haveMessage(MESSAGE_ERROR);
         }
 
         // we only enter in the main loop if we have connected
         doRun = isConnected;
 
-        messageListener.haveMessage(BT_CONFIGURE);
+        messageListener.haveMessage(MESSAGE_CONFIGURE);
         sendInit();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Starting main data acquistion loop");
         }
-        messageListener.haveMessage(BT_CONNECTED);
+        messageListener.haveMessage(MESSAGE_CONNECTED);
         // Keep listening to the InputStream until an exception occurs
         while (doRun) {
             try {

@@ -4,8 +4,6 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
-import android.os.Handler;
-import android.os.Message;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -201,7 +199,7 @@ public class Attys2ScienceJournal extends Service {
                             @Override
                             public void haveMessage(int msg) {
                                 switch (msg) {
-                                    case AttysComm.BT_ERROR:
+                                    case AttysComm.MESSAGE_ERROR:
                                         for (int i = 0; i < AttysComm.NCHANNELS; i++) {
                                             try {
                                                 if (listener[i] != null) {
@@ -214,7 +212,7 @@ public class Attys2ScienceJournal extends Service {
                                             }
                                         }
                                         break;
-                                    case AttysComm.BT_CONNECTED:
+                                    case AttysComm.MESSAGE_CONNECTED:
                                         for (int i = 0; i < AttysComm.NCHANNELS; i++) {
                                             try {
                                                 if (listener[i] != null) {
@@ -230,12 +228,12 @@ public class Attys2ScienceJournal extends Service {
                                             Log.d(TAG, "Connected");
                                         }
                                         break;
-                                    case AttysComm.BT_CONFIGURE:
+                                    case AttysComm.MESSAGE_CONFIGURE:
                                         if (Log.isLoggable(TAG, Log.DEBUG)) {
                                             Log.d(TAG, "Configuring Attys");
                                         }
                                         break;
-                                    case AttysComm.BT_RETRY:
+                                    case AttysComm.MESSAGE_RETRY:
                                         if (Log.isLoggable(TAG, Log.DEBUG)) {
                                             Log.d(TAG, "Retrying to connect");
                                         }

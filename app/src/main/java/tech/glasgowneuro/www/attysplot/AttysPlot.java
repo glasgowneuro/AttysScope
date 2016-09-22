@@ -35,10 +35,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.InputFilter;
-import android.text.Spanned;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -118,27 +115,32 @@ public class AttysPlot extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case AttysComm.BT_ERROR:
+                case AttysComm.MESSAGE_ERROR:
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth connection problem", Toast.LENGTH_LONG).show();
                     finish();
                     break;
-                case AttysComm.BT_CONNECTED:
+                case AttysComm.MESSAGE_CONNECTED:
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth connected", Toast.LENGTH_SHORT).show();
                     break;
-                case AttysComm.BT_CONFIGURE:
+                case AttysComm.MESSAGE_CONFIGURE:
                     Toast.makeText(getApplicationContext(),
                             "Configuring Attys", Toast.LENGTH_SHORT).show();
                     break;
-                case AttysComm.BT_RETRY:
+                case AttysComm.MESSAGE_RETRY:
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth - trying to connect. Please be patient.",
                             Toast.LENGTH_SHORT).show();
                     break;
-                case AttysComm.BT_CSV_RECORDING:
+                case AttysComm.MESSAGE_STARTED_RECORDING:
                     Toast.makeText(getApplicationContext(),
-                            "Recording CSV data to external storage.",
+                            "Started recording data to external storage.",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case AttysComm.MESSAGE_STOPPED_RECORDING:
+                    Toast.makeText(getApplicationContext(),
+                            "Finished recording data to external storage.",
                             Toast.LENGTH_SHORT).show();
                     break;
             }
@@ -282,7 +284,7 @@ public class AttysPlot extends AppCompatActivity {
             if (attysComm != null) {
                 if (attysComm.hasFatalError()) {
                     // Log.d(TAG,String.format("No bluetooth connection"));
-                    handler.sendEmptyMessage(AttysComm.BT_ERROR);
+                    handler.sendEmptyMessage(AttysComm.MESSAGE_ERROR);
                     return;
                 }
             }
@@ -508,6 +510,9 @@ public class AttysPlot extends AppCompatActivity {
                         if (!csvFilename.contains(".")) {
                             csvFilename = csvFilename + ".csv";
                         }
+                        Toast.makeText(getApplicationContext(),
+                                "Press rec to record to '"+csvFilename+"'",
+                                Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -541,7 +546,6 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.toggleRec:
                 if (attysComm.isRecording()) {
                     attysComm.stopRec();
-                    item.setChecked(false);
                 } else {
                     if (csvFilename != null) {
                         File file = new File(Environment.getExternalStorageDirectory().getPath(),
@@ -553,8 +557,10 @@ public class AttysPlot extends AppCompatActivity {
                         }
                         if (attysComm.isRecording()) {
                             Log.d(TAG,"Saving to "+file.getAbsolutePath());
-                            item.setChecked(true);
                         }
+                    } else {
+                        Toast.makeText(getApplicationContext(),
+                                "To record enter a filename first", Toast.LENGTH_SHORT).show();
                     }
                 }
                 return true;

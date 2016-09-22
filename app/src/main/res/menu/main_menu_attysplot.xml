@@ -4,6 +4,12 @@
     xmlns:yourapp="http://schemas.android.com/tools">
 
     <item
+        android:id="@+id/toggleRec"
+        android:icon="@drawable/ic_action_rec"
+        android:title="rec"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:title="ADC"
         app:showAsAction="ifRoom|withText">
 
@@ -142,29 +148,13 @@
     </item>
 
     <item
-        android:id="@+id/record"
-        android:title="Record"
-        app:showAsAction="ifRoom|withText">
-
-        <group
-            android:id="@+id/rec_checkboxes"
-            android:checkableBehavior="all">
-            <item
-                android:id="@+id/toggleRec"
-                android:checked="false"
-                android:title="Recording" />
-        </group>
-
-        <item
-            android:id="@+id/enterFilename"
-            android:title="Enter Filename" />
-
-    </item>
+        android:id="@+id/enterFilename"
+        android:title="Enter Filename" />
 
     <item
         android:id="@+id/preferences"
         android:title="Preferences"
-        app:showAsAction="ifRoom|withText" />
+        app:showAsAction="never" />
 
 </menu>
 
