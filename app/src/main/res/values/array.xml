@@ -19,4 +19,28 @@
         <item>6</item>
     </string-array>
 
+    <string-array name="currentOptions">
+        <item>off</item>
+        <item>6nA</item>
+        <item>22nA</item>
+        <item>6uA</item>
+    </string-array>
+    <string-array name="currentValues">
+        <item>-1</item>
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="textDataFileSeparatorOptions">
+        <item>Space separated values for MATLAB/OCTAVE/GNUPLOT</item>
+        <item>Comma separated values</item>
+        <item>Tab separated values</item>
+    </string-array>
+    <string-array name="textDataFileSeparatorValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
 </resources>

@@ -102,7 +102,8 @@ public class AttysPlot extends AppCompatActivity {
     String[] labels = {"Acc x", "Acc y", "Acc z", "Gyr x", "Gyr y", "Gyr z", "Mag x", "Mag y", "Mag z",
             "ADC 1", "ADC 2"};
 
-    private String csvFilename = null;
+    private String dataFilename = null;
+    private byte dataSeparator = 0;
 
     /**
      * App Indexing API.
@@ -497,7 +498,7 @@ public class AttysPlot extends AppCompatActivity {
         }
 
         filenameEditText.setHint("");
-        filenameEditText.setText(csvFilename);
+        filenameEditText.setText(dataFilename);
 
         new AlertDialog.Builder(this)
                 .setTitle("Enter filename")
@@ -505,13 +506,20 @@ public class AttysPlot extends AppCompatActivity {
                 .setView(filenameEditText)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        csvFilename = filenameEditText.getText().toString();
-                        csvFilename = csvFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-                        if (!csvFilename.contains(".")) {
-                            csvFilename = csvFilename + ".csv";
+                        dataFilename = filenameEditText.getText().toString();
+                        dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+                        if (!dataFilename.contains(".")) {
+                            switch (dataSeparator) {
+                                case AttysComm.DATA_SEPARATOR_COMMA:
+                                    dataFilename = dataFilename + ".csv";
+                                break;
+                                case AttysComm.DATA_SEPARATOR_SPACE:
+                                case AttysComm.DATA_SEPARATOR_TAB:
+                                    dataFilename = dataFilename + ".dat";
+                            }
                         }
                         Toast.makeText(getApplicationContext(),
-                                "Press rec to record to '"+csvFilename+"'",
+                                "Press rec to record to '"+ dataFilename +"'",
                                 Toast.LENGTH_SHORT).show();
                     }
                 })
@@ -547,12 +555,13 @@ public class AttysPlot extends AppCompatActivity {
                 if (attysComm.isRecording()) {
                     attysComm.stopRec();
                 } else {
-                    if (csvFilename != null) {
+                    if (dataFilename != null) {
                         File file = new File(Environment.getExternalStorageDirectory().getPath(),
-                                csvFilename.trim());
+                                dataFilename.trim());
+                        attysComm.setDataSeparator(dataSeparator);
                         java.io.FileNotFoundException e = attysComm.startRec(file);
                         if (e != null) {
-                            Log.d(TAG, "Could not open CSV file: "+e.getMessage());
+                            Log.d(TAG, "Could not open data file: "+e.getMessage());
                             return true;
                         }
                         if (attysComm.isRecording()) {
@@ -687,9 +696,6 @@ public class AttysPlot extends AppCompatActivity {
         viewAction = Action.newAction(
                 Action.TYPE_VIEW,
                 "AttysPlot Homepage",
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
                 Uri.parse("http://www.attys.tech")
         );
         AppIndex.AppIndexApi.start(client, viewAction);
@@ -734,6 +740,15 @@ public class AttysPlot extends AppCompatActivity {
         byte gain1 = (byte)(Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
         attysComm.setAdc1_gain_index(gain1);
         attysComm.setAdc1_mux_index(mux);
+        int current = Integer.parseInt(prefs.getString("ch2_current", "-1"));
+        if (current < 0) {
+            attysComm.enableCurrents(false,false,false);
+        } else {
+            attysComm.setBiasCurrent((byte)current);
+            attysComm.enableCurrents(false,false,true);
+        }
+        byte data_separator = (byte)(Integer.parseInt(prefs.getString("data_separator", "0")));
+        attysComm.setDataSeparator(data_separator);
 
         showAcc = prefs.getBoolean("acc",true);
         showGyr = prefs.getBoolean("gyr",true);

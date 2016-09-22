@@ -55,7 +55,7 @@ public class AttysComm extends Thread {
 
     public final static int NCHANNELS = 11;
 
-    // for the handler
+    // for MessageListener
     public final static int MESSAGE_CONNECTED = 0;
     public final static int MESSAGE_ERROR = 1;
     public final static int MESSAGE_RETRY = 2;
@@ -63,13 +63,20 @@ public class AttysComm extends Thread {
     public final static int MESSAGE_STARTED_RECORDING = 4;
     public final static int MESSAGE_STOPPED_RECORDING = 5;
 
+    // sampling rate as transmitted as index to the Attys
     public final static byte ADC_RATE_125HZ = 0;
     public final static byte ADC_RATE_250HZ = 1;
     public final static byte ADC_RATE_500Hz = 2;
     public final static byte ADC_DEFAULT_RATE = ADC_RATE_250HZ;
+    // array of the sampling rates converting the index
+    // to the actual sampling rate
     public final static int[] ADC_SAMPLINGRATE = {125,250,500,1000};
+    // the actual sampling rate in terms of the sampling rate index
     private byte adc_rate_index = ADC_DEFAULT_RATE;
 
+    // gain index numbers
+    // the strange numbering sceme comes from the ADC's numbering
+    // scheme. Index=0 is really a gain factor of 6
     public final static byte ADC_GAIN_6 = 0;
     public final static byte ADC_GAIN_1 = 1;
     public final static byte ADC_GAIN_2 = 2;
@@ -77,18 +84,24 @@ public class AttysComm extends Thread {
     public final static byte ADC_GAIN_4 = 4;
     public final static byte ADC_GAIN_8 = 5;
     public final static byte ADC_GAIN_12 = 6;
+    // mapping between index and actual gain
+    public final static int[] ADC_GAIN_FACTOR = {6,1,2,3,4,8,12};
 
-    public final static float[] ADC_GAIN_FACTOR = {6.0F,1.0F,2.0F,3.0F,4.0F,8.0F,12.0F};
-
+    // initial gain factor is 6 for both channels
     private byte adc0_gain_index = 0;
     private byte adc1_gain_index = 0;
 
+    // selectable bias current index numbers for the ADC inputs
+    // used to measure resistance
     public final static byte ADC_CURRENT_6NA = 0;
     public final static byte ADC_CURRENT_22NA = 1;
     public final static byte ADC_CURRENT_6UA = 2;
     public final static byte ADC_CURRENT_22UA = 3;
-    private byte adc_current_index = 0;
+    private byte current_index = 0;
+    private byte current_mask = 0;
 
+    // selectable different input mux settings
+    // for the ADC channels
     public final static byte ADC_MUX_NORMAL = 0;
     public final static byte ADC_MUX_SHORT = 1;
     public final static byte ADC_MUX_SUPPLY = 3;
@@ -98,13 +111,14 @@ public class AttysComm extends Thread {
     private byte adc0_mux_index = ADC_MUX_NORMAL;
     private byte adc1_mux_index = ADC_MUX_NORMAL;
 
-    public final static float ADC_REF = 2.42F; // Volt
+    // the voltage reference of the ADC in volts
+    public final static float ADC_REF = 2.42F;
 
-    public final static float[] ACCEL_FULL_SCALE = {2,4,8,16}; // G
     public final static byte ACCEL_2G = 0;
     public final static byte ACCEL_4G = 1;
     public final static byte ACCEL_8G = 2;
     public final static byte ACCEL_16G = 3;
+    public final static float[] ACCEL_FULL_SCALE = {2,4,8,16}; // G
     private byte accel_full_scale_index = ACCEL_16G;
 
     public final static float[] GYRO_FULL_SCALE= {250,500,1000,2000}; //DPS
@@ -115,6 +129,11 @@ public class AttysComm extends Thread {
     private byte gyro_full_scale_index = GYRO_2000DPS;
 
     public final static float MAG_FULL_SCALE = 4800.0E-6F; // TESLA
+
+    public final static byte DATA_SEPARATOR_SPACE = 0;
+    public final static byte DATA_SEPARATOR_COMMA = 1;
+    public final static byte DATA_SEPARATOR_TAB = 2;
+    private byte data_separator = DATA_SEPARATOR_SPACE;
 
     private BluetoothSocket mmSocket;
     private Scanner inScanner = null;
@@ -141,17 +160,35 @@ public class AttysComm extends Thread {
     private float accelFullScaleRange;
     private byte expectedTimestamp = 0;
 
-    private PrintWriter csvFileStream = null;
+    private PrintWriter textdataFileStream = null;
     private double timestamp = 0.0; // in secs
 
+
+    public void setDataSeparator(byte s) {
+        data_separator = s;
+    }
+
+    public byte getDataSeparator() {
+        return data_separator;
+    }
+
+    // timestamp stuff as double
+    // note this might drift in the long run
     public void setTimestamp(double ts) { timestamp = ts;};
     public double getTimestamp() {return timestamp;};
 
+
+    // sample counter
     private long sampleNumber = 0;
     public long getSampleNumber() {return sampleNumber;}
     public void setSampleNumber(long sn) { sampleNumber = sn;}
 
+
     // data listener
+    // provides the data with the sample number as long
+    // the data arrar contains all the data:
+    // accx, accy, accz, gyrx, gyry, gyrz, magx, magz, magy, ch1, ch2
+    // all in the right dimensions
     public interface DataListener {
         void gotData(long samplenumber,float[] data);
     }
@@ -159,13 +196,17 @@ public class AttysComm extends Thread {
     public void registerDataListener(DataListener l) { dataListener = l;};
     public void unregisterDataListener() {dataListener = null;};
 
+
     // message listener
+    // sends error messages back
     public interface MessageListener {
         void haveMessage(int msg);
     }
     private MessageListener messageListener = null;
     public void registerMessageListener(MessageListener m) {messageListener = m;}
     public void unregisterMessageListener() {messageListener = null;};
+
+
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -412,7 +453,7 @@ public class AttysComm extends Thread {
     }
 
 
-    private void setSamplingRate(int rate) {
+    private void sendSamplingRate(int rate) {
         adcSamplingRate = rate;
         sendSyncCommand("r="+rate);
     }
@@ -421,12 +462,45 @@ public class AttysComm extends Thread {
         return ADC_SAMPLINGRATE[adcSamplingRate];
     }
 
-    private void setFullscaleGyroRange(int range) {
+    // sets the bias current which can be switched on
+    public void setBiasCurrent(byte currIndex) {
+        current_index = currIndex;
+    }
+
+    private void sendBiasCurrent() {
+        sendSyncCommand("i="+current_index);
+    }
+
+    // gets the bias current as in index
+    public byte getBiasCurrent() {
+        return current_index;
+    }
+
+    public void enableCurrents(boolean pos_ch1, boolean neg_ch1, boolean pos_ch2 ) {
+
+        current_mask = 0;
+
+        if (pos_ch1) {
+            current_mask = (byte)(current_mask | (byte)0b00000001);
+        }
+        if (neg_ch1) {
+            current_mask = (byte)(current_mask | (byte)0b00000010);
+        }
+        if (pos_ch2) {
+            current_mask = (byte)(current_mask | (byte)0b00000100);
+        }
+    }
+
+    private void sendCurrentMask() {
+        sendSyncCommand("c="+current_mask);
+    }
+
+    private void sendFullscaleGyroRange(int range) {
         sendSyncCommand("g="+range);
         gyroFullScaleRange = GYRO_FULL_SCALE[range];
     }
 
-    private void setFullscaleAccelRange(int range) {
+    private void sendFullscaleAccelRange(int range) {
 
         sendSyncCommand("t="+range);
         accelFullScaleRange = ACCEL_FULL_SCALE[range];
@@ -446,7 +520,7 @@ public class AttysComm extends Thread {
         return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
     }
 
-    private void setGainMux(int channel, byte gain, byte mux) {
+    private void sendGainMux(int channel, byte gain, byte mux) {
         int v = (mux & 0x0f) | ((gain & 0x0f) << 4);
         switch (channel) {
             case 0:
@@ -461,11 +535,11 @@ public class AttysComm extends Thread {
     }
 
     private void setADCGain(int channel,byte gain) {
-        setGainMux(channel,gain,adcMuxRegister[channel]);
+        sendGainMux(channel,gain,adcMuxRegister[channel]);
     }
 
     private void setADCMux(int channel, byte mux) {
-        setGainMux(channel, adcGainRegister[channel],mux);
+        sendGainMux(channel, adcGainRegister[channel],mux);
     }
 
     public void setAccel_full_scale_index(byte idx) { accel_full_scale_index = idx; }
@@ -480,21 +554,23 @@ public class AttysComm extends Thread {
         stopADC();
         // switching to base64 encoding
         sendSyncCommand("d=1");
-        setSamplingRate(adc_rate_index);
-        setFullscaleGyroRange(gyro_full_scale_index);
-        setFullscaleAccelRange(accel_full_scale_index);
-        setGainMux(0,adc0_gain_index,adc0_mux_index);
-        setGainMux(1,adc1_gain_index,adc1_mux_index);
+        sendSamplingRate(adc_rate_index);
+        sendFullscaleGyroRange(gyro_full_scale_index);
+        sendFullscaleAccelRange(accel_full_scale_index);
+        sendGainMux(0,adc0_gain_index,adc0_mux_index);
+        sendGainMux(1,adc1_gain_index,adc1_mux_index);
+        sendCurrentMask();
+        sendBiasCurrent();
         startADC();
         return true;
     }
 
     public java.io.FileNotFoundException startRec(File file) {
         try {
-            csvFileStream = new PrintWriter(file);
+            textdataFileStream = new PrintWriter(file);
             messageListener.haveMessage(MESSAGE_STARTED_RECORDING);
         } catch (java.io.FileNotFoundException e) {
-            csvFileStream = null;
+            textdataFileStream = null;
             return e;
         }
         return null;
@@ -502,29 +578,41 @@ public class AttysComm extends Thread {
 
 
     public void stopRec() {
-        if (csvFileStream != null) {
-            csvFileStream.close();
+        if (textdataFileStream != null) {
+            textdataFileStream.close();
             messageListener.haveMessage(MESSAGE_STOPPED_RECORDING);
-            csvFileStream = null;
+            textdataFileStream = null;
         }
     }
 
 
     public boolean isRecording() {
-        return (csvFileStream != null);
+        return (textdataFileStream != null);
     }
 
 
     public void saveData(float[] data) {
-        if (csvFileStream != null) {
-            csvFileStream.format("%f,", timestamp);
+        char s = ' ';
+        switch (data_separator) {
+            case DATA_SEPARATOR_SPACE:
+                s = ' ';
+                break;
+            case DATA_SEPARATOR_COMMA:
+                s = ',';
+                break;
+            case DATA_SEPARATOR_TAB:
+                s = 9;
+                break;
+        }
+        if (textdataFileStream != null) {
+            textdataFileStream.format("%f%c", timestamp,s);
             for (int i = 0; i < (data.length - 1); i++) {
-                if (csvFileStream != null) {
-                    csvFileStream.format("%f,", data[i]);
+                if (textdataFileStream != null) {
+                    textdataFileStream.format("%f%c", data[i],s);
                 }
             }
-            if (csvFileStream != null) {
-                csvFileStream.format("%f\n", data[data.length - 1]);
+            if (textdataFileStream != null) {
+                textdataFileStream.format("%f\n", data[data.length - 1]);
             }
         }
     }
@@ -689,7 +777,7 @@ public class AttysComm extends Thread {
                             }
                         }
 
-                        if (csvFileStream != null) {
+                        if (textdataFileStream != null) {
                             saveData(ringBuffer[inPtr]);
                         }
 

@@ -37,6 +37,18 @@
         android:key="ch2_gainpref"
         android:summary="Channel 2 full scanel range in Volts"
         android:title="Channel 2 range" />
+    <ListPreference
+        android:entries="@array/currentOptions"
+        android:entryValues="@array/currentValues"
+        android:key="ch2_current"
+        android:summary="Channel 2 current towards ground for resistance measurements"
+        android:title="Channel 2 current" />
+    <ListPreference
+        android:entries="@array/textDataFileSeparatorOptions"
+        android:entryValues="@array/textDataFileSeparatorValues"
+        android:summary="Separator between the values in the datafile saved to the SD card"
+        android:key="data_separator"
+        android:title="Separator (CSV, SSV or TSV)" />
     <CheckBoxPreference
         android:key="ECG_mode"
         android:summary="Ch1+ and Ch2 internally connected for ECG Einthoven I,II"
