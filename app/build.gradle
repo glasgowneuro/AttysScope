@@ -22,7 +22,12 @@ android {
         main {
             res.srcDirs = ['src/main/res', 'src/main/res/menu']
             String osj = '../../science-journal/OpenScienceJournal'
-            aidl.srcDirs = [osj + '/whistlepunk_library/src/api/scalarinput/aidl']
+            aidl {
+                srcDir osj + '/whistlepunk_library/src/api/scalarinput/aidl'
+            }
+            java {
+                srcDir osj + '/whistlepunk_library/src/api/scalarinput/java'
+            }
         }
     }
 

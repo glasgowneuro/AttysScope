@@ -1,5 +1,6 @@
 package tech.glasgowneuro.www.attysplot;
 
+import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -14,6 +15,7 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorCon
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorDiscoverer;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorObserver;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorStatusListener;
+import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppearanceResources;
 
 import java.util.Set;
 
@@ -25,6 +27,67 @@ public class Attys2ScienceJournal extends Service {
     private static ISensorStatusListener[] listener = null;
     private static BluetoothDevice bluetoothDevice = null;
     private static long timestamp = 0;
+
+    private final static SensorAppearanceResources[] sensorAppearanceResources =
+            new SensorAppearanceResources[AttysComm.NCHANNELS];
+
+    private static void setAppearance() {
+
+        sensorAppearanceResources[0] = new SensorAppearanceResources();
+        sensorAppearanceResources[0].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[0].units = "m/s^2";
+        sensorAppearanceResources[0].shortDescription = "Accelerometer X axis";
+
+        sensorAppearanceResources[1] = new SensorAppearanceResources();
+        sensorAppearanceResources[1].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[1].units = "m/s^2";
+        sensorAppearanceResources[1].shortDescription = "Accelerometer Y axis";
+
+        sensorAppearanceResources[2] = new SensorAppearanceResources();
+        sensorAppearanceResources[2].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[2].units = "m/s^2";
+        sensorAppearanceResources[2].shortDescription = "Accelerometer Z axis";
+
+        sensorAppearanceResources[3] = new SensorAppearanceResources();
+        sensorAppearanceResources[3].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[3].units = "deg/s";
+        sensorAppearanceResources[3].shortDescription = "Gyroscope X axis";
+
+        sensorAppearanceResources[4] = new SensorAppearanceResources();
+        sensorAppearanceResources[4].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[4].units = "deg/s";
+        sensorAppearanceResources[4].shortDescription = "Gyroscope Y axis";
+
+        sensorAppearanceResources[5] = new SensorAppearanceResources();
+        sensorAppearanceResources[5].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[5].units = "deg/s";
+        sensorAppearanceResources[5].shortDescription = "Gyroscope Z axis";
+
+        sensorAppearanceResources[6] = new SensorAppearanceResources();
+        sensorAppearanceResources[6].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[6].units = "T";
+        sensorAppearanceResources[6].shortDescription = "Magnetometer X axis";
+
+        sensorAppearanceResources[7] = new SensorAppearanceResources();
+        sensorAppearanceResources[7].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[7].units = "T";
+        sensorAppearanceResources[7].shortDescription = "Magnetometer Y axis";
+
+        sensorAppearanceResources[8] = new SensorAppearanceResources();
+        sensorAppearanceResources[8].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[8].units = "T";
+        sensorAppearanceResources[8].shortDescription = "Magnetometer Z axis";
+
+        sensorAppearanceResources[9] = new SensorAppearanceResources();
+        sensorAppearanceResources[9].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[9].units = "V";
+        sensorAppearanceResources[9].shortDescription = "Analogue channel 1";
+
+        sensorAppearanceResources[10] = new SensorAppearanceResources();
+        sensorAppearanceResources[10].iconId = android.R.drawable.ic_media_ff;
+        sensorAppearanceResources[10].units = "V";
+        sensorAppearanceResources[10].shortDescription = "Analogue channel 2";
+    }
 
     @Override
     public void onCreate() {
@@ -133,8 +196,33 @@ public class Attys2ScienceJournal extends Service {
                     return;
                 }
 
+                // added just a dummy
+                PendingIntent settingsIntent = PendingIntent.getActivity(
+                        getApplicationContext(),
+                        0,
+                        new Intent(),
+                        PendingIntent.FLAG_UPDATE_CURRENT);
+
+                setAppearance();
+
                 for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                    c.onSensorFound("" + i, "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i], null);
+                    String loggingID = new String().format("Device=Attys, Index=%d,%s",
+                            i,AttysComm.CHANNEL_DESCRIPTION[i]);
+                    String channelDescr = "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i];
+                    Log.d(TAG,loggingID);
+                    Log.d(TAG,channelDescr);
+                    if (sensorAppearanceResources[i]==null) {
+                        Log.d(TAG,"appearance NOT OK!!!");
+                    } else {
+                        Log.d(TAG,"appearance IS OK :)");
+                    }
+
+                    assert(sensorAppearanceResources[i]!=null);
+                    c.onSensorFound("" + i, // sensorAddress = ch index number
+                            channelDescr, // name
+                            loggingID,
+                            sensorAppearanceResources[i],
+                            settingsIntent);
                 }
             }
 
