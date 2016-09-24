@@ -800,7 +800,7 @@ public class AttysComm extends Thread {
                 }
             } catch (Exception e) {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "Stream lost or closing.");
+                    Log.d(TAG, "Stream lost or closing.",e);
                 }
                 break;
             }

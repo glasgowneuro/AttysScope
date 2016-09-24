@@ -16,6 +16,7 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorDis
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorObserver;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorStatusListener;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppearanceResources;
+import com.google.android.gms.common.server.converter.StringToIntConverter;
 
 import java.util.Set;
 
@@ -30,6 +31,13 @@ public class Attys2ScienceJournal extends Service {
 
     private final static SensorAppearanceResources[] sensorAppearanceResources =
             new SensorAppearanceResources[AttysComm.NCHANNELS];
+
+    private float[] gainFactor = {
+            1,1,1, // acceleration
+            1,1,1, // rotation
+            1E6F,1E6F,1E6F, // magnetic field
+            1,1 // adc channels
+    };
 
     private static void setAppearance() {
 
@@ -63,19 +71,20 @@ public class Attys2ScienceJournal extends Service {
         sensorAppearanceResources[5].units = "deg/s";
         sensorAppearanceResources[5].shortDescription = "Gyroscope Z axis";
 
+        String usign = "\u00b5";
         sensorAppearanceResources[6] = new SensorAppearanceResources();
         sensorAppearanceResources[6].iconId = android.R.drawable.ic_media_ff;
-        sensorAppearanceResources[6].units = "T";
+        sensorAppearanceResources[6].units = usign+"T";
         sensorAppearanceResources[6].shortDescription = "Magnetometer X axis";
 
         sensorAppearanceResources[7] = new SensorAppearanceResources();
         sensorAppearanceResources[7].iconId = android.R.drawable.ic_media_ff;
-        sensorAppearanceResources[7].units = "T";
+        sensorAppearanceResources[7].units = usign+"T";
         sensorAppearanceResources[7].shortDescription = "Magnetometer Y axis";
 
         sensorAppearanceResources[8] = new SensorAppearanceResources();
         sensorAppearanceResources[8].iconId = android.R.drawable.ic_media_ff;
-        sensorAppearanceResources[8].units = "T";
+        sensorAppearanceResources[8].units = usign+"T";
         sensorAppearanceResources[8].shortDescription = "Magnetometer Z axis";
 
         sensorAppearanceResources[9] = new SensorAppearanceResources();
@@ -207,17 +216,11 @@ public class Attys2ScienceJournal extends Service {
 
                 for (int i = 0; i < AttysComm.NCHANNELS; i++) {
                     String loggingID = new String().format("Device=Attys, Index=%d,%s",
-                            i,AttysComm.CHANNEL_DESCRIPTION[i]);
+                            i, AttysComm.CHANNEL_DESCRIPTION[i]);
                     String channelDescr = "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i];
-                    Log.d(TAG,loggingID);
-                    Log.d(TAG,channelDescr);
-                    if (sensorAppearanceResources[i]==null) {
-                        Log.d(TAG,"appearance NOT OK!!!");
-                    } else {
-                        Log.d(TAG,"appearance IS OK :)");
-                    }
-
-                    assert(sensorAppearanceResources[i]!=null);
+                    Log.d(TAG, loggingID);
+                    Log.d(TAG, channelDescr);
+                    assert (sensorAppearanceResources[i] != null);
                     c.onSensorFound("" + i, // sensorAddress = ch index number
                             channelDescr, // name
                             loggingID,
@@ -237,6 +240,10 @@ public class Attys2ScienceJournal extends Service {
                                                String settingsKey) throws RemoteException {
 
                         int sensorIndex = Integer.valueOf(sensorId);
+
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "Start observing on sensorID:" + sensorIndex);
+                        }
 
                         // we keep all open listeners and observers in an array so
                         // that they can be served at once from the Attys callback
@@ -263,20 +270,31 @@ public class Attys2ScienceJournal extends Service {
                         AttysComm.DataListener dataListener = new AttysComm.DataListener() {
                             @Override
                             public void gotData(long samplenumber, float[] data) {
+                                boolean onDataUsed = false;
+                                // Log.d(TAG, String.format("Got data: timestamp=%d",
+ //                                       timestamp));
                                 for (int i = 0; i < AttysComm.NCHANNELS; i++) {
                                     if (observer[i] != null) {
                                         try {
                                             if (timestamp == 0) {
                                                 timestamp = System.currentTimeMillis();
                                             }
-                                            observer[i].onNewData(timestamp, data[i]);
+                                            observer[i].onNewData(
+                                                    timestamp,
+                                                    data[i] * gainFactor[i]
+                                            );
+                                            onDataUsed = true;
+                                            // Log.d(TAG, String.format("timestamp=%d,data=%f",
+                                            //        timestamp, data[i]));
                                             timestamp = timestamp +
-                                                    1000/((long)attysComm.getSamplingRateInHz());
-                                            // Log.d(TAG,String.format("timestamp=%d",timestamp));
+                                                    1000 / ((long) attysComm.getSamplingRateInHz());
                                         } catch (RemoteException e) {
                                             Log.e(TAG, "onNewData exception:", e);
                                         }
                                     }
+                                }
+                                if (!onDataUsed) {
+                                    Log.d(TAG, String.format("All observers are NULL"));
                                 }
                             }
                         };
@@ -336,8 +354,6 @@ public class Attys2ScienceJournal extends Service {
                         // this is async in the background and might take a second or two
                         attysComm.start();
 
-                        theListener.onSensorConnected();
-
                     }
 
                     @Override
@@ -367,6 +383,13 @@ public class Attys2ScienceJournal extends Service {
                         }
                         // we no longer need an active bluetooth connection so we kill it off
                         attysComm.cancel();
+                        try {
+                            attysComm.join();
+                        } catch (InterruptedException e) {
+                        }
+                        ;
+                        // start the garbage collection
+                        attysComm = null;
                     }
                 };
             }
