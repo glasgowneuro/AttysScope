@@ -390,6 +390,7 @@ public class Attys2ScienceJournal extends Service {
                         ;
                         // start the garbage collection
                         attysComm = null;
+                        timestamp = 0;
                     }
                 };
             }

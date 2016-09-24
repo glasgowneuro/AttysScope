@@ -1,18 +1,27 @@
 /**
- Copyright 2016 Bernd Porr, mail@berndporr.me.uk
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- **/
+ * Copyright 2016 Bernd Porr, mail@berndporr.me.uk
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Modified code from:
+ * https://developer.android.com/guide/topics/connectivity/bluetooth.html
+ * <p>
+ * Modified code from:
+ * https://developer.android.com/guide/topics/connectivity/bluetooth.html
+ * <p>
+ * Modified code from:
+ * https://developer.android.com/guide/topics/connectivity/bluetooth.html
+ */
 
 /**
  * Modified code from:
@@ -23,6 +32,7 @@ package tech.glasgowneuro.www.attysplot;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.os.ParcelUuid;
 import android.util.Base64;
 import android.util.Log;
 
@@ -31,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -70,7 +81,7 @@ public class AttysComm extends Thread {
     public final static byte ADC_DEFAULT_RATE = ADC_RATE_250HZ;
     // array of the sampling rates converting the index
     // to the actual sampling rate
-    public final static int[] ADC_SAMPLINGRATE = {125,250,500,1000};
+    public final static int[] ADC_SAMPLINGRATE = {125, 250, 500, 1000};
     // the actual sampling rate in terms of the sampling rate index
     private byte adc_rate_index = ADC_DEFAULT_RATE;
 
@@ -85,7 +96,7 @@ public class AttysComm extends Thread {
     public final static byte ADC_GAIN_8 = 5;
     public final static byte ADC_GAIN_12 = 6;
     // mapping between index and actual gain
-    public final static int[] ADC_GAIN_FACTOR = {6,1,2,3,4,8,12};
+    public final static int[] ADC_GAIN_FACTOR = {6, 1, 2, 3, 4, 8, 12};
 
     // initial gain factor is 6 for both channels
     private byte adc0_gain_index = 0;
@@ -118,10 +129,10 @@ public class AttysComm extends Thread {
     public final static byte ACCEL_4G = 1;
     public final static byte ACCEL_8G = 2;
     public final static byte ACCEL_16G = 3;
-    public final static float[] ACCEL_FULL_SCALE = {2,4,8,16}; // G
+    public final static float[] ACCEL_FULL_SCALE = {2, 4, 8, 16}; // G
     private byte accel_full_scale_index = ACCEL_16G;
 
-    public final static float[] GYRO_FULL_SCALE= {250,500,1000,2000}; //DPS
+    public final static float[] GYRO_FULL_SCALE = {250, 500, 1000, 2000}; //DPS
     public final static byte GYRO_250DPS = 0;
     public final static byte GYRO_500DPS = 1;
     public final static byte GYRO_1000DPS = 2;
@@ -174,14 +185,29 @@ public class AttysComm extends Thread {
 
     // timestamp stuff as double
     // note this might drift in the long run
-    public void setTimestamp(double ts) { timestamp = ts;};
-    public double getTimestamp() {return timestamp;};
+    public void setTimestamp(double ts) {
+        timestamp = ts;
+    }
+
+    ;
+
+    public double getTimestamp() {
+        return timestamp;
+    }
+
+    ;
 
 
     // sample counter
     private long sampleNumber = 0;
-    public long getSampleNumber() {return sampleNumber;}
-    public void setSampleNumber(long sn) { sampleNumber = sn;}
+
+    public long getSampleNumber() {
+        return sampleNumber;
+    }
+
+    public void setSampleNumber(long sn) {
+        sampleNumber = sn;
+    }
 
 
     // data listener
@@ -190,11 +216,22 @@ public class AttysComm extends Thread {
     // accx, accy, accz, gyrx, gyry, gyrz, magx, magz, magy, ch1, ch2
     // all in the right dimensions
     public interface DataListener {
-        void gotData(long samplenumber,float[] data);
+        void gotData(long samplenumber, float[] data);
     }
+
     private DataListener dataListener = null;
-    public void registerDataListener(DataListener l) { dataListener = l;};
-    public void unregisterDataListener() {dataListener = null;};
+
+    public void registerDataListener(DataListener l) {
+        dataListener = l;
+    }
+
+    ;
+
+    public void unregisterDataListener() {
+        dataListener = null;
+    }
+
+    ;
 
 
     // message listener
@@ -202,56 +239,73 @@ public class AttysComm extends Thread {
     public interface MessageListener {
         void haveMessage(int msg);
     }
+
     private MessageListener messageListener = null;
-    public void registerMessageListener(MessageListener m) {messageListener = m;}
-    public void unregisterMessageListener() {messageListener = null;};
 
+    public void registerMessageListener(MessageListener m) {
+        messageListener = m;
+    }
 
+    public void unregisterMessageListener() {
+        messageListener = null;
+    }
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
         private boolean connectionEstablished;
+        BluetoothDevice bluetoothDevice = null;
+        // standard SPP uid
+        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
 
         public BluetoothSocket getBluetoothSocket() {
             return mmSocket;
         }
 
-        public boolean hasActiveConnection() { return connectionEstablished; }
+        public boolean hasActiveConnection() {
+            return connectionEstablished;
+        }
 
         public ConnectThread(BluetoothDevice device) {
             // Use a temporary object that is later assigned to mmSocket,
             // because mmSocket is final
             bluetoothDevice = device;
-            BluetoothSocket tmp = null;
             connectionEstablished = false;
 
             if (device == null) {
                 if (Log.isLoggable(TAG, Log.ERROR)) {
-                    Log.e(TAG, "Bluetooth device is null. Cannot connect to Attys.");
-                }
-                return;
-            }
-            // Get a BluetoothSocket to connect with the given BluetoothDevice
-            try {
-                UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-                tmp = device.createInsecureRfcommSocketToServiceRecord(uuid);
-            } catch (Exception e) {
-                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "Could not get rfComm socket:", e);
-                }
-                messageListener.haveMessage(MESSAGE_ERROR);
-            }
-            mmSocket = tmp;
-            if (tmp != null) {
-                if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                    Log.v(TAG, "Got rfComm socket!");
+                    Log.e(TAG, "Bluetooth device is null.");
                 }
             }
         }
 
+        // this is all a bit of a mystery / woodoo
+        // the connect command is terribly unreliable so we try out
+        // different strategies
         public void run() {
-            // Cancel discovery because it will slow down the connection
-            // mBluetoothAdapter.cancelDiscovery();
+
+            if (bluetoothDevice == null) return;
+            // Get a BluetoothSocket to connect with the given BluetoothDevice
+            try {
+                mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
+            } catch (Exception ex) {
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Could not get rfComm socket:", ex);
+                }
+                try {
+                    mmSocket.close();
+                } catch (Exception closeExeption) {};
+                mmSocket = null;
+                messageListener.haveMessage(MESSAGE_ERROR);
+                return;
+            }
+
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                Log.v(TAG, "Got rfComm socket!");
+            }
+
+            try {
+                sleep(100);
+            } catch (Exception esleep) {};
 
             if (mmSocket != null) {
                 try {
@@ -260,12 +314,35 @@ public class AttysComm extends Thread {
                     }
                 } catch (IOException connectException) {
 
+                    // connection failed
                     messageListener.haveMessage(MESSAGE_RETRY);
 
+                    // let's get a new socket
+                    try {
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "We start over and retry to connect to the socket.");
+                        }
+                        mmSocket.close();
+                        mmSocket = null;
+                        yield();
+                        mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
+                    } catch (IOException e) {
+                        if (Log.isLoggable(TAG, Log.ERROR)) {
+                            Log.e(TAG, "Could not get a socket in the 2nd attempt!", e);
+                        }
+                        mmSocket = null;
+                        messageListener.haveMessage(MESSAGE_ERROR);
+                        // we give up b/c a socket itself should be always possible
+                        return;
+                    }
+
+                    // let's just wait a bit
                     try {
                         sleep(100);
-                    } catch (InterruptedException e1) {}
+                    } catch (InterruptedException e1) {
+                    }
 
+                    // let's try to connect
                     try {
                         if (mmSocket != null) {
                             mmSocket.connect();
@@ -274,7 +351,31 @@ public class AttysComm extends Thread {
 
                         try {
                             sleep(100);
-                        } catch (InterruptedException e3) {}
+                        } catch (InterruptedException e3) {
+                        }
+
+                        try {
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Last resort: we try the hidden API");
+                            }
+                            mmSocket.close();
+                            mmSocket = null;
+                            yield();
+                            Method createMethod = bluetoothDevice.getClass().
+                                    getMethod("createInsecureRfcommSocket", new Class[]{int.class});
+                            mmSocket = (BluetoothSocket) createMethod.invoke(bluetoothDevice, 1);
+                        } catch (Exception e) {
+                            if (Log.isLoggable(TAG, Log.ERROR)) {
+                                Log.e(TAG, "Could not get non-UUID based bluetooth socket!", e);
+                            }
+                            mmSocket = null;
+                            return;
+                        }
+
+                        try {
+                            sleep(100);
+                        } catch (InterruptedException e3) {
+                        }
 
                         try {
                             if (mmSocket != null) {
@@ -282,19 +383,20 @@ public class AttysComm extends Thread {
                             }
                         } catch (IOException e4) {
 
+                            try {
+                                mmSocket.close();
+                                mmSocket = null;
+                            } catch (IOException e) {
+                            }
+
                             connectionEstablished = false;
                             fatalError = true;
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Could not establish connection: " + e4.getMessage());
+                                Log.d(TAG, "Could not establish connection to Attys: " +
+                                        e4.getMessage());
                             }
                             messageListener.haveMessage(MESSAGE_ERROR);
 
-                            try {
-                                if (mmSocket != null) {
-                                    mmSocket.close();
-                                }
-                            } catch (IOException closeException) {}
-                            mmSocket = null;
                             return;
                         }
                     }
@@ -312,14 +414,16 @@ public class AttysComm extends Thread {
                 if (mmSocket != null) {
                     mmSocket.close();
                 }
-            } catch (IOException e) { }
+            } catch (IOException e) {
+            }
             mmSocket = null;
         }
     }
 
 
-    public boolean hasActiveConnection() { return isConnected;}
-
+    public boolean hasActiveConnection() {
+        return isConnected;
+    }
 
 
     public AttysComm(BluetoothDevice device) {
@@ -348,7 +452,7 @@ public class AttysComm extends Thread {
     private void stopADC() {
         String s = "\r\n\r\n\r\nx=0\r";
         byte[] bytes = s.getBytes();
-        for(int j=0;j<100;j++) {
+        for (int j = 0; j < 100; j++) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "Trying to stop the data acquisition. Attempt #" + (j + 1) + ".");
             }
@@ -441,7 +545,8 @@ public class AttysComm extends Thread {
                         } else {
                             try {
                                 sleep(10);
-                            } catch (InterruptedException e) {}
+                            } catch (InterruptedException e) {
+                            }
                         }
                     }
                 }
@@ -455,7 +560,7 @@ public class AttysComm extends Thread {
 
     private void sendSamplingRate(int rate) {
         adcSamplingRate = rate;
-        sendSyncCommand("r="+rate);
+        sendSyncCommand("r=" + rate);
     }
 
     public int getSamplingRateInHz() {
@@ -468,7 +573,7 @@ public class AttysComm extends Thread {
     }
 
     private void sendBiasCurrent() {
-        sendSyncCommand("i="+current_index);
+        sendSyncCommand("i=" + current_index);
     }
 
     // gets the bias current as in index
@@ -476,33 +581,33 @@ public class AttysComm extends Thread {
         return current_index;
     }
 
-    public void enableCurrents(boolean pos_ch1, boolean neg_ch1, boolean pos_ch2 ) {
+    public void enableCurrents(boolean pos_ch1, boolean neg_ch1, boolean pos_ch2) {
 
         current_mask = 0;
 
         if (pos_ch1) {
-            current_mask = (byte)(current_mask | (byte)0b00000001);
+            current_mask = (byte) (current_mask | (byte) 0b00000001);
         }
         if (neg_ch1) {
-            current_mask = (byte)(current_mask | (byte)0b00000010);
+            current_mask = (byte) (current_mask | (byte) 0b00000010);
         }
         if (pos_ch2) {
-            current_mask = (byte)(current_mask | (byte)0b00000100);
+            current_mask = (byte) (current_mask | (byte) 0b00000100);
         }
     }
 
     private void sendCurrentMask() {
-        sendSyncCommand("c="+current_mask);
+        sendSyncCommand("c=" + current_mask);
     }
 
     private void sendFullscaleGyroRange(int range) {
-        sendSyncCommand("g="+range);
+        sendSyncCommand("g=" + range);
         gyroFullScaleRange = GYRO_FULL_SCALE[range];
     }
 
     private void sendFullscaleAccelRange(int range) {
 
-        sendSyncCommand("t="+range);
+        sendSyncCommand("t=" + range);
         accelFullScaleRange = ACCEL_FULL_SCALE[range];
     }
 
@@ -514,7 +619,9 @@ public class AttysComm extends Thread {
         return accelFullScaleRange;
     }
 
-    public float getMagFullScaleRange() { return MAG_FULL_SCALE; }
+    public float getMagFullScaleRange() {
+        return MAG_FULL_SCALE;
+    }
 
     public float getADCFullScaleRange(int channel) {
         return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
@@ -534,21 +641,41 @@ public class AttysComm extends Thread {
         adcMuxRegister[channel] = mux;
     }
 
-    private void setADCGain(int channel,byte gain) {
-        sendGainMux(channel,gain,adcMuxRegister[channel]);
+    private void setADCGain(int channel, byte gain) {
+        sendGainMux(channel, gain, adcMuxRegister[channel]);
     }
 
     private void setADCMux(int channel, byte mux) {
-        sendGainMux(channel, adcGainRegister[channel],mux);
+        sendGainMux(channel, adcGainRegister[channel], mux);
     }
 
-    public void setAccel_full_scale_index(byte idx) { accel_full_scale_index = idx; }
-    public void setGyro_full_scale_index(byte idx) { gyro_full_scale_index = idx; }
-    public void setAdc_samplingrate_index(byte idx) { adc_rate_index = idx; }
-    public void setAdc0_gain_index(byte idx) { adc0_gain_index = idx; }
-    public void setAdc1_gain_index(byte idx) { adc1_gain_index = idx; }
-    public void setAdc0_mux_index(byte idx) { adc0_mux_index = idx; }
-    public void setAdc1_mux_index(byte idx) { adc1_mux_index = idx; }
+    public void setAccel_full_scale_index(byte idx) {
+        accel_full_scale_index = idx;
+    }
+
+    public void setGyro_full_scale_index(byte idx) {
+        gyro_full_scale_index = idx;
+    }
+
+    public void setAdc_samplingrate_index(byte idx) {
+        adc_rate_index = idx;
+    }
+
+    public void setAdc0_gain_index(byte idx) {
+        adc0_gain_index = idx;
+    }
+
+    public void setAdc1_gain_index(byte idx) {
+        adc1_gain_index = idx;
+    }
+
+    public void setAdc0_mux_index(byte idx) {
+        adc0_mux_index = idx;
+    }
+
+    public void setAdc1_mux_index(byte idx) {
+        adc1_mux_index = idx;
+    }
 
     private boolean sendInit() {
         stopADC();
@@ -557,8 +684,8 @@ public class AttysComm extends Thread {
         sendSamplingRate(adc_rate_index);
         sendFullscaleGyroRange(gyro_full_scale_index);
         sendFullscaleAccelRange(accel_full_scale_index);
-        sendGainMux(0,adc0_gain_index,adc0_mux_index);
-        sendGainMux(1,adc1_gain_index,adc1_mux_index);
+        sendGainMux(0, adc0_gain_index, adc0_mux_index);
+        sendGainMux(1, adc1_gain_index, adc1_mux_index);
         sendCurrentMask();
         sendBiasCurrent();
         startADC();
@@ -605,10 +732,10 @@ public class AttysComm extends Thread {
                 break;
         }
         if (textdataFileStream != null) {
-            textdataFileStream.format("%f%c", timestamp,s);
+            textdataFileStream.format("%f%c", timestamp, s);
             for (int i = 0; i < (data.length - 1); i++) {
                 if (textdataFileStream != null) {
-                    textdataFileStream.format("%f%c", data[i],s);
+                    textdataFileStream.format("%f%c", data[i], s);
                 }
             }
             if (textdataFileStream != null) {
@@ -717,7 +844,7 @@ public class AttysComm extends Thread {
                             byte ts = 0;
                             if (raw.length > 8) {
                                 ts = raw[9];
-                                if (Math.abs(ts-expectedTimestamp)==1) {
+                                if (Math.abs(ts - expectedTimestamp) == 1) {
                                     Log.d(TAG, String.format("sample lost"));
                                     ts++;
                                 }
@@ -782,7 +909,7 @@ public class AttysComm extends Thread {
                         }
 
                         if (dataListener != null) {
-                            dataListener.gotData(sampleNumber,ringBuffer[inPtr]);
+                            dataListener.gotData(sampleNumber, ringBuffer[inPtr]);
                         }
 
                         timestamp = timestamp + 1.0 / getSamplingRateInHz();
@@ -800,14 +927,16 @@ public class AttysComm extends Thread {
                 }
             } catch (Exception e) {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "Stream lost or closing.",e);
+                    Log.d(TAG, "Stream lost or closing.", e);
                 }
                 break;
             }
         }
     }
 
-    public boolean hasFatalError() { return fatalError; }
+    public boolean hasFatalError() {
+        return fatalError;
+    }
 
     public float[] getSampleFromBuffer() {
         if (inPtr != outPtr) {
@@ -854,7 +983,8 @@ public class AttysComm extends Thread {
         if (mmInStream != null) {
             try {
                 mmInStream.close();
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
         }
         if (mmOutStream != null) {
             try {
