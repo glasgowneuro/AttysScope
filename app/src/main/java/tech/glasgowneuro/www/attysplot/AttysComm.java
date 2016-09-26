@@ -171,7 +171,7 @@ public class AttysComm extends Thread {
     public final static byte ACCEL_4G = 1;
     public final static byte ACCEL_8G = 2;
     public final static byte ACCEL_16G = 3;
-    private final static float oneG = 9.80665F;
+    public final static float oneG = 9.80665F; // m/s^2
     public final static float[] ACCEL_FULL_SCALE = {2*oneG, 4*oneG, 8*oneG, 16*oneG}; // m/s^2
     private byte accel_full_scale_index = ACCEL_16G;
     public float getAccelFullScaleRange() {
@@ -261,6 +261,20 @@ public class AttysComm extends Thread {
             "Magnetic field Z",
             "Analogue channel 1",
             "Analogue channel 2"
+    };
+
+    public final static String[] CHANNEL_UNITS = {
+            "m/s^2",
+            "m/s^2",
+            "m/s^2",
+            "\u00b0"+"/s",
+            "\u00b0"+"/s",
+            "\u00b0"+"/s",
+            "\u00b5"+"T",
+            "\u00b5"+"T",
+            "\u00b5"+"T",
+            "V",
+            "V"
     };
 
     // 11 channels will be always sent back
@@ -696,9 +710,7 @@ public class AttysComm extends Thread {
                 }
             }
         }
-        if (Log.isLoggable(TAG, Log.ERROR)) {
-            Log.e(TAG, "ATTYS hasn't replied with OK after command: " + s + ".");
-        }
+        Log.e(TAG, "ATTYS hasn't replied with OK after command: " + s + ".");
     }
 
 

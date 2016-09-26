@@ -41,61 +41,30 @@ public class Attys2ScienceJournal extends Service {
 
     private void setAppearance() {
 
-        sensorAppearanceResources[0] = new SensorAppearanceResources();
+        for(int i=0;i<AttysComm.NCHANNELS;i++) {
+            sensorAppearanceResources[i] = new SensorAppearanceResources();
+            sensorAppearanceResources[i].units = AttysComm.CHANNEL_UNITS[i];
+            sensorAppearanceResources[i].shortDescription = AttysComm.CHANNEL_DESCRIPTION[i];
+        }
+
+        // acc
         sensorAppearanceResources[0].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
-        sensorAppearanceResources[0].units = "m/s^2";
-        sensorAppearanceResources[0].shortDescription = "Accelerometer X axis";
-
-        sensorAppearanceResources[1] = new SensorAppearanceResources();
         sensorAppearanceResources[1].iconId = R.drawable.ic_sensor_acc_y_white_24dp;
-        sensorAppearanceResources[1].units = "m/s^2";
-        sensorAppearanceResources[1].shortDescription = "Accelerometer Y axis";
-
-        sensorAppearanceResources[2] = new SensorAppearanceResources();
         sensorAppearanceResources[2].iconId = R.drawable.ic_sensor_acc_z_white_24dp;
-        sensorAppearanceResources[2].units = "m/s^2";
-        sensorAppearanceResources[2].shortDescription = "Accelerometer Z axis";
 
-        sensorAppearanceResources[3] = new SensorAppearanceResources();
+        // gyro
         sensorAppearanceResources[3].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
-        sensorAppearanceResources[3].units = "deg/s";
-        sensorAppearanceResources[3].shortDescription = "Gyroscope X axis";
+        sensorAppearanceResources[4].iconId = R.drawable.ic_sensor_acc_z_white_24dp;
+        sensorAppearanceResources[5].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
 
-        sensorAppearanceResources[4] = new SensorAppearanceResources();
-        sensorAppearanceResources[4].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
-        sensorAppearanceResources[4].units = "deg/s";
-        sensorAppearanceResources[4].shortDescription = "Gyroscope Y axis";
-
-        sensorAppearanceResources[5] = new SensorAppearanceResources();
-        sensorAppearanceResources[5].iconId = R.drawable.ic_sensor_acc_z_white_24dp;
-        sensorAppearanceResources[5].units = "deg/s";
-        sensorAppearanceResources[5].shortDescription = "Gyroscope Z axis";
-
-        String usign = "\u00b5";
-        sensorAppearanceResources[6] = new SensorAppearanceResources();
+        // mag
         sensorAppearanceResources[6].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
-        sensorAppearanceResources[6].units = usign+"T";
-        sensorAppearanceResources[6].shortDescription = "Magnetometer X axis";
-
-        sensorAppearanceResources[7] = new SensorAppearanceResources();
         sensorAppearanceResources[7].iconId = R.drawable.ic_sensor_acc_y_white_24dp;
-        sensorAppearanceResources[7].units = usign+"T";
-        sensorAppearanceResources[7].shortDescription = "Magnetometer Y axis";
-
-        sensorAppearanceResources[8] = new SensorAppearanceResources();
         sensorAppearanceResources[8].iconId = R.drawable.ic_sensor_acc_z_white_24dp;
-        sensorAppearanceResources[8].units = usign+"T";
-        sensorAppearanceResources[8].shortDescription = "Magnetometer Z axis";
 
-        sensorAppearanceResources[9] = new SensorAppearanceResources();
+        // ADC
         sensorAppearanceResources[9].iconId = R.drawable.ic_sensor_channel1_bold_24dp;
-        sensorAppearanceResources[9].units = "V";
-        sensorAppearanceResources[9].shortDescription = "Analogue channel 1";
-
-        sensorAppearanceResources[10] = new SensorAppearanceResources();
         sensorAppearanceResources[10].iconId = R.drawable.ic_sensor_channel2_bold_24dp;
-        sensorAppearanceResources[10].units = "V";
-        sensorAppearanceResources[10].shortDescription = "Analogue channel 2";
     }
 
     @Override

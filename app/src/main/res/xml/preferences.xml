@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <CheckBoxPreference
-        android:key="acc"
-        android:summary="Show accelerometer channels"
-        android:defaultValue="true"
-        android:title="Accelerometer" />
-    <CheckBoxPreference
-        android:key="gyr"
-        android:summary="Show gyroscope channels"
-        android:defaultValue="true"
-        android:title="Gyroscope" />
-    <CheckBoxPreference
-        android:key="mag"
-        android:summary="Show magnetometer channels"
-        android:defaultValue="true"
-        android:title="Magnetometer" />
-    <CheckBoxPreference
         android:key="ch1"
         android:defaultValue="true"
         android:summary="Show the ADC 1 channel"
@@ -43,14 +28,29 @@
         android:key="ch2_current"
         android:summary="ADC channel 2 current towards ground for resistance measurements"
         android:title="ADC 2 current" />
+    <CheckBoxPreference
+        android:key="ECG_mode"
+        android:summary="Ch1+ and Ch2 internally connected for ECG Einthoven I,II"
+        android:title="Connect Ch1+ with Ch2" />
+    <CheckBoxPreference
+        android:key="acc"
+        android:summary="Show accelerometer channels"
+        android:defaultValue="true"
+        android:title="Accelerometer" />
+    <CheckBoxPreference
+        android:key="gyr"
+        android:summary="Show gyroscope channels"
+        android:defaultValue="true"
+        android:title="Gyroscope" />
+    <CheckBoxPreference
+        android:key="mag"
+        android:summary="Show magnetometer channels"
+        android:defaultValue="true"
+        android:title="Magnetometer" />
     <ListPreference
         android:entries="@array/textDataFileSeparatorOptions"
         android:entryValues="@array/textDataFileSeparatorValues"
         android:summary="Separator between the values in the datafile saved to the SD card"
         android:key="data_separator"
         android:title="Separator (CSV, SSV or TSV)" />
-    <CheckBoxPreference
-        android:key="ECG_mode"
-        android:summary="Ch1+ and Ch2 internally connected for ECG Einthoven I,II"
-        android:title="Connect Ch1+ with Ch2" />
 </PreferenceScreen>

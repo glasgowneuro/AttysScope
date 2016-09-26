@@ -22,9 +22,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * Created by bp1 on 10/08/16.
@@ -46,6 +50,18 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     Canvas canvas;
     private int gap = 10;
     private int xtic = 250;
+    private float[] yZero = null;
+    private float yHeight = 0;
+
+    public interface TouchEventListener {
+        void touchedChannel(int chNo);
+    }
+
+    private TouchEventListener touchEventListener = null;
+
+    public void registerTouchEventListener(TouchEventListener t) {
+        touchEventListener = t;
+    }
 
     private void init() {
         xpos = 0;
@@ -80,9 +96,11 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         nMaxChannels = n;
         minData = new float[n];
         maxData = new float[n];
+        yZero = new float[n];
         for (int i = 0; i < n; i++) {
             minData[i] = -1;
             maxData[i] = 1;
+            yZero[i] = -1;
         }
     }
 
@@ -128,6 +146,30 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     }
 
 
+    public int getChannelIdFromY(int y) {
+        for(int i=0;i<nMaxChannels;i++) {
+            if ((Math.abs(y-yZero[i])) < yHeight ) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        float y = event.getY();
+        int idx = getChannelIdFromY((int)y);
+        if (idx != -1) {
+            if (touchEventListener != null) {
+                touchEventListener.touchedChannel(idx);
+            }
+        }
+        return super.onTouchEvent(event);
+    }
+
+
     public void addSamples(float[] newData, float[] minV, float[] maxV, float[] ytick,
                            String[] label) {
         int width = getWidth();
@@ -137,6 +179,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         if (nCh == 0) return;
 
         float base = height / nCh;
+        yHeight = base/2;
 
         if (ypos == null) initYpos(width);
 
@@ -149,12 +192,12 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                 canvas.drawRect(rect, paintBlack);
                 for (int i = 0; i < nCh; i++) {
                     float dy = (float) base / (float) (maxV[i] - minV[i]);
-                    float yZero = base * (i + 1) - ((0 - minV[i]) * dy);
+                    yZero[i] = base * (i + 1) - ((0 - minV[i]) * dy);
                     float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
                     float yTmpTicPos = base * (i + 1) - ((ytick[i] - minV[i]) * dy);
                     float yTmpTicNeg = base * (i + 1) - ((-ytick[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
-                    canvas.drawPoint(xpos, yZero, paintXCoord);
+                    canvas.drawPoint(xpos, yZero[i], paintXCoord);
                     if ((xpos % 2) == 0) {
                         canvas.drawPoint(xpos, yTmpTicPos, paintXCoord);
                         canvas.drawPoint(xpos, yTmpTicNeg, paintXCoord);
@@ -163,7 +206,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                         canvas.drawLine(xpos, 0, xpos, height, paintYCoord);
                     }
                     canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
-                    canvas.drawText(label[i], 0F, yZero - 1, paintLabel);
+                    canvas.drawText(label[i], 0F, yZero[i] - 1, paintLabel);
                 }
             }
             xpos++;

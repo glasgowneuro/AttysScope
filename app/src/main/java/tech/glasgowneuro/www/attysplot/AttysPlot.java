@@ -1,17 +1,17 @@
 /**
- Copyright 2016 Bernd Porr, mail@berndporr.me.uk
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+ * Copyright 2016 Bernd Porr, mail@berndporr.me.uk
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  **/
 
 package tech.glasgowneuro.www.attysplot;
@@ -38,6 +38,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -80,6 +81,10 @@ public class AttysPlot extends AppCompatActivity {
     private float ch1Div = 1;
     private float ch2Div = 1;
 
+    private int theChannelWeDoAnalysis = 9;
+
+    private int[] actualChannelIdx;
+
     public enum DataAnalysis {
         NONE,
         AC,
@@ -90,7 +95,7 @@ public class AttysPlot extends AppCompatActivity {
     private DataAnalysis dataAnalysis = DataAnalysis.NONE;
 
     // for data analysis
-    private double max,min;
+    private double max, min;
     private float t2 = 0;
     private int timestamp = 0;
     private int doNotDetect = 0;
@@ -99,7 +104,10 @@ public class AttysPlot extends AppCompatActivity {
 
     Highpass ecgHighpass = new Highpass();
 
-    String[] labels = {"Acc x", "Acc y", "Acc z", "Gyr x", "Gyr y", "Gyr z", "Mag x", "Mag y", "Mag z",
+    String[] labels = {
+            "Acc x", "Acc y", "Acc z",
+            "Gyr x", "Gyr y", "Gyr z",
+            "Mag x", "Mag y", "Mag z",
             "ADC 1", "ADC 2"};
 
     private String dataFilename = null;
@@ -152,7 +160,7 @@ public class AttysPlot extends AppCompatActivity {
     AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
         @Override
         public void haveMessage(int msg) {
-           handler.sendEmptyMessage(msg);
+            handler.sendEmptyMessage(msg);
         }
     };
 
@@ -189,11 +197,10 @@ public class AttysPlot extends AppCompatActivity {
     }
 
 
-
     private class UpdatePlotTask extends TimerTask {
 
 
-        private void showLargeText(String s) {
+        private void annotatePlot(String largeText) {
             String small = new String();
             if (showCh1) {
                 small = small + new String().format("ADC1 = %fV/div", ch1Div);
@@ -204,9 +211,13 @@ public class AttysPlot extends AppCompatActivity {
             if (showCh2) {
                 small = small + new String().format("ADC2 = %fV/div", ch2Div);
             }
+            if (showCh1 || showCh2) {
+                small = small + ",";
+            }
+            small = small + new String().format("status: %s", labels[theChannelWeDoAnalysis]);
             if (infoView != null) {
                 if (attysComm != null) {
-                    infoView.drawText(s,small);
+                    infoView.drawText(largeText, small);
                 }
             }
         }
@@ -214,42 +225,46 @@ public class AttysPlot extends AppCompatActivity {
 
         private void doAnalysis(float v) {
 
+            String m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
+
             switch (dataAnalysis) {
                 case ECG:
-                    double h = ecgHighpass.filter(v*1000);
-                    if (h<0) h=0;
-                    h = h * h;
-                    if (h > max) {
-                        max = h;
-                    }
-                    max = max - 0.1 * max / attysComm.getSamplingRateInHz();
-                    //Log.d(TAG,String.format("h=%f,max=%f",h,max));
-                    if (doNotDetect > 0) {
-                        doNotDetect--;
-                    } else {
-                        if (h > (max/2)) {
-                            float t = (float)(timestamp - t2)/attysComm.getSamplingRateInHz();
-                            float bpm = 1/t*60;
-                            if ((bpm > 40) && (bpm<300)) {
-                                showLargeText(String.format("%03d BPM",(int)bpm));
+                    if (theChannelWeDoAnalysis > 8) {
+                        double h = ecgHighpass.filter(v * 1000);
+                        if (h < 0) h = 0;
+                        h = h * h;
+                        if (h > max) {
+                            max = h;
+                        }
+                        max = max - 0.1 * max / attysComm.getSamplingRateInHz();
+                        //Log.d(TAG,String.format("h=%f,max=%f",h,max));
+                        if (doNotDetect > 0) {
+                            doNotDetect--;
+                        } else {
+                            if (h > (max / 2)) {
+                                float t = (float) (timestamp - t2) / attysComm.getSamplingRateInHz();
+                                float bpm = 1 / t * 60;
+                                if ((bpm > 40) && (bpm < 300)) {
+                                    annotatePlot(String.format("%03d BPM", (int) bpm));
+                                }
+                                t2 = timestamp;
+                                // advoid 1/2 sec
+                                doNotDetect = attysComm.getSamplingRateInHz() / 2;
                             }
-                            t2 = timestamp;
-                            // do not detect for 100ms
-                            doNotDetect = 100;
                         }
                     }
                     break;
                 case NONE:
                     break;
                 case DC:
-                    double a = 1.0/attysComm.getSamplingRateInHz();
-                    max = v*a - (1-a) * max;
+                    double a = 1.0 / attysComm.getSamplingRateInHz();
+                    max = v * a - (1 - a) * max;
                     int interval = (int) attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
                         if (max < 0.01) {
-                            showLargeText(String.format("%fmV", max*1000.0));
+                            annotatePlot(String.format("%fm%s", max * 1000.0, m_unit));
                         } else {
-                            showLargeText(String.format("%fV", max));
+                            annotatePlot(String.format("%f%s", max, m_unit));
                         }
                     }
                     break;
@@ -271,9 +286,9 @@ public class AttysPlot extends AppCompatActivity {
                         }
                         double diff = max - min;
                         if (diff < 0.01) {
-                            showLargeText(String.format("%1.03fmVpp", diff * 1000));
+                            annotatePlot(String.format("%1.03fm%spp", diff * 1000, m_unit));
                         } else {
-                            showLargeText(String.format("%1.03fVpp", diff));
+                            annotatePlot(String.format("%1.03f%spp", diff, m_unit));
                         }
                     }
                     break;
@@ -305,9 +320,12 @@ public class AttysPlot extends AppCompatActivity {
                 if (realtimePlotView != null) {
                     realtimePlotView.startAddSamples(n);
                     for (int i = 0; ((i < n) && (attysComm != null)); i++) {
-                        float[] sample = attysComm.getSampleFromBuffer();
+                        float[] sample = null;
+                        if (attysComm != null) {
+                            sample = attysComm.getSampleFromBuffer();
+                        }
                         if (sample != null) {
-                            doAnalysis(sample[9]);
+                            doAnalysis(sample[theChannelWeDoAnalysis]);
                             timestamp++;
                             for (int j = 0; j < nCh; j++) {
                                 float v = sample[j];
@@ -324,6 +342,34 @@ public class AttysPlot extends AppCompatActivity {
                             }
                             int nRealChN = 0;
                             int sn = 0;
+                            if (showCh1) {
+                                if (attysComm != null) {
+                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
+                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
+                                    ch1Div = 1.0F / (float) gain[9];
+                                    if (attysComm.getADCFullScaleRange(0)<1) {
+                                        ch1Div = ch1Div / 10;
+                                    }
+                                    tmpTick[nRealChN] = ch1Div * gain[9];
+                                    tmpLabels[nRealChN] = labels[9];
+                                    actualChannelIdx[nRealChN] = 9;
+                                    tmpSample[nRealChN++] = sample[9];
+                                }
+                            }
+                            if (showCh2) {
+                                if (attysComm != null) {
+                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
+                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
+                                    ch2Div = 1.0F / (float) gain[10];
+                                    if (attysComm.getADCFullScaleRange(1)<1) {
+                                        ch2Div = ch2Div / 10;
+                                    }
+                                    tmpTick[nRealChN] = ch2Div * gain[10];
+                                    tmpLabels[nRealChN] = labels[10];
+                                    actualChannelIdx[nRealChN] = 10;
+                                    tmpSample[nRealChN++] = sample[10];
+                                }
+                            }
                             if (showAcc) {
                                 if (attysComm != null) {
                                     float min = -attysComm.getAccelFullScaleRange();
@@ -332,8 +378,9 @@ public class AttysPlot extends AppCompatActivity {
                                     for (int k = 0; k < 3; k++) {
                                         tmpMin[nRealChN] = min;
                                         tmpMax[nRealChN] = max;
-                                        tmpTick[nRealChN] = gain[k] * 1.0F; // 1G
+                                        tmpTick[nRealChN] = gain[k] * AttysComm.oneG;
                                         tmpLabels[nRealChN] = labels[k];
+                                        actualChannelIdx[nRealChN] = k;
                                         tmpSample[nRealChN++] = sample[k];
                                     }
                                 }
@@ -347,6 +394,7 @@ public class AttysPlot extends AppCompatActivity {
                                         tmpMax[nRealChN] = max;
                                         tmpTick[nRealChN] = gain[k + 3] * 1000.0F; // 1000DPS
                                         tmpLabels[nRealChN] = labels[k + 3];
+                                        actualChannelIdx[nRealChN] = k + 3;
                                         tmpSample[nRealChN++] = sample[k + 3];
                                     }
                                 }
@@ -357,27 +405,10 @@ public class AttysPlot extends AppCompatActivity {
                                         tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
                                         tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
                                         tmpLabels[nRealChN] = labels[k + 6];
-                                        tmpTick[nRealChN] = gain[k + 6] * 1000.0E-6F; //1000uT
+                                        actualChannelIdx[nRealChN] = k + 6;
+                                        tmpTick[nRealChN] = 1000.0E-6F; //1000uT
                                         tmpSample[nRealChN++] = sample[k + 6];
                                     }
-                                }
-                            }
-                            if (showCh1) {
-                                if (attysComm != null) {
-                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
-                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
-                                    tmpTick[nRealChN] = ch1Div * gain[9];
-                                    tmpLabels[nRealChN] = labels[9];
-                                    tmpSample[nRealChN++] = sample[9];
-                                }
-                            }
-                            if (showCh2) {
-                                if (attysComm != null) {
-                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
-                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
-                                    tmpTick[nRealChN] = ch2Div * gain[10];
-                                    tmpLabels[nRealChN] = labels[10];
-                                    tmpSample[nRealChN++] = sample[10];
                                 }
                             }
                             realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
@@ -441,14 +472,19 @@ public class AttysPlot extends AppCompatActivity {
         gain = new float[nChannels];
         iirNotch = new IIR_notch[nChannels];
         invert = new boolean[nChannels];
+        actualChannelIdx = new int[nChannels];
         for (int i = 0; i < nChannels; i++) {
             highpass[i] = new Highpass();
             iirNotch[i] = new IIR_notch();
+            // set it to 1st ADC channel
+            actualChannelIdx[i] = 9;
             gain[i] = 1;
-            if ((i>5) && (i<9)) {gain[i] = 50;}
+            if ((i > 5) && (i < 9)) {
+                gain[i] = 50;
+            }
         }
         // 1sec
-        analysisBuffer = new float[(int)attysComm.getSamplingRateInHz()];
+        analysisBuffer = new float[(int) attysComm.getSamplingRateInHz()];
 
         getsetAttysPrefs();
 
@@ -462,6 +498,18 @@ public class AttysPlot extends AppCompatActivity {
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
+
+        realtimePlotView.registerTouchEventListener(
+                new RealtimePlotView.TouchEventListener() {
+                    @Override
+                    public void touchedChannel(int chNo) {
+                        try {
+                            theChannelWeDoAnalysis = actualChannelIdx[chNo];
+                        } catch (Exception e) {
+                            Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
+                        }
+                    }
+                });
 
         infoView = (InfoView) findViewById(R.id.infoview);
         infoView.setZOrderOnTop(true);
@@ -512,14 +560,14 @@ public class AttysPlot extends AppCompatActivity {
                             switch (dataSeparator) {
                                 case AttysComm.DATA_SEPARATOR_COMMA:
                                     dataFilename = dataFilename + ".csv";
-                                break;
+                                    break;
                                 case AttysComm.DATA_SEPARATOR_SPACE:
                                 case AttysComm.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".dat";
                             }
                         }
                         Toast.makeText(getApplicationContext(),
-                                "Press rec to record to '"+ dataFilename +"'",
+                                "Press rec to record to '" + dataFilename + "'",
                                 Toast.LENGTH_SHORT).show();
                     }
                 })
@@ -547,7 +595,7 @@ public class AttysPlot extends AppCompatActivity {
         switch (item.getItemId()) {
 
             case R.id.preferences:
-                Intent intent = new Intent(this,PrefsActivity.class);
+                Intent intent = new Intent(this, PrefsActivity.class);
                 startActivity(intent);
                 return true;
 
@@ -561,11 +609,11 @@ public class AttysPlot extends AppCompatActivity {
                         attysComm.setDataSeparator(dataSeparator);
                         java.io.FileNotFoundException e = attysComm.startRec(file);
                         if (e != null) {
-                            Log.d(TAG, "Could not open data file: "+e.getMessage());
+                            Log.d(TAG, "Could not open data file: " + e.getMessage());
                             return true;
                         }
                         if (attysComm.isRecording()) {
-                            Log.d(TAG,"Saving to "+file.getAbsolutePath());
+                            Log.d(TAG, "Saving to " + file.getAbsolutePath());
                         }
                     } else {
                         Toast.makeText(getApplicationContext(),
@@ -631,14 +679,9 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch1gain500:
                 String t = item.getTitle().toString();
                 int g = Integer.parseInt(t);
-                gain[9] = (float)g;
-                if (g<20) {
-                    ch1Div = 1;
-                } else {
-                    ch1Div = 1E-3F;
-                }
+                gain[9] = (float) g;
                 Toast.makeText(getApplicationContext(),
-                        String.format("Channel 1 gain set to x%d",g),Toast.LENGTH_LONG).show();
+                        String.format("Channel 1 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 return true;
 
             case R.id.Ch2gain1:
@@ -653,17 +696,13 @@ public class AttysPlot extends AppCompatActivity {
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
-                        String.format("Channel 2 gain set to x%d",g),Toast.LENGTH_LONG).show();
-                gain[10] = (float)g;
-                if (g<20) {
-                    ch2Div = 1;
-                } else {
-                    ch2Div = 1E-3F;
-                }
+                        String.format("Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
+                gain[10] = (float) g;
                 return true;
 
             case R.id.largeStatusOff:
                 dataAnalysis = DataAnalysis.NONE;
+                infoView.removeText();
                 return true;
 
             case R.id.largeStatusAC:
@@ -685,7 +724,6 @@ public class AttysPlot extends AppCompatActivity {
 
         }
     }
-
 
 
     @Override
@@ -723,38 +761,38 @@ public class AttysPlot extends AppCompatActivity {
 
 
     private void getsetAttysPrefs() {
-        byte mux=0;
+        byte mux = 0;
 
         Log.d(TAG, String.format("Setting preferences"));
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(this);
-        boolean ecg_mode = prefs.getBoolean("ECG_mode",false);
+        boolean ecg_mode = prefs.getBoolean("ECG_mode", false);
         if (ecg_mode) {
             mux = AttysComm.ADC_MUX_ECG_EINTHOVEN;
         } else {
             mux = AttysComm.ADC_MUX_NORMAL;
         }
-        byte gain0 = (byte)(Integer.parseInt(prefs.getString("ch1_gainpref", "0")));
+        byte gain0 = (byte) (Integer.parseInt(prefs.getString("ch1_gainpref", "0")));
         attysComm.setAdc0_gain_index(gain0);
         attysComm.setAdc0_mux_index(mux);
-        byte gain1 = (byte)(Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
+        byte gain1 = (byte) (Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
         attysComm.setAdc1_gain_index(gain1);
         attysComm.setAdc1_mux_index(mux);
         int current = Integer.parseInt(prefs.getString("ch2_current", "-1"));
         if (current < 0) {
-            attysComm.enableCurrents(false,false,false);
+            attysComm.enableCurrents(false, false, false);
         } else {
-            attysComm.setBiasCurrent((byte)current);
-            attysComm.enableCurrents(false,false,true);
+            attysComm.setBiasCurrent((byte) current);
+            attysComm.enableCurrents(false, false, true);
         }
-        byte data_separator = (byte)(Integer.parseInt(prefs.getString("data_separator", "0")));
+        byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
         attysComm.setDataSeparator(data_separator);
 
-        showAcc = prefs.getBoolean("acc",true);
-        showGyr = prefs.getBoolean("gyr",true);
-        showMag = prefs.getBoolean("mag",true);
-        showCh1 = prefs.getBoolean("ch1",true);
-        showCh2 = prefs.getBoolean("ch2",true);
+        showAcc = prefs.getBoolean("acc", true);
+        showGyr = prefs.getBoolean("gyr", true);
+        showMag = prefs.getBoolean("mag", true);
+        showCh1 = prefs.getBoolean("ch1", true);
+        showCh2 = prefs.getBoolean("ch2", true);
     }
 
     @Override
@@ -775,7 +813,7 @@ public class AttysPlot extends AppCompatActivity {
     public void onStop() {
         super.onStop();
 
-        Log.d(TAG,String.format("Stopped"));
+        Log.d(TAG, String.format("Stopped"));
 
         killAttysComm();
 
