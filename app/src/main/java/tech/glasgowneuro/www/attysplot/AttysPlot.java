@@ -101,6 +101,7 @@ public class AttysPlot extends AppCompatActivity {
     private int doNotDetect = 0;
     private float[] analysisBuffer;
     private int analysisPtr = 0;
+    private float v2 = 0;
 
     Highpass ecgHighpass = new Highpass();
 
@@ -212,9 +213,9 @@ public class AttysPlot extends AppCompatActivity {
                 small = small + new String().format("ADC2 = %fV/div", ch2Div);
             }
             if (showCh1 || showCh2) {
-                small = small + ",";
+                small = small + ", ";
             }
-            small = small + new String().format("status: %s", labels[theChannelWeDoAnalysis]);
+            small = small + new String().format("readings from %s", labels[theChannelWeDoAnalysis]);
             if (infoView != null) {
                 if (attysComm != null) {
                     infoView.drawText(largeText, small);
@@ -231,17 +232,18 @@ public class AttysPlot extends AppCompatActivity {
                 case ECG:
                     if (theChannelWeDoAnalysis > 8) {
                         double h = ecgHighpass.filter(v * 1000);
+                        v2 = v;
                         if (h < 0) h = 0;
-                        h = h * h;
+                        h = h * h * h;
                         if (h > max) {
                             max = h;
                         }
                         max = max - 0.1 * max / attysComm.getSamplingRateInHz();
-                        //Log.d(TAG,String.format("h=%f,max=%f",h,max));
+                        // Log.d(TAG,"h="+h+",max="+max);
                         if (doNotDetect > 0) {
                             doNotDetect--;
                         } else {
-                            if (h > (max / 2)) {
+                            if (h > (0.75*max)) {
                                 float t = (float) (timestamp - t2) / attysComm.getSamplingRateInHz();
                                 float bpm = 1 / t * 60;
                                 if ((bpm > 40) && (bpm < 300)) {
@@ -257,11 +259,12 @@ public class AttysPlot extends AppCompatActivity {
                 case NONE:
                     break;
                 case DC:
-                    double a = 1.0 / attysComm.getSamplingRateInHz();
-                    max = v * a - (1 - a) * max;
+                    double a = 1.0 / (double)(attysComm.getSamplingRateInHz());
+                    // 1st order lowpass IIR filter
+                    max = v * a + (1 - a) * max;
                     int interval = (int) attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
-                        if (max < 0.01) {
+                        if (max < 0.002) {
                             annotatePlot(String.format("%fm%s", max * 1000.0, m_unit));
                         } else {
                             annotatePlot(String.format("%f%s", max, m_unit));
@@ -285,7 +288,7 @@ public class AttysPlot extends AppCompatActivity {
                             }
                         }
                         double diff = max - min;
-                        if (diff < 0.01) {
+                        if (diff < 0.002) {
                             annotatePlot(String.format("%1.03fm%spp", diff * 1000, m_unit));
                         } else {
                             annotatePlot(String.format("%1.03f%spp", diff, m_unit));
@@ -308,7 +311,7 @@ public class AttysPlot extends AppCompatActivity {
                 if (!attysComm.hasActiveConnection()) return;
             }
             int nCh = 0;
-            if (attysComm != null) ecgHighpass.setAlpha(100.0F / attysComm.getSamplingRateInHz());
+            if (attysComm != null) ecgHighpass.setAlpha(10.0F / attysComm.getSamplingRateInHz());
             if (attysComm != null) nCh = attysComm.NCHANNELS;
             if (attysComm != null) {
                 float[] tmpSample = new float[nCh];
@@ -550,7 +553,7 @@ public class AttysPlot extends AppCompatActivity {
 
         new AlertDialog.Builder(this)
                 .setTitle("Enter filename")
-                .setMessage("Enter the filename of the CSV file")
+                .setMessage("Enter the filename of the data textfile")
                 .setView(filenameEditText)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {

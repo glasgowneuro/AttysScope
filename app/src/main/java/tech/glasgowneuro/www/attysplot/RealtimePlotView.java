@@ -69,7 +69,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         paint.setColor(Color.WHITE);
         paintBlack.setColor(Color.BLACK);
         paintXCoord.setColor(Color.argb(128, 0, 255, 0));
-        paintYCoord.setColor(Color.argb(64, 0, 128, 0));
+        paintYCoord.setColor(Color.argb(128, 0, 128, 0));
         paintLabel.setColor(Color.argb(128, 0, 255, 0));
     }
 

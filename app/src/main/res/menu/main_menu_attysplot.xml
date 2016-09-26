@@ -136,7 +136,7 @@
     <item
         android:id="@+id/largeStatus"
         android:checked="true"
-        android:title="Status display">
+        android:title="Sensor data display">
 
         <menu>
             <item
@@ -144,10 +144,10 @@
                 android:title="off" />
             <item
                 android:id="@+id/largeStatusAC"
-                android:title="Vpp" />
+                android:title="peak-peak" />
             <item
                 android:id="@+id/largeStatusDC"
-                android:title="Vdc" />
+                android:title="DC" />
             <item
                 android:id="@+id/largeStatusBPM"
                 android:title="ECG/bpm" />

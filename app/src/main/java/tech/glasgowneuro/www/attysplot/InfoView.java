@@ -89,13 +89,14 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
             paintSmall.getTextBounds(smallText, 0, smallText.length(), bounds);
             //Log.d(TAG,smallText);
             int y2 = bounds.height();
+            int x2 = bounds.width();
             canvas = holder.lockCanvas();
             if (canvas != null) {
                 Paint paint = new Paint();
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
                 canvas.drawPaint(paint);
-                canvas.drawText(text,x,y+y2, paintLarge);
-                canvas.drawText(smallText,0,y2, paintSmall);
+                canvas.drawText(text,x,y+y2*10/9, paintLarge);
+                canvas.drawText(smallText,getWidth()/10,y2, paintSmall);
             } else {
                 Log.d(TAG,"Canvas==null");
             }

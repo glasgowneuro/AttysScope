@@ -485,7 +485,7 @@ public class AttysComm extends Thread {
             if (bluetoothDevice == null) return;
             // Get a BluetoothSocket to connect with the given BluetoothDevice
             try {
-                mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
+                mmSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid);
             } catch (Exception ex) {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Could not get rfComm socket:", ex);
@@ -494,7 +494,6 @@ public class AttysComm extends Thread {
                     mmSocket.close();
                 } catch (Exception closeExeption) {
                 }
-                ;
                 mmSocket = null;
                 messageListener.haveMessage(MESSAGE_ERROR);
                 return;
@@ -508,7 +507,6 @@ public class AttysComm extends Thread {
                 sleep(100);
             } catch (Exception esleep) {
             }
-            ;
 
             if (mmSocket != null) {
                 try {
@@ -528,6 +526,21 @@ public class AttysComm extends Thread {
                     try {
                         sleep(100);
                     } catch (InterruptedException e1) {}
+
+                    try {
+                        mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
+                    } catch (Exception ex) {
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "Could not get rfComm socket:", ex);
+                        }
+                        try {
+                            mmSocket.close();
+                        } catch (Exception closeExeption) {
+                        }
+                        mmSocket = null;
+                        messageListener.haveMessage(MESSAGE_ERROR);
+                        return;
+                    }
 
                     // let's try to connect
                     try {
