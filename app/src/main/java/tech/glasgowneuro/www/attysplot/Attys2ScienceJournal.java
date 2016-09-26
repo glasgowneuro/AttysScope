@@ -308,7 +308,7 @@ public class Attys2ScienceJournal extends Service {
                                                 offset = 0;
                                             }
 
-                                            Log.d(TAG, "offset=" + offset);
+                                            //Log.d(TAG, "offset=" + offset);
 
                                             timestamp = timestamp + offset;
                                         } catch (RemoteException e) {
