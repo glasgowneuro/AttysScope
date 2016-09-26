@@ -243,7 +243,7 @@ public class AttysPlot extends AppCompatActivity {
                         if (doNotDetect > 0) {
                             doNotDetect--;
                         } else {
-                            if (h > (0.75*max)) {
+                            if (h > (0.75 * max)) {
                                 float t = (float) (timestamp - t2) / attysComm.getSamplingRateInHz();
                                 float bpm = 1 / t * 60;
                                 if ((bpm > 40) && (bpm < 300)) {
@@ -259,16 +259,12 @@ public class AttysPlot extends AppCompatActivity {
                 case NONE:
                     break;
                 case DC:
-                    double a = 1.0 / (double)(attysComm.getSamplingRateInHz());
+                    double a = 1.0 / (double) (attysComm.getSamplingRateInHz());
                     // 1st order lowpass IIR filter
                     max = v * a + (1 - a) * max;
                     int interval = (int) attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
-                        if (max < 0.002) {
-                            annotatePlot(String.format("%fm%s", max * 1000.0, m_unit));
-                        } else {
-                            annotatePlot(String.format("%f%s", max, m_unit));
-                        }
+                        annotatePlot(String.format("%1.05f%s", max, m_unit));
                     }
                     break;
                 case AC:
@@ -288,11 +284,7 @@ public class AttysPlot extends AppCompatActivity {
                             }
                         }
                         double diff = max - min;
-                        if (diff < 0.002) {
-                            annotatePlot(String.format("%1.03fm%spp", diff * 1000, m_unit));
-                        } else {
-                            annotatePlot(String.format("%1.03f%spp", diff, m_unit));
-                        }
+                        annotatePlot(String.format("%1.05f%spp", diff, m_unit));
                     }
                     break;
             }
@@ -350,7 +342,7 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                                     tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
                                     ch1Div = 1.0F / (float) gain[9];
-                                    if (attysComm.getADCFullScaleRange(0)<1) {
+                                    if (attysComm.getADCFullScaleRange(0) < 1) {
                                         ch1Div = ch1Div / 10;
                                     }
                                     tmpTick[nRealChN] = ch1Div * gain[9];
@@ -364,7 +356,7 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                                     tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
                                     ch2Div = 1.0F / (float) gain[10];
-                                    if (attysComm.getADCFullScaleRange(1)<1) {
+                                    if (attysComm.getADCFullScaleRange(1) < 1) {
                                         ch2Div = ch2Div / 10;
                                     }
                                     tmpTick[nRealChN] = ch2Div * gain[10];

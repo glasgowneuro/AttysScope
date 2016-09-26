@@ -136,7 +136,7 @@
     <item
         android:id="@+id/largeStatus"
         android:checked="true"
-        android:title="Sensor data display">
+        android:title="Signal readings / coordinate system">
 
         <menu>
             <item
