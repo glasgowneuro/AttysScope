@@ -29,20 +29,20 @@
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"
         android:key="ch1_gainpref"
-        android:summary="Channel 1 full scale range in Volts"
-        android:title="Channel 1 range" />
+        android:summary="ADC Channel 1 full scale range in Volts"
+        android:title="ADC 1 range" />
     <ListPreference
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"
         android:key="ch2_gainpref"
-        android:summary="Channel 2 full scanel range in Volts"
-        android:title="Channel 2 range" />
+        android:summary="ADC Channel 2 full scanel range in Volts"
+        android:title="ADC 2 range" />
     <ListPreference
         android:entries="@array/currentOptions"
         android:entryValues="@array/currentValues"
         android:key="ch2_current"
-        android:summary="Channel 2 current towards ground for resistance measurements"
-        android:title="Channel 2 current" />
+        android:summary="ADC channel 2 current towards ground for resistance measurements"
+        android:title="ADC 2 current" />
     <ListPreference
         android:entries="@array/textDataFileSeparatorOptions"
         android:entryValues="@array/textDataFileSeparatorValues"
