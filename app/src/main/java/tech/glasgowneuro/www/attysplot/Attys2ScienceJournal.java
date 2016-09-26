@@ -300,7 +300,7 @@ public class Attys2ScienceJournal extends Service {
                                             // time but let the ADC clock dominate the
                                             // timing because we know that they arrive at
                                             // the sampling rate (+/- a small drift)
-                                            double offset = timeDiff/1000 +
+                                            double offset = timeDiff/100 +
                                                     1000 / ((long) attysComm.getSamplingRateInHz());
 
                                             // prevent of going back in time!
@@ -308,7 +308,7 @@ public class Attys2ScienceJournal extends Service {
                                                 offset = 0;
                                             }
 
-                                            // Log.d(TAG, "offset=" + offset);
+                                            Log.d(TAG, "offset=" + offset);
 
                                             timestamp = timestamp + offset;
                                         } catch (RemoteException e) {
