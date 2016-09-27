@@ -54,8 +54,8 @@ public class Attys2ScienceJournal extends Service {
 
         // gyro
         sensorAppearanceResources[3].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
-        sensorAppearanceResources[4].iconId = R.drawable.ic_sensor_acc_z_white_24dp;
-        sensorAppearanceResources[5].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
+        sensorAppearanceResources[4].iconId = R.drawable.ic_sensor_acc_y_white_24dp;
+        sensorAppearanceResources[5].iconId = R.drawable.ic_sensor_acc_z_white_24dp;
 
         // mag
         sensorAppearanceResources[6].iconId = R.drawable.ic_sensor_acc_x_white_24dp;
@@ -74,6 +74,9 @@ public class Attys2ScienceJournal extends Service {
         // to all sensors at the same time (i.e. connection loss) and
         // check when we can close the bluetooth connection once all
         // sensors have been disconnected.
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Creating service");
+        }
         observer = new ISensorObserver[AttysComm.NCHANNELS];
         listener = new ISensorStatusListener[AttysComm.NCHANNELS];
         for (int i = 0; i < AttysComm.NCHANNELS; i++) {
@@ -85,6 +88,9 @@ public class Attys2ScienceJournal extends Service {
 
     @Override
     public void onDestroy() {
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Destroying service");
+        }
         if (attysComm != null) {
             // we cancel sync the connection
             attysComm.cancel();
@@ -235,116 +241,116 @@ public class Attys2ScienceJournal extends Service {
                             attysComm.setGyro_full_scale_index(AttysComm.GYRO_2000DPS);
                             attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
                             attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
-                        }
 
-                        AttysComm.DataListener dataListener = new AttysComm.DataListener() {
-                            @Override
-                            public void gotData(long samplenumber, float[] data) {
-                                boolean onDataUsed = false;
-                                // Log.d(TAG, String.format("Got data: timestamp=%d",
- //                                       timestamp));
-                                for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                                    if (observer[i] != null) {
-                                        try {
-                                            if (timestamp == 0) {
-                                                timestamp = (double)System.currentTimeMillis();
+                            AttysComm.DataListener dataListener = new AttysComm.DataListener() {
+                                @Override
+                                public void gotData(long samplenumber, float[] data) {
+                                    boolean onDataUsed = false;
+                                    // Log.d(TAG, String.format("Got data: timestamp=%d",
+                                    //                                       timestamp));
+                                    for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                        if (observer[i] != null) {
+                                            try {
+                                                if (timestamp == 0) {
+                                                    timestamp = (double) System.currentTimeMillis();
+                                                }
+                                                observer[i].onNewData(
+                                                        (long) Math.round(timestamp),
+                                                        data[i] * gainFactor[i]
+                                                );
+                                                onDataUsed = true;
+                                                // Log.d(TAG, String.format("timestamp=%d,data=%f",
+                                                //        timestamp, data[i]));
+
+                                                double timeNow = System.currentTimeMillis();
+                                                // let see if we drift apart which happens because
+                                                // the clock in the Attys might be slightly
+                                                // faster or slower
+                                                // so if the timestamp is lagging behind the
+                                                // system time we speed up our timestamp a bit
+                                                double timeDiff = timeNow - timestamp;
+
+                                                // let's gently stay in sync with the system
+                                                // time but let the ADC clock dominate the
+                                                // timing because we know that they arrive at
+                                                // the sampling rate (+/- a small drift)
+                                                double offset = timeDiff / 100 +
+                                                        1000 / ((long) attysComm.getSamplingRateInHz());
+
+                                                // prevent of going back in time!
+                                                if (offset < 0) {
+                                                    offset = 0;
+                                                }
+
+                                                //Log.d(TAG, "offset=" + offset);
+
+                                                timestamp = timestamp + offset;
+                                            } catch (RemoteException e) {
+                                                Log.e(TAG, "onNewData exception:", e);
                                             }
-                                            observer[i].onNewData(
-                                                    (long)Math.round(timestamp),
-                                                    data[i] * gainFactor[i]
-                                            );
-                                            onDataUsed = true;
-                                            // Log.d(TAG, String.format("timestamp=%d,data=%f",
-                                            //        timestamp, data[i]));
-
-                                            double timeNow = System.currentTimeMillis();
-                                            // let see if we drift apart which happens because
-                                            // the clock in the Attys might be slightly
-                                            // faster or slower
-                                            // so if the timestamp is lagging behind the
-                                            // system time we speed up our timestamp a bit
-                                            double timeDiff = timeNow - timestamp;
-
-                                            // let's gently stay in sync with the system
-                                            // time but let the ADC clock dominate the
-                                            // timing because we know that they arrive at
-                                            // the sampling rate (+/- a small drift)
-                                            double offset = timeDiff/100 +
-                                                    1000 / ((long) attysComm.getSamplingRateInHz());
-
-                                            // prevent of going back in time!
-                                            if (offset < 0) {
-                                                offset = 0;
-                                            }
-
-                                            //Log.d(TAG, "offset=" + offset);
-
-                                            timestamp = timestamp + offset;
-                                        } catch (RemoteException e) {
-                                            Log.e(TAG, "onNewData exception:", e);
                                         }
                                     }
+                                    if (!onDataUsed) {
+                                        Log.d(TAG, String.format("All observers are NULL"));
+                                    }
                                 }
-                                if (!onDataUsed) {
-                                    Log.d(TAG, String.format("All observers are NULL"));
-                                }
-                            }
-                        };
+                            };
 
-                        attysComm.registerDataListener(dataListener);
+                            attysComm.registerDataListener(dataListener);
 
-                        AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
-                            @Override
-                            public void haveMessage(int msg) {
-                                switch (msg) {
-                                    case AttysComm.MESSAGE_ERROR:
-                                        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                                            try {
-                                                if (listener[i] != null) {
-                                                    listener[i].onSensorError("Attys connection problem");
-                                                }
-                                            } catch (RemoteException e) {
-                                                if (Log.isLoggable(TAG, Log.ERROR)) {
-                                                    Log.e(TAG, "Cannot report BT error to open science journal", e);
+                            AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
+                                @Override
+                                public void haveMessage(int msg) {
+                                    switch (msg) {
+                                        case AttysComm.MESSAGE_ERROR:
+                                            for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                                try {
+                                                    if (listener[i] != null) {
+                                                        listener[i].onSensorError("Attys connection problem");
+                                                    }
+                                                } catch (RemoteException e) {
+                                                    if (Log.isLoggable(TAG, Log.ERROR)) {
+                                                        Log.e(TAG, "Cannot report BT error to open science journal", e);
+                                                    }
                                                 }
                                             }
-                                        }
-                                        break;
-                                    case AttysComm.MESSAGE_CONNECTED:
-                                        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                                            try {
-                                                if (listener[i] != null) {
-                                                    listener[i].onSensorConnected();
-                                                }
-                                            } catch (RemoteException e) {
-                                                if (Log.isLoggable(TAG, Log.ERROR)) {
-                                                    Log.e(TAG, "Cannot announce connect", e);
+                                            break;
+                                        case AttysComm.MESSAGE_CONNECTED:
+                                            for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                                try {
+                                                    if (listener[i] != null) {
+                                                        listener[i].onSensorConnected();
+                                                    }
+                                                } catch (RemoteException e) {
+                                                    if (Log.isLoggable(TAG, Log.ERROR)) {
+                                                        Log.e(TAG, "Cannot announce connect", e);
+                                                    }
                                                 }
                                             }
-                                        }
-                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                            Log.d(TAG, "Connected");
-                                        }
-                                        break;
-                                    case AttysComm.MESSAGE_CONFIGURE:
-                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                            Log.d(TAG, "Configuring Attys");
-                                        }
-                                        break;
-                                    case AttysComm.MESSAGE_RETRY:
-                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                            Log.d(TAG, "Retrying to connect");
-                                        }
-                                        break;
+                                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                                Log.d(TAG, "Connected");
+                                            }
+                                            break;
+                                        case AttysComm.MESSAGE_CONFIGURE:
+                                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                                Log.d(TAG, "Configuring Attys");
+                                            }
+                                            break;
+                                        case AttysComm.MESSAGE_RETRY:
+                                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                                Log.d(TAG, "Retrying to connect");
+                                            }
+                                            break;
+                                    }
+
                                 }
+                            };
 
-                            }
-                        };
+                            attysComm.registerMessageListener(messageListener);
 
-                        attysComm.registerMessageListener(messageListener);
-
-                        // this is async in the background and might take a second or two
-                        attysComm.start();
+                            // this is async in the background and might take a second or two
+                            attysComm.start();
+                        }
 
                     }
 
@@ -377,9 +383,7 @@ public class Attys2ScienceJournal extends Service {
                         attysComm.cancel();
                         try {
                             attysComm.join();
-                        } catch (InterruptedException e) {
-                        }
-                        ;
+                        } catch (InterruptedException e) {}
                         // start the garbage collection
                         attysComm = null;
                         timestamp = 0;
