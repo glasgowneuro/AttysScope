@@ -154,5 +154,10 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/filebrowser"
+        android:title="File Browser"
+        app:showAsAction="never" />
+
 </menu>
 

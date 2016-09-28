@@ -194,13 +194,24 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     float dy = (float) base / (float) (maxV[i] - minV[i]);
                     yZero[i] = base * (i + 1) - ((0 - minV[i]) * dy);
                     float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
-                    float yTmpTicPos = base * (i + 1) - ((ytick[i] - minV[i]) * dy);
-                    float yTmpTicNeg = base * (i + 1) - ((-ytick[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
                     canvas.drawPoint(xpos, yZero[i], paintXCoord);
+                    float yTmpTicTicPosBorder = base * (i + 1) - ((maxV[i] - minV[i]) * dy);
+                    float yTmpTicPos;
+                    float yTmpTicNeg;
+                    int ticCtr = 1;
+                    boolean doCoord = true;
                     if ((xpos % 2) == 0) {
-                        canvas.drawPoint(xpos, yTmpTicPos, paintXCoord);
-                        canvas.drawPoint(xpos, yTmpTicNeg, paintXCoord);
+                        do {
+                            yTmpTicPos = base * (i + 1) - ((ytick[i] * ticCtr - minV[i]) * dy);
+                            yTmpTicNeg = base * (i + 1) - ((-ytick[i] * ticCtr - minV[i]) * dy);
+                            doCoord = yTmpTicPos > yTmpTicTicPosBorder;
+                            if (doCoord) {
+                                canvas.drawPoint(xpos, yTmpTicPos, paintXCoord);
+                                canvas.drawPoint(xpos, yTmpTicNeg, paintXCoord);
+                            }
+                            ticCtr++;
+                        } while (doCoord);
                     }
                     if ((xpos % xtic) == 0) {
                         canvas.drawLine(xpos, 0, xpos, height, paintYCoord);

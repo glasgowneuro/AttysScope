@@ -52,5 +52,5 @@
         android:entryValues="@array/textDataFileSeparatorValues"
         android:summary="Separator between the values in the datafile saved to the SD card"
         android:key="data_separator"
-        android:title="Separator (CSV, SSV or TSV)" />
+        android:title="Separator (TSV, CSV or SSV)" />
 </PreferenceScreen>

@@ -79,7 +79,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
-        sha1="b3963513f41cffe91479d7f436084ee0dd2bf3ae">
+        sha1="e814102b51717f26cdbfc52dabdfbb53a62723a9">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_df1026115f4efaf472ec1a89fd844c020a7f2567/classes.dex" />
     </item>
     <item
@@ -88,7 +88,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
-        sha1="0544b7e91f70b1a1a5610f8b4a3970dada193fc0">
+        sha1="ff8bdd87fbb8a1f25712492f52d3a72e5a4d26ee">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_3a6f21391e140280a2fea0347ee609d97c1c5fd1/classes.dex" />
     </item>
     <item

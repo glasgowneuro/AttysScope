@@ -17,6 +17,8 @@
 package tech.glasgowneuro.www.attysplot;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
@@ -30,6 +32,7 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Parcel;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
@@ -38,7 +41,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
+import android.webkit.URLUtil;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -47,10 +50,13 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Exchanger;
 
 public class AttysPlot extends AppCompatActivity {
 
@@ -121,22 +127,33 @@ public class AttysPlot extends AppCompatActivity {
     private GoogleApiClient client;
     private Action viewAction;
 
+    private final String ATTYS_SUBDIR = "attys";
+    private File attysdir = null;
+
+    ProgressDialog progress = null;
+
     Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case AttysComm.MESSAGE_ERROR:
                     Toast.makeText(getApplicationContext(),
-                            "Bluetooth connection problem", Toast.LENGTH_LONG).show();
-                    finish();
+                            "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
+                    attysComm.cancel();
+                    try {
+                        attysComm.join();
+                    } catch (Exception ee) {};
+                    progress.dismiss();
                     break;
                 case AttysComm.MESSAGE_CONNECTED:
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth connected", Toast.LENGTH_SHORT).show();
+                    progress.dismiss();
                     break;
                 case AttysComm.MESSAGE_CONFIGURE:
                     Toast.makeText(getApplicationContext(),
                             "Configuring Attys", Toast.LENGTH_SHORT).show();
+                    progress.dismiss();
                     break;
                 case AttysComm.MESSAGE_RETRY:
                     Toast.makeText(getApplicationContext(),
@@ -153,6 +170,10 @@ public class AttysPlot extends AppCompatActivity {
                             "Finished recording data to external storage.",
                             Toast.LENGTH_SHORT).show();
                     break;
+                case AttysComm.MESSAGE_CONNECTING:
+                    progress.setTitle("Bluetooth connection to Attys");
+                    progress.setMessage("Connecting");
+                    progress.show();
             }
         }
     };
@@ -442,6 +463,15 @@ public class AttysPlot extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        progress = new ProgressDialog(this);
+
+        attysdir = new File(Environment.getExternalStorageDirectory().getPath(),
+                ATTYS_SUBDIR);
+        if (!attysdir.exists())
+        {
+            attysdir.mkdirs();
+        }
+
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
 
         setContentView(R.layout.activity_plot_window);
@@ -599,8 +629,7 @@ public class AttysPlot extends AppCompatActivity {
                     attysComm.stopRec();
                 } else {
                     if (dataFilename != null) {
-                        File file = new File(Environment.getExternalStorageDirectory().getPath(),
-                                dataFilename.trim());
+                        File file = new File(attysdir,dataFilename.trim());
                         attysComm.setDataSeparator(dataSeparator);
                         java.io.FileNotFoundException e = attysComm.startRec(file);
                         if (e != null) {
@@ -712,6 +741,14 @@ public class AttysPlot extends AppCompatActivity {
                 dataAnalysis = DataAnalysis.ECG;
                 return true;
 
+            case R.id.filebrowser:
+                intent = new Intent(Intent.ACTION_GET_CONTENT);
+                Uri uri = Uri.fromFile(new File(attysdir,"/"));
+                intent.setDataAndType(uri, "*/*");
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(Intent.createChooser(intent, "Open folder"),1);
+                return true;
+
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
@@ -722,13 +759,29 @@ public class AttysPlot extends AppCompatActivity {
 
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1) {
+            if(resultCode == Activity.RESULT_OK){
+                String result=data.getDataString();
+                Log.d(TAG,"result="+result);
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(Intent.ACTION_SEND);
+                sendIntent.putExtra(Intent.EXTRA_STREAM,Uri.parse(result));
+                sendIntent.setType("text/*");
+                startActivity(Intent.createChooser(sendIntent, "share data"));
+            }
+        }
+    }//onActivityResult
+
+
+    @Override
     public void onStart() {
         super.onStart();
 
         client.connect();
         viewAction = Action.newAction(
                 Action.TYPE_VIEW,
-                "AttysPlot Homepage",
+                "Attys Homepage",
                 Uri.parse("http://www.attys.tech")
         );
         AppIndex.AppIndexApi.start(client, viewAction);

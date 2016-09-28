@@ -206,10 +206,10 @@ public class AttysComm extends Thread {
 
     /////////////////////////////////////////////////////
     // data separator when saving it to the SD card
-    public final static byte DATA_SEPARATOR_SPACE = 0;
+    public final static byte DATA_SEPARATOR_TAB = 0;
     public final static byte DATA_SEPARATOR_COMMA = 1;
-    public final static byte DATA_SEPARATOR_TAB = 2;
-    private byte data_separator = DATA_SEPARATOR_SPACE;
+    public final static byte DATA_SEPARATOR_SPACE = 2;
+    private byte data_separator = DATA_SEPARATOR_TAB;
 
     public void setDataSeparator(byte s) {
         data_separator = s;
@@ -306,6 +306,7 @@ public class AttysComm extends Thread {
     public final static int MESSAGE_CONFIGURE = 3;
     public final static int MESSAGE_STARTED_RECORDING = 4;
     public final static int MESSAGE_STOPPED_RECORDING = 5;
+    public final static int MESSAGE_CONNECTING = 6;
 
     public interface MessageListener {
         void haveMessage(int msg);
@@ -484,6 +485,9 @@ public class AttysComm extends Thread {
 
             if (bluetoothDevice == null) return;
             // Get a BluetoothSocket to connect with the given BluetoothDevice
+
+            messageListener.haveMessage(MESSAGE_CONNECTING);
+
             try {
                 mmSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid);
             } catch (Exception ex) {
@@ -519,7 +523,9 @@ public class AttysComm extends Thread {
                     messageListener.haveMessage(MESSAGE_RETRY);
 
                     try {
-                        mmSocket.close();
+                        if (mmSocket != null) {
+                            mmSocket.close();
+                        }
                     } catch (IOException e1) {}
 
                     // let's just wait a bit
@@ -534,7 +540,9 @@ public class AttysComm extends Thread {
                             Log.d(TAG, "Could not get rfComm socket:", ex);
                         }
                         try {
-                            mmSocket.close();
+                            if (mmSocket != null) {
+                                mmSocket.close();
+                            }
                         } catch (Exception closeExeption) {
                         }
                         mmSocket = null;
@@ -604,6 +612,7 @@ public class AttysComm extends Thread {
                 if (Log.isLoggable(TAG, Log.VERBOSE)) {
                     Log.v(TAG, "Connected to socket!");
                 }
+                messageListener.haveMessage(MESSAGE_CONNECTED);
             }
         }
 
