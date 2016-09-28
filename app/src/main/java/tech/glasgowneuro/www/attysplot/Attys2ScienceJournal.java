@@ -16,6 +16,7 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorDis
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorObserver;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorStatusListener;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppearanceResources;
+import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorBehavior;
 import com.google.android.gms.common.server.converter.StringToIntConverter;
 
 import java.util.Set;
@@ -32,6 +33,9 @@ public class Attys2ScienceJournal extends Service {
     private final static SensorAppearanceResources[] sensorAppearanceResources =
             new SensorAppearanceResources[AttysComm.NCHANNELS];
 
+    private final static SensorBehavior[] behaviour =
+            new SensorBehavior[AttysComm.NCHANNELS];
+
     private float[] gainFactor = {
             1,1,1, // acceleration
             1,1,1, // rotation
@@ -45,6 +49,8 @@ public class Attys2ScienceJournal extends Service {
             sensorAppearanceResources[i] = new SensorAppearanceResources();
             sensorAppearanceResources[i].units = AttysComm.CHANNEL_UNITS[i];
             sensorAppearanceResources[i].shortDescription = AttysComm.CHANNEL_DESCRIPTION[i];
+            behaviour[i] = new SensorBehavior();
+            behaviour[i].shouldShowSettingsOnConnect = false;
         }
 
         // acc
@@ -190,17 +196,18 @@ public class Attys2ScienceJournal extends Service {
                 setAppearance();
 
                 for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                    String loggingID = new String().format("Device=Attys, Index=%d,%s",
-                            i, AttysComm.CHANNEL_DESCRIPTION[i]);
+                    String loggingID = new String().format("Attys,%d,%s",
+                            i,AttysComm.CHANNEL_DESCRIPTION[i]);
                     String channelDescr = "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i];
-                    Log.d(TAG, loggingID);
-                    Log.d(TAG, channelDescr);
+                    behaviour[i].loggingId = loggingID;
+                    behaviour[i].settingsIntent = settingsIntent;
+                    Log.d(TAG,loggingID);
+                    Log.d(TAG,channelDescr);
                     assert (sensorAppearanceResources[i] != null);
                     c.onSensorFound("" + i, // sensorAddress = ch index number
                             channelDescr, // name
-                            loggingID,
-                            sensorAppearanceResources[i],
-                            settingsIntent);
+                            behaviour[i],
+                            sensorAppearanceResources[i]);
                 }
             }
 

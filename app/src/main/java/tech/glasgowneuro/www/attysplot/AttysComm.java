@@ -486,7 +486,9 @@ public class AttysComm extends Thread {
             if (bluetoothDevice == null) return;
             // Get a BluetoothSocket to connect with the given BluetoothDevice
 
-            messageListener.haveMessage(MESSAGE_CONNECTING);
+            if (messageListener != null) {
+                messageListener.haveMessage(MESSAGE_CONNECTING);
+            }
 
             try {
                 mmSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid);
@@ -499,7 +501,9 @@ public class AttysComm extends Thread {
                 } catch (Exception closeExeption) {
                 }
                 mmSocket = null;
-                messageListener.haveMessage(MESSAGE_ERROR);
+                if (messageListener != null) {
+                    messageListener.haveMessage(MESSAGE_ERROR);
+                }
                 return;
             }
 
@@ -520,7 +524,9 @@ public class AttysComm extends Thread {
                 } catch (IOException connectException) {
 
                     // connection failed
-                    messageListener.haveMessage(MESSAGE_RETRY);
+                    if (messageListener != null) {
+                        messageListener.haveMessage(MESSAGE_RETRY);
+                    }
 
                     try {
                         if (mmSocket != null) {
@@ -546,7 +552,9 @@ public class AttysComm extends Thread {
                         } catch (Exception closeExeption) {
                         }
                         mmSocket = null;
-                        messageListener.haveMessage(MESSAGE_ERROR);
+                        if (messageListener != null) {
+                            messageListener.haveMessage(MESSAGE_ERROR);
+                        }
                         return;
                     }
 
@@ -602,7 +610,9 @@ public class AttysComm extends Thread {
                                 Log.d(TAG, "Could not establish connection to Attys: " +
                                         e4.getMessage());
                             }
-                            messageListener.haveMessage(MESSAGE_ERROR);
+                            if (messageListener != null) {
+                                messageListener.haveMessage(MESSAGE_ERROR);
+                            }
 
                             return;
                         }
@@ -612,7 +622,9 @@ public class AttysComm extends Thread {
                 if (Log.isLoggable(TAG, Log.VERBOSE)) {
                     Log.v(TAG, "Connected to socket!");
                 }
-                messageListener.haveMessage(MESSAGE_CONNECTED);
+                if (messageListener != null) {
+                    messageListener.haveMessage(MESSAGE_CONNECTED);
+                }
             }
         }
 
@@ -865,19 +877,25 @@ public class AttysComm extends Thread {
             mmOutStream = null;
             inScanner = null;
             ringBuffer = null;
-            messageListener.haveMessage(MESSAGE_ERROR);
+            if (messageListener != null) {
+                messageListener.haveMessage(MESSAGE_ERROR);
+            }
         }
 
         // we only enter in the main loop if we have connected
         doRun = isConnected;
 
-        messageListener.haveMessage(MESSAGE_CONFIGURE);
+        if (messageListener != null) {
+            messageListener.haveMessage(MESSAGE_CONFIGURE);
+        }
         sendInit();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Starting main data acquistion loop");
         }
-        messageListener.haveMessage(MESSAGE_CONNECTED);
+        if (messageListener != null) {
+            messageListener.haveMessage(MESSAGE_CONNECTED);
+        }
         // Keep listening to the InputStream until an exception occurs
         while (doRun) {
             try {
