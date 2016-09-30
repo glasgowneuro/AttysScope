@@ -32,17 +32,21 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.os.Parcel;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.webkit.URLUtil;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
@@ -50,13 +54,13 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.File;
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Exchanger;
 
 public class AttysPlot extends AppCompatActivity {
 
@@ -144,6 +148,7 @@ public class AttysPlot extends AppCompatActivity {
                         attysComm.join();
                     } catch (Exception ee) {};
                     progress.dismiss();
+                    finish();
                     break;
                 case AttysComm.MESSAGE_CONNECTED:
                     Toast.makeText(getApplicationContext(),
@@ -171,7 +176,6 @@ public class AttysPlot extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                     break;
                 case AttysComm.MESSAGE_CONNECTING:
-                    progress.setTitle("Bluetooth connection to Attys");
                     progress.setMessage("Connecting");
                     progress.show();
             }
@@ -604,6 +608,75 @@ public class AttysPlot extends AppCompatActivity {
     }
 
 
+    private void shareData() {
+
+        final int REQUEST_EXTERNAL_STORAGE = 1;
+        String[] PERMISSIONS_STORAGE = {
+                Manifest.permission.READ_EXTERNAL_STORAGE
+        };
+
+        int permission = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
+
+        final List files = new ArrayList();
+        final String[] list = attysdir.list();
+        for(String file : list) {
+            files.add(file);
+        }
+        Collections.sort(files);
+
+        final ListView listview = new ListView(this);
+        ArrayAdapter adapter = new ArrayAdapter(this,
+                android.R.layout.simple_list_item_multiple_choice,
+                files);
+        listview.setAdapter(adapter);
+        listview.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                view.setSelected(true);
+            }
+        });
+
+        new AlertDialog.Builder(this)
+                .setTitle("Share")
+                .setMessage("Select filename(s)")
+                .setView(listview)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        SparseBooleanArray checked = listview.getCheckedItemPositions();
+                        Intent sendIntent = new Intent();
+                        sendIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+                        ArrayList<Uri> files = new ArrayList<Uri>();
+                        for(int i = 0;i< listview.getCount();i++) {
+                            if (checked.get(i)) {
+                                String filename = list[i];
+                                File fp = new File(attysdir,filename);
+                                files.add(Uri.fromFile(fp));
+                                Log.d(TAG,filename);
+                            }
+                        }
+                        sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM,files);
+                        sendIntent.setType("text/*");
+                        startActivity(Intent.createChooser(sendIntent, "Send your files"));
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                    }
+                })
+                .show();
+    }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -742,11 +815,7 @@ public class AttysPlot extends AppCompatActivity {
                 return true;
 
             case R.id.filebrowser:
-                intent = new Intent(Intent.ACTION_GET_CONTENT);
-                Uri uri = Uri.fromFile(new File(attysdir,"/"));
-                intent.setDataAndType(uri, "*/*");
-                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                startActivityForResult(Intent.createChooser(intent, "Open folder"),1);
+                shareData();
                 return true;
 
             default:
@@ -764,11 +833,6 @@ public class AttysPlot extends AppCompatActivity {
             if(resultCode == Activity.RESULT_OK){
                 String result=data.getDataString();
                 Log.d(TAG,"result="+result);
-                Intent sendIntent = new Intent();
-                sendIntent.setAction(Intent.ACTION_SEND);
-                sendIntent.putExtra(Intent.EXTRA_STREAM,Uri.parse(result));
-                sendIntent.setType("text/*");
-                startActivity(Intent.createChooser(sendIntent, "share data"));
             }
         }
     }//onActivityResult
