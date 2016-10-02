@@ -6,3 +6,4 @@
 ~/Android/Sdk/platform-tools/adb shell setprop log.tag.AttysPlot VERBOSE
 ~/Android/Sdk/platform-tools/adb shell setprop log.tag.AttysComm VERBOSE
 ~/Android/Sdk/platform-tools/adb shell setprop log.tag.ConSensorRegistry VERBOSE
+~/Android/Sdk/platform-tools/adb shell setprop log.tag.AttysADCSettings VERBOSE

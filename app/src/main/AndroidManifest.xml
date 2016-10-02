@@ -14,13 +14,16 @@
         <activity android:name=".AttysPlot">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".PrefsActivity"
-            android:theme="@android:style/Theme.Black.NoTitleBar"></activity>
+            android:theme="@android:style/Theme.Black.NoTitleBar" />
+        <activity
+            android:name=".Attys2ScienceJournalADCSettings"
+            android:excludeFromRecents="true" android:launchMode="singleInstance"
+            android:taskAffinity="" android:theme="@android:style/Theme.Dialog" />
         <!--
      ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.

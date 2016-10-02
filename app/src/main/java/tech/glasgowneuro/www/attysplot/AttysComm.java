@@ -54,6 +54,51 @@ import java.util.UUID;
  */
 public class AttysComm extends Thread {
 
+    // 11 channels will be always sent back
+    public final static int NCHANNELS = 11;
+
+    // index numbers of the channels returned in the data array
+    public final int INDEX_Acceleration_X = 0;
+    public final int INDEX_Acceleration_Y = 1;
+    public final int INDEX_Acceleration_Z = 2;
+    public final int INDEX_Rotation_X = 3;
+    public final int INDEX_Rotation_Y = 4;
+    public final int INDEX_Rotation_Z = 5;
+    public final int INDEX_Magnetic_field_X = 6;
+    public final int INDEX_Magnetic_field_Y = 7;
+    public final int INDEX_Magnetic_field_Z = 8;
+    public final int INDEX_Analogue_channel_1 = 9;
+    public final int INDEX_Analogue_channel_2 = 10;
+
+    // descriptions the channels in text form
+    public final static String[] CHANNEL_DESCRIPTION = {
+            "Acceleration X",
+            "Acceleration Y",
+            "Acceleration Z",
+            "Rotation X",
+            "Rotation Y",
+            "Rotation Z",
+            "Magnetic field X",
+            "Magnetic field Y",
+            "Magnetic field Z",
+            "Analogue channel 1",
+            "Analogue channel 2"
+    };
+
+    // units of the channels
+    public final static String[] CHANNEL_UNITS = {
+            "m/s^2",
+            "m/s^2",
+            "m/s^2",
+            "\u00b0"+"/s",
+            "\u00b0"+"/s",
+            "\u00b0"+"/s",
+            "\u00b5"+"T",
+            "\u00b5"+"T",
+            "\u00b5"+"T",
+            "V",
+            "V"
+    };
 
     ///////////////////////////////////////////////////////////////////
     // ADC sampling rate and for the whole system
@@ -249,37 +294,6 @@ public class AttysComm extends Thread {
     // data listener
     // provides the data with the sample number as long
     // the data array contains all the data:
-    public final static String[] CHANNEL_DESCRIPTION = {
-            "Acceleration X",
-            "Acceleration Y",
-            "Acceleration Z",
-            "Rotation X",
-            "Rotation Y",
-            "Rotation Z",
-            "Magnetic field X",
-            "Magnetic field Y",
-            "Magnetic field Z",
-            "Analogue channel 1",
-            "Analogue channel 2"
-    };
-
-    public final static String[] CHANNEL_UNITS = {
-            "m/s^2",
-            "m/s^2",
-            "m/s^2",
-            "\u00b0"+"/s",
-            "\u00b0"+"/s",
-            "\u00b0"+"/s",
-            "\u00b5"+"T",
-            "\u00b5"+"T",
-            "\u00b5"+"T",
-            "V",
-            "V"
-    };
-
-    // 11 channels will be always sent back
-    public final static int NCHANNELS = 11;
-
     public interface DataListener {
         void gotData(long samplenumber, float[] data);
     }
@@ -960,7 +974,9 @@ public class AttysComm extends Thread {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
                                         getAccelFullScaleRange();
                             } catch (Exception e) {
-                                ringBuffer[inPtr][i] = 0;
+                                if (ringBuffer != null) {
+                                    ringBuffer[inPtr][i] = 0;
+                                }
                             }
                         }
 
@@ -971,7 +987,9 @@ public class AttysComm extends Thread {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
                                         getGyroFullScaleRange();
                             } catch (Exception e) {
-                                ringBuffer[inPtr][i] = 0;
+                                if (ringBuffer != null) {
+                                    ringBuffer[inPtr][i] = 0;
+                                }
                             }
                         }
 
@@ -982,7 +1000,9 @@ public class AttysComm extends Thread {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
                                         MAG_FULL_SCALE;
                             } catch (Exception e) {
-                                ringBuffer[inPtr][i] = 0;
+                                if (ringBuffer != null) {
+                                    ringBuffer[inPtr][i] = 0;
+                                }
                             }
                         }
 
@@ -992,7 +1012,9 @@ public class AttysComm extends Thread {
                                 ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
                                         ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]];
                             } catch (Exception e) {
-                                ringBuffer[inPtr][i] = 0;
+                                if (ringBuffer != null) {
+                                    ringBuffer[inPtr][i] = 0;
+                                }
                             }
                         }
 
