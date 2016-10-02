@@ -303,6 +303,7 @@ public class Attys2ScienceJournal extends Service {
                                     case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_50HZ:
                                         iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
                                         iirNotch[i].setIsActive(true);
+                                        Log.d(TAG,"50Hz,iirNotch,ch="+i);
                                         break;
                                     case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_60HZ:
                                         iirNotch[i].setParameters((float) 60.0 / attysComm.getSamplingRateInHz(), 0.9F);
