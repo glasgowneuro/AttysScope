@@ -58,17 +58,17 @@ public class AttysComm extends Thread {
     public final static int NCHANNELS = 11;
 
     // index numbers of the channels returned in the data array
-    public final int INDEX_Acceleration_X = 0;
-    public final int INDEX_Acceleration_Y = 1;
-    public final int INDEX_Acceleration_Z = 2;
-    public final int INDEX_Rotation_X = 3;
-    public final int INDEX_Rotation_Y = 4;
-    public final int INDEX_Rotation_Z = 5;
-    public final int INDEX_Magnetic_field_X = 6;
-    public final int INDEX_Magnetic_field_Y = 7;
-    public final int INDEX_Magnetic_field_Z = 8;
-    public final int INDEX_Analogue_channel_1 = 9;
-    public final int INDEX_Analogue_channel_2 = 10;
+    public static final int INDEX_Acceleration_X = 0;
+    public static final int INDEX_Acceleration_Y = 1;
+    public static final int INDEX_Acceleration_Z = 2;
+    public static final int INDEX_Rotation_X = 3;
+    public static final int INDEX_Rotation_Y = 4;
+    public static final int INDEX_Rotation_Z = 5;
+    public static final int INDEX_Magnetic_field_X = 6;
+    public static final int INDEX_Magnetic_field_Y = 7;
+    public static final int INDEX_Magnetic_field_Z = 8;
+    public static final int INDEX_Analogue_channel_1 = 9;
+    public static final int INDEX_Analogue_channel_2 = 10;
 
     // descriptions the channels in text form
     public final static String[] CHANNEL_DESCRIPTION = {

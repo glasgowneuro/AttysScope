@@ -1,23 +1,13 @@
 package tech.glasgowneuro.www.attysplot;
 
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.hardware.Sensor;
-import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
-import android.widget.TextView;
 
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.IDeviceConsumer;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorConnector;
@@ -27,12 +17,12 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorObs
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorStatusListener;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppearanceResources;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorBehavior;
-import com.google.android.gms.common.server.converter.StringToIntConverter;
 
 import java.util.Set;
 
 public class Attys2ScienceJournal extends Service {
     public static final String DEVICE_ID = "AttysDevice";
+    public static final String SENSOR_PREF_NAME = "attys_sensors";
     private static final String TAG = "Attys2ScienceJournal";
     private static AttysComm attysComm = null;
     private static ISensorObserver[] observer = null;
@@ -64,6 +54,26 @@ public class Attys2ScienceJournal extends Service {
             sensorAppearanceResources[i].shortDescription = AttysComm.CHANNEL_DESCRIPTION[i];
             behaviour[i] = new SensorBehavior();
             behaviour[i].shouldShowSettingsOnConnect = false;
+        }
+
+        switch (Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this)) {
+            case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units =
+                        "m"+AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_1];
+                break;
+            default:
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units =
+                        AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_1];
+        }
+
+        switch (Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this)) {
+            case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units =
+                        "Ohm";
+                break;
+            default:
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units =
+                        AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_2];
         }
 
         // acc
@@ -222,13 +232,17 @@ public class Attys2ScienceJournal extends Service {
                     if (i < 9) {
                         behaviour[i].settingsIntent = settingsIntent;
                     } else {
-                        Log.d(TAG, "Intent=" + (i - 9));
-                        behaviour[i].settingsIntent =
-                                Attys2ScienceJournalADCSettings.getPendingIntent(
-                                        Attys2ScienceJournal.this, i - 9);
+                        if (i == 9) {
+                            behaviour[i].settingsIntent =
+                                    Attys2ScienceJournalADC1Settings.getPendingIntent(
+                                            Attys2ScienceJournal.this);
+                        }
+                        if (i == 10) {
+                            behaviour[i].settingsIntent =
+                                    Attys2ScienceJournalADC2Settings.getPendingIntent(
+                                            Attys2ScienceJournal.this);
+                        }
                     }
-                    Log.d(TAG, loggingID);
-                    Log.d(TAG, channelDescr);
                     c.onSensorFound("" + i, // sensorAddress = ch index number
                             channelDescr, // name
                             behaviour[i],
@@ -265,36 +279,14 @@ public class Attys2ScienceJournal extends Service {
                             return;
                         }
 
-                        Log.d(TAG,"getting adcMode");
-                        int[] adcMode = {
-                                Attys2ScienceJournalADCSettings.getIndexForMode(0, Attys2ScienceJournal.this),
-                                Attys2ScienceJournalADCSettings.getIndexForMode(1, Attys2ScienceJournal.this)
-                        };
+                        int adc1Mode = Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this);
+                        final int adc2Mode = Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this);
 
-                        Log.d(TAG,"getting adcPowermode");
                         int[] adcpowerline = {
-                                Attys2ScienceJournalADCSettings.getIndexForPowerline(0, Attys2ScienceJournal.this),
-                                Attys2ScienceJournalADCSettings.getIndexForPowerline(1, Attys2ScienceJournal.this)
+                                Attys2ScienceJournalADC1Settings.getIndexForPowerline(Attys2ScienceJournal.this),
+                                Attys2ScienceJournalADC2Settings.getIndexForPowerline(Attys2ScienceJournal.this)
                         };
 
-
-/**                        for (int i = 0; i < 2; i++) {
-                            switch (adcpowerline[i]) {
-                                case Attys2ScienceJournalADCSettings.POWERLINE_FILTER_50HZ:
-                                    iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
-                                    iirNotch[i].setIsActive(true);
-                                    break;
-                                case Attys2ScienceJournalADCSettings.POWERLINE_FILTER_60HZ:
-                                    iirNotch[i].setParameters((float) 60.0 / attysComm.getSamplingRateInHz(), 0.9F);
-                                    iirNotch[i].setIsActive(true);
-                                    break;
-                                case Attys2ScienceJournalADCSettings.POWERLINE_FILTER_OFF:
-                                default:
-                                    iirNotch[i].setIsActive(false);
-                            }
-                            highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
-                        }
-**/
 
                         // are we the first sensor? Then let's start a proper connection
                         if (attysComm == null) {
@@ -305,6 +297,61 @@ public class Attys2ScienceJournal extends Service {
 
                             attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
                             attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
+
+                            for (int i = 0; i < 2; i++) {
+                                switch (adcpowerline[i]) {
+                                    case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_50HZ:
+                                        iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
+                                        iirNotch[i].setIsActive(true);
+                                        break;
+                                    case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_60HZ:
+                                        iirNotch[i].setParameters((float) 60.0 / attysComm.getSamplingRateInHz(), 0.9F);
+                                        iirNotch[i].setIsActive(true);
+                                        break;
+                                    default:
+                                        iirNotch[i].setParameters((float) 0.1F, 0.9F);
+                                        iirNotch[i].setIsActive(false);
+                                }
+                                highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
+                            }
+                            switch (adc1Mode) {
+                                case Attys2ScienceJournalADC1Settings.MODE_AC:
+                                case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                                    highpass[0].setActive(true);
+                                    Log.d(TAG,"MODE_AC / MODE_BIO");
+                                    break;
+                                default:
+                                    highpass[0].setActive(false);
+                                    break;
+                            }
+                            switch (adc1Mode) {
+                                case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_6);
+                                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1000;
+                                    break;
+                                default:
+                                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
+                                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1;
+                                    break;
+                            }
+                            switch (adc2Mode) {
+                                case Attys2ScienceJournalADC2Settings.MODE_AC:
+                                    highpass[1].setActive(true);
+                                    break;
+                                default:
+                                    highpass[1].setActive(false);
+                                    break;
+                            }
+
+                            switch (adc2Mode) {
+                                case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
+                                    attysComm.setBiasCurrent((byte) AttysComm.ADC_CURRENT_22UA);
+                                    attysComm.enableCurrents(false, false, true);
+                                    break;
+                                default:
+                                    attysComm.enableCurrents(false, false, false);
+                                    break;
+                            }
 
                             AttysComm.DataListener dataListener = new AttysComm.DataListener() {
                                 @Override
@@ -318,10 +365,21 @@ public class Attys2ScienceJournal extends Service {
                                                 if (timestamp == 0) {
                                                     timestamp = (double) System.currentTimeMillis();
                                                 }
+                                                float v = data[i];
+                                                if (i == AttysComm.INDEX_Analogue_channel_1) {
+                                                    v = iirNotch[0].filter(v);
+                                                    v = highpass[0].filter(v);
+                                                }
+                                                if (i == AttysComm.INDEX_Analogue_channel_2) {
+                                                    v = iirNotch[1].filter(v);
+                                                    v = highpass[1].filter(v);
+                                                    if (adc2Mode == Attys2ScienceJournalADC2Settings.MODE_RESISTANCE) {
+                                                        v = v / 22E-6F;
+                                                    }
+                                                }
                                                 observer[i].onNewData(
                                                         (long) Math.round(timestamp),
-                                                        data[i] * gainFactor[i]
-                                                );
+                                                        v * gainFactor[i]);
                                                 onDataUsed = true;
                                                 // Log.d(TAG, String.format("timestamp=%d,data=%f",
                                                 //        timestamp, data[i]));

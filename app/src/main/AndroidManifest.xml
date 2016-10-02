@@ -21,7 +21,11 @@
             android:name=".PrefsActivity"
             android:theme="@android:style/Theme.Black.NoTitleBar" />
         <activity
-            android:name=".Attys2ScienceJournalADCSettings"
+            android:name=".Attys2ScienceJournalADC1Settings"
+            android:excludeFromRecents="true" android:launchMode="singleInstance"
+            android:taskAffinity="" android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name=".Attys2ScienceJournalADC2Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
             android:taskAffinity="" android:theme="@android:style/Theme.Dialog" />
         <!--
