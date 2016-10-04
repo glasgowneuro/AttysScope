@@ -94,6 +94,9 @@ public class Attys2ScienceJournal extends Service {
         // ADC
         sensorAppearanceResources[9].iconId = R.drawable.ic_sensor_channel1_bold_24dp;
         sensorAppearanceResources[10].iconId = R.drawable.ic_sensor_channel2_bold_24dp;
+
+        Log.d(TAG,"ch1/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units);
+        Log.d(TAG,"ch2/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units);
     }
 
     @Override
@@ -272,13 +275,6 @@ public class Attys2ScienceJournal extends Service {
                         listener[sensorIndex] = theListener;
                         observer[sensorIndex] = theObserver;
 
-                        bluetoothDevice = findPairedAttys();
-
-                        if (bluetoothDevice == null) {
-                            theListener.onSensorError("No paired Attys available");
-                            return;
-                        }
-
                         int adc1Mode = Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this);
                         final int adc2Mode = Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this);
 
@@ -290,6 +286,13 @@ public class Attys2ScienceJournal extends Service {
 
                         // are we the first sensor? Then let's start a proper connection
                         if (attysComm == null) {
+                            bluetoothDevice = findPairedAttys();
+
+                            if (bluetoothDevice == null) {
+                                theListener.onSensorError("No paired Attys available");
+                                return;
+                            }
+
                             attysComm = new AttysComm(bluetoothDevice);
                             attysComm.setAdc_samplingrate_index(AttysComm.ADC_RATE_125HZ);
                             attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
@@ -473,6 +476,9 @@ public class Attys2ScienceJournal extends Service {
 
                             // this is async in the background and might take a second or two
                             attysComm.start();
+                        } else {
+                            // we have already a connection so no need to wait for it
+                            theListener.onSensorConnected();
                         }
 
                     }
