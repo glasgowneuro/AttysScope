@@ -273,6 +273,7 @@ public class Attys2ScienceJournal extends Service {
                         // that they can be served at once from the Attys callback
                         // when a new set of samples arrives
                         listener[sensorIndex] = theListener;
+                        theListener.onSensorConnecting();
                         observer[sensorIndex] = theObserver;
 
                         int adc1Mode = Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this);
