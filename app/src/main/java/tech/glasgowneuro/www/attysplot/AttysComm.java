@@ -612,7 +612,9 @@ public class AttysComm extends Thread {
                         } catch (IOException e4) {
 
                             try {
-                                mmSocket.close();
+                                if (mmSocket != null) {
+                                    mmSocket.close();
+                                }
                                 mmSocket = null;
                             } catch (IOException e) {
                             }

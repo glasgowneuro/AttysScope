@@ -62,6 +62,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import uk.me.berndporr.iirj.Butterworth;
+
 public class AttysPlot extends AppCompatActivity {
 
     private Timer timer = null;
@@ -74,13 +76,16 @@ public class AttysPlot extends AppCompatActivity {
     private BluetoothAdapter BA;
     private AttysComm attysComm = null;
     private BluetoothDevice btAttysDevice = null;
+    private byte samplingRate = AttysComm.ADC_RATE_125HZ;
 
     private static final String TAG = "AttysPlot";
 
     private Highpass[] highpass = null;
     private float[] gain;
-    private IIR_notch[] iirNotch;
+    private Butterworth[] iirNotch;
+    private double notchBW = 5; // Hz
     private boolean[] invert;
+    private float powerlineHz = 50;
 
     private boolean showAcc = true;
     private boolean showGyr = true;
@@ -353,7 +358,9 @@ public class AttysPlot extends AppCompatActivity {
                                 float v = sample[j];
                                 if (j > 8) {
                                     v = highpass[j].filter(v);
-                                    v = iirNotch[j].filter(v);
+                                    if (iirNotch[j] != null) {
+                                        v = (float) iirNotch[j].filter((double) v);
+                                    }
                                 }
                                 v = v * gain[j];
                                 if (invert[j]) {
@@ -496,17 +503,18 @@ public class AttysPlot extends AppCompatActivity {
         }
 
         attysComm = new AttysComm(btAttysDevice);
+        attysComm.setAdc_samplingrate_index(samplingRate);
         attysComm.registerMessageListener(messageListener);
 
         int nChannels = attysComm.NCHANNELS;
         highpass = new Highpass[nChannels];
         gain = new float[nChannels];
-        iirNotch = new IIR_notch[nChannels];
+        iirNotch = new Butterworth[nChannels];
         invert = new boolean[nChannels];
         actualChannelIdx = new int[nChannels];
         for (int i = 0; i < nChannels; i++) {
             highpass[i] = new Highpass();
-            iirNotch[i] = new IIR_notch();
+            iirNotch[i] = null;
             // set it to 1st ADC channel
             actualChannelIdx[i] = 9;
             gain[i] = 1;
@@ -522,8 +530,6 @@ public class AttysPlot extends AppCompatActivity {
         attysComm.start();
 
         for (int i = 0; i < nChannels; i++) {
-            iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
-            iirNotch[i].setIsActive(true);
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
         }
 
@@ -691,7 +697,6 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-
         switch (item.getItemId()) {
 
             case R.id.preferences:
@@ -740,17 +745,23 @@ public class AttysPlot extends AppCompatActivity {
                 return true;
 
             case R.id.Ch1notch:
-                a = iirNotch[9].getIsActive();
-                a = !a;
-                item.setChecked(a);
-                iirNotch[9].setIsActive(a);
+                if (iirNotch[9] == null) {
+                    iirNotch[9] = new Butterworth();
+                    iirNotch[9].bandStop(2,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
+                } else {
+                    iirNotch[9] = null;
+                }
+                item.setChecked( iirNotch[9] != null);
                 return true;
 
             case R.id.Ch2notch:
-                a = iirNotch[10].getIsActive();
-                a = !a;
-                item.setChecked(a);
-                iirNotch[10].setIsActive(a);
+                if (iirNotch[10] == null) {
+                    iirNotch[10] = new Butterworth();
+                    iirNotch[10].bandStop(2,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
+                } else {
+                    iirNotch[10] = null;
+                }
+                item.setChecked( iirNotch[10] != null);
                 return true;
 
             case R.id.Ch1invert:
@@ -907,6 +918,8 @@ public class AttysPlot extends AppCompatActivity {
         showMag = prefs.getBoolean("mag", true);
         showCh1 = prefs.getBoolean("ch1", true);
         showCh2 = prefs.getBoolean("ch2", true);
+
+        powerlineHz = Float.parseFloat(prefs.getString("powerline","50"));
     }
 
     @Override

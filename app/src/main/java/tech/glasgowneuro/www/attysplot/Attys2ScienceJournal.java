@@ -78,23 +78,23 @@ public class Attys2ScienceJournal extends Service {
         }
 
         // acc
-        sensorAppearanceResources[0].iconId = R.drawable.ic_sensor_acc_x_green_24dp;
-        sensorAppearanceResources[1].iconId = R.drawable.ic_sensor_acc_y_green_24dp;
-        sensorAppearanceResources[2].iconId = R.drawable.ic_sensor_acc_z_green_24dp;
+        sensorAppearanceResources[0].iconId = R.drawable.ic_attys_acc_x_24dp;
+        sensorAppearanceResources[1].iconId = R.drawable.ic_attys_acc_y_24dp;
+        sensorAppearanceResources[2].iconId = R.drawable.ic_attys_acc_z_24dp;
 
         // gyro
-        sensorAppearanceResources[3].iconId = R.drawable.ic_sensor_acc_x_green_24dp;
-        sensorAppearanceResources[4].iconId = R.drawable.ic_sensor_acc_y_green_24dp;
-        sensorAppearanceResources[5].iconId = R.drawable.ic_sensor_acc_z_green_24dp;
+        sensorAppearanceResources[3].iconId = R.drawable.ic_attys_acc_x_24dp;
+        sensorAppearanceResources[4].iconId = R.drawable.ic_attys_acc_y_24dp;
+        sensorAppearanceResources[5].iconId = R.drawable.ic_attys_acc_z_24dp;
 
         // mag
-        sensorAppearanceResources[6].iconId = R.drawable.ic_sensor_acc_x_green_24dp;
-        sensorAppearanceResources[7].iconId = R.drawable.ic_sensor_acc_y_green_24dp;
-        sensorAppearanceResources[8].iconId = R.drawable.ic_sensor_acc_z_green_24dp;
+        sensorAppearanceResources[6].iconId = R.drawable.ic_attys_acc_x_24dp;
+        sensorAppearanceResources[7].iconId = R.drawable.ic_attys_acc_y_24dp;
+        sensorAppearanceResources[8].iconId = R.drawable.ic_attys_acc_z_24dp;
 
         // ADC
-        sensorAppearanceResources[9].iconId = R.drawable.ic_sensor_channel1_bold_24dp;
-        sensorAppearanceResources[10].iconId = R.drawable.ic_sensor_channel2_bold_24dp;
+        sensorAppearanceResources[9].iconId = R.drawable.ic_attys_channel1_bold;
+        sensorAppearanceResources[10].iconId = R.drawable.ic_attys_channel2_bold;
 
         Log.d(TAG,"ch1/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units);
         Log.d(TAG,"ch2/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units);

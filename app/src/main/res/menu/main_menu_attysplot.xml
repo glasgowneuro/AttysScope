@@ -28,7 +28,7 @@
                     android:title="Ch1 invert" />
                 <item
                     android:id="@+id/Ch1notch"
-                    android:checked="true"
+                    android:checked="false"
                     android:title="Ch1 notch" />
             </group>
 
@@ -82,7 +82,7 @@
                     android:title="Ch2 invert" />
                 <item
                     android:id="@+id/Ch2notch"
-                    android:checked="true"
+                    android:checked="false"
                     android:title="Ch2 notch" />
             </group>
 

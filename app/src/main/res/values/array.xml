@@ -43,4 +43,13 @@
         <item>2</item>
     </string-array>
 
+    <string-array name="powerlineOptions">
+        <item>50Hz</item>
+        <item>60Hz</item>
+    </string-array>
+    <string-array name="powerlineValues">
+        <item>50</item>
+        <item>60</item>
+    </string-array>
+
 </resources>
