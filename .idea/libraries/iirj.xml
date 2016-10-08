@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="iirj">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../iirj/iirj.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

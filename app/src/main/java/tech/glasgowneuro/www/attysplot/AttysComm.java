@@ -116,7 +116,7 @@ public class AttysComm extends Thread {
     }
     // get the sampling rate in Hz (not index number)
     public int getSamplingRateInHz() {
-        return ADC_SAMPLINGRATE[adcSamplingRate];
+        return ADC_SAMPLINGRATE[adc_rate_index];
     }
     public byte getAdc_samplingrate_index() {
         return adc_rate_index;
@@ -454,7 +454,6 @@ public class AttysComm extends Thread {
     private static final String TAG = "AttysComm";
     private boolean fatalError = false;
     private byte[] adcMuxRegister = null;
-    private int adcSamplingRate = ADC_DEFAULT_RATE;
     private byte[] adcGainRegister = null;
     private boolean[] adcCurrNegOn = null;
     private boolean[] adcCurrPosOn = null;

@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import uk.me.berndporr.iirj.*;
 
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.IDeviceConsumer;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorConnector;
@@ -44,7 +45,7 @@ public class Attys2ScienceJournal extends Service {
     };
 
     private Highpass[] highpass = null;
-    private IIR_notch[] iirNotch = null;
+    private Butterworth[] notch = null;
 
     private void setAppearance() {
 
@@ -116,10 +117,10 @@ public class Attys2ScienceJournal extends Service {
             listener[i] = null;
         }
         highpass = new Highpass[2];
-        iirNotch = new IIR_notch[2];
+        notch = new Butterworth[2];
         for (int i = 0; i < 2; i++) {
             highpass[i] = new Highpass();
-            iirNotch[i] = new IIR_notch();
+            notch[i] = null;
         }
         super.onCreate();
     }
@@ -305,17 +306,15 @@ public class Attys2ScienceJournal extends Service {
                             for (int i = 0; i < 2; i++) {
                                 switch (adcpowerline[i]) {
                                     case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_50HZ:
-                                        iirNotch[i].setParameters((float) 50.0 / attysComm.getSamplingRateInHz(), 0.9F);
-                                        iirNotch[i].setIsActive(true);
-                                        Log.d(TAG,"50Hz,iirNotch,ch="+i);
+                                        notch[i] = new Butterworth();
+                                        notch[i].bandStop(2,(double)attysComm.getSamplingRateInHz(),50,5);
                                         break;
                                     case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_60HZ:
-                                        iirNotch[i].setParameters((float) 60.0 / attysComm.getSamplingRateInHz(), 0.9F);
-                                        iirNotch[i].setIsActive(true);
+                                        notch[i] = new Butterworth();
+                                        notch[i].bandStop(2,(double)attysComm.getSamplingRateInHz(),60,5);
                                         break;
                                     default:
-                                        iirNotch[i].setParameters((float) 0.1F, 0.9F);
-                                        iirNotch[i].setIsActive(false);
+                                        notch[i] = null;
                                 }
                                 highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
                             }
@@ -323,7 +322,6 @@ public class Attys2ScienceJournal extends Service {
                                 case Attys2ScienceJournalADC1Settings.MODE_AC:
                                 case Attys2ScienceJournalADC1Settings.MODE_BIO:
                                     highpass[0].setActive(true);
-                                    Log.d(TAG,"MODE_AC / MODE_BIO");
                                     break;
                                 default:
                                     highpass[0].setActive(false);
@@ -372,11 +370,16 @@ public class Attys2ScienceJournal extends Service {
                                                 }
                                                 float v = data[i];
                                                 if (i == AttysComm.INDEX_Analogue_channel_1) {
-                                                    v = iirNotch[0].filter(v);
+                                                    if (notch[0] != null) {
+                                                        v = (float)notch[0].filter((double)v);
+                                                    }
                                                     v = highpass[0].filter(v);
                                                 }
                                                 if (i == AttysComm.INDEX_Analogue_channel_2) {
-                                                    v = iirNotch[1].filter(v);
+                                                    if (notch[1] != null) {
+                                                        v = (float)notch[1].filter((double)v);
+                                                        //Log.d(TAG,""+v);
+                                                    }
                                                     v = highpass[1].filter(v);
                                                     if (adc2Mode == Attys2ScienceJournalADC2Settings.MODE_RESISTANCE) {
                                                         v = v / 22E-6F;

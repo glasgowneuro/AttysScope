@@ -143,7 +143,9 @@ public class AttysPlot extends AppCompatActivity {
                 case AttysComm.MESSAGE_ERROR:
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
-                    attysComm.cancel();
+                    if (attysComm != null) {
+                        attysComm.cancel();
+                    }
                     try {
                         attysComm.join();
                     } catch (Exception ee) {};
