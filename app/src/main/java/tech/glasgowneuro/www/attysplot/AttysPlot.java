@@ -17,6 +17,7 @@
 package tech.glasgowneuro.www.attysplot;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -26,6 +27,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.content.Context;
@@ -260,6 +263,14 @@ public class AttysPlot extends AppCompatActivity {
         private void doAnalysis(float v) {
 
             String m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
+
+            if ( (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
+                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Y) ||
+                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Z) )
+            {
+                v = v * 1E6F;
+                m_unit = "\u00b5"+m_unit;
+            }
 
             switch (dataAnalysis) {
                 case ECG:

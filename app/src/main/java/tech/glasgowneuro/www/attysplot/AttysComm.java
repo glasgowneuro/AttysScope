@@ -93,9 +93,9 @@ public class AttysComm extends Thread {
             "\u00b0"+"/s",
             "\u00b0"+"/s",
             "\u00b0"+"/s",
-            "\u00b5"+"T",
-            "\u00b5"+"T",
-            "\u00b5"+"T",
+            "T",
+            "T",
+            "T",
             "V",
             "V"
     };
@@ -636,9 +636,6 @@ public class AttysComm extends Thread {
                 connectionEstablished = true;
                 if (Log.isLoggable(TAG, Log.VERBOSE)) {
                     Log.v(TAG, "Connected to socket!");
-                }
-                if (messageListener != null) {
-                    messageListener.haveMessage(MESSAGE_CONNECTED);
                 }
             }
         }
