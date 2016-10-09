@@ -76,14 +76,15 @@ public class AttysPlot extends AppCompatActivity {
     private BluetoothAdapter BA;
     private AttysComm attysComm = null;
     private BluetoothDevice btAttysDevice = null;
-    private byte samplingRate = AttysComm.ADC_RATE_125HZ;
+    private byte samplingRate = AttysComm.ADC_RATE_250HZ;
 
     private static final String TAG = "AttysPlot";
 
     private Highpass[] highpass = null;
     private float[] gain;
     private Butterworth[] iirNotch;
-    private double notchBW = 5; // Hz
+    private double notchBW = 2.5; // Hz
+    private int notchOrder = 2;
     private boolean[] invert;
     private float powerlineHz = 50;
 
@@ -747,7 +748,7 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch1notch:
                 if (iirNotch[9] == null) {
                     iirNotch[9] = new Butterworth();
-                    iirNotch[9].bandStop(2,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
+                    iirNotch[9].bandStop(notchOrder,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
                 } else {
                     iirNotch[9] = null;
                 }
@@ -757,7 +758,7 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch2notch:
                 if (iirNotch[10] == null) {
                     iirNotch[10] = new Butterworth();
-                    iirNotch[10].bandStop(2,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
+                    iirNotch[10].bandStop(notchOrder,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
                 } else {
                     iirNotch[10] = null;
                 }
@@ -920,6 +921,7 @@ public class AttysPlot extends AppCompatActivity {
         showCh2 = prefs.getBoolean("ch2", true);
 
         powerlineHz = Float.parseFloat(prefs.getString("powerline","50"));
+        Log.d(TAG,"powerline="+powerlineHz);
     }
 
     @Override
