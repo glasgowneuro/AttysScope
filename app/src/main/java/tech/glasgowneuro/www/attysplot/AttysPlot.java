@@ -515,7 +515,6 @@ public class AttysPlot extends AppCompatActivity {
         }
 
         attysComm = new AttysComm(btAttysDevice);
-        attysComm.setAdc_samplingrate_index(samplingRate);
         attysComm.registerMessageListener(messageListener);
 
         int nChannels = attysComm.NCHANNELS;
@@ -933,6 +932,11 @@ public class AttysPlot extends AppCompatActivity {
 
         powerlineHz = Float.parseFloat(prefs.getString("powerline","50"));
         Log.d(TAG,"powerline="+powerlineHz);
+
+        samplingRate = (byte)Integer.parseInt(prefs.getString("samplingrate","0"));
+        if (samplingRate > 1) samplingRate = 1;
+
+        attysComm.setAdc_samplingrate_index(samplingRate);
     }
 
     @Override

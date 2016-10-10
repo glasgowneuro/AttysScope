@@ -59,4 +59,10 @@
         android:summary="The frequency of your mains AC supply (US: 60Hz, EU: 50Hz, ...)"
         android:key="powerline"
         android:title="Powerline frequency" />
+    <ListPreference
+        android:entries="@array/samplingRateOptions"
+        android:entryValues="@array/samplingRateValues"
+        android:summary="Sampling rate the Attys is acquiring the data and transmitting it"
+        android:key="samplingrate"
+        android:title="Sampling rate" />
 </PreferenceScreen>
