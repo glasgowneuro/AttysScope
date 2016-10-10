@@ -845,8 +845,9 @@ public class AttysComm extends Thread {
 
     public void run() {
 
-        long[] data = new long[12];
+        long[] data = new long[NCHANNELS];
         byte[] raw = null;
+        float[] sample = new float[NCHANNELS];
 
         int nTrans = 1;
 
@@ -919,6 +920,7 @@ public class AttysComm extends Thread {
                     String oneLine;
                     if (inScanner != null) {
                         oneLine = inScanner.nextLine();
+                        //Log.d(TAG, oneLine);
                     } else {
                         return;
                     }
@@ -951,10 +953,9 @@ public class AttysComm extends Thread {
                             nTrans = 1;
                             if (raw.length > 8) {
                                 ts = raw[7];
-                                //Log.d(TAG,String.format("ts=%s,exp=%d",ts,expectedTimestamp));
-                                if (Math.abs(ts - expectedTimestamp) == 1) {
-                                    Log.d(TAG, String.format("sample lost"));
-                                    nTrans = 2;
+                                if ((ts - expectedTimestamp) > 0) {
+                                    nTrans = 1 + (ts - expectedTimestamp);
+                                    Log.d(TAG,String.format("Timestamp=%s,expected=%d",ts,expectedTimestamp));
                                 }
                             }
                             // update timestamp
@@ -973,12 +974,10 @@ public class AttysComm extends Thread {
                         for (int i = 0; i < 3; i++) {
                             float norm = 0x8000;
                             try {
-                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                sample[i] = ((float) data[i] - norm) / norm *
                                         getAccelFullScaleRange();
                             } catch (Exception e) {
-                                if (ringBuffer != null) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
+                                    sample[i] = 0;
                             }
                         }
 
@@ -986,12 +985,10 @@ public class AttysComm extends Thread {
                         for (int i = 3; i < 6; i++) {
                             float norm = 0x8000;
                             try {
-                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                sample[i] = ((float) data[i] - norm) / norm *
                                         getGyroFullScaleRange();
                             } catch (Exception e) {
-                                if (ringBuffer != null) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
+                                    sample[i] = 0;
                             }
                         }
 
@@ -999,38 +996,35 @@ public class AttysComm extends Thread {
                         for (int i = 6; i < 9; i++) {
                             float norm = 0x8000;
                             try {
-                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                sample[i] = ((float) data[i] - norm) / norm *
                                         MAG_FULL_SCALE;
                             } catch (Exception e) {
-                                if (ringBuffer != null) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
+                                    sample[i] = 0;
                             }
                         }
 
                         for (int i = 9; i < 11; i++) {
                             float norm = 0x800000;
                             try {
-                                ringBuffer[inPtr][i] = ((float) data[i] - norm) / norm *
+                                sample[i] = ((float) data[i] - norm) / norm *
                                         ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]];
                             } catch (Exception e) {
-                                if (ringBuffer != null) {
-                                    ringBuffer[inPtr][i] = 0;
-                                }
+                                    sample[i] = 0;
                             }
                         }
 
                         // in case a sample has been lost
                         for(int j=0;j<nTrans;j++) {
-                            if (j==1) Log.d(TAG,"duplic sample");
                             if (textdataFileStream != null) {
-                                saveData(ringBuffer[inPtr]);
+                                saveData(sample);
                             }
 
                             if (dataListener != null) {
-                                dataListener.gotData(sampleNumber, ringBuffer[inPtr]);
+                                dataListener.gotData(sampleNumber, sample);
                             }
-
+                            if (ringBuffer != null) {
+                                System.arraycopy(sample, 0, ringBuffer[inPtr], 0, sample.length);
+                            }
                             timestamp = timestamp + 1.0 / getSamplingRateInHz();
                             sampleNumber++;
                             inPtr++;
