@@ -848,6 +848,8 @@ public class AttysComm extends Thread {
         long[] data = new long[12];
         byte[] raw = null;
 
+        int nTrans = 1;
+
         try {
             // let's wait until we are connected
             if (connectThread != null) {
@@ -928,29 +930,31 @@ public class AttysComm extends Thread {
                             // adc data def there
                             if (raw.length > 9) {
                                 for (int i = 0; i < 2; i++) {
-                                    long v = (raw[i * 4] & 0xff)
-                                            | ((raw[i * 4 + 1] & 0xff) << 8)
-                                            | ((raw[i * 4 + 2] & 0xff) << 16);
+                                    long v = (raw[i * 3] & 0xff)
+                                            | ((raw[i * 3 + 1] & 0xff) << 8)
+                                            | ((raw[i * 3 + 2] & 0xff) << 16);
                                     data[9 + i] = v;
                                 }
                             }
 
                             // all data def there
-                            if (raw.length > 27) {
+                            if (raw.length > 25) {
                                 for (int i = 0; i < 9; i++) {
-                                    long v = (raw[10 + i * 2] & 0xff)
-                                            | ((raw[10 + i * 2 + 1] & 0xff) << 8);
+                                    long v = (raw[8 + i * 2] & 0xff)
+                                            | ((raw[8 + i * 2 + 1] & 0xff) << 8);
                                     data[i] = v;
                                 }
                             }
 
                             // check that the timestamp is the expected one
                             byte ts = 0;
+                            nTrans = 1;
                             if (raw.length > 8) {
-                                ts = raw[9];
+                                ts = raw[7];
+                                //Log.d(TAG,String.format("ts=%s,exp=%d",ts,expectedTimestamp));
                                 if (Math.abs(ts - expectedTimestamp) == 1) {
                                     Log.d(TAG, String.format("sample lost"));
-                                    ts++;
+                                    nTrans = 2;
                                 }
                             }
                             // update timestamp
@@ -1016,19 +1020,23 @@ public class AttysComm extends Thread {
                             }
                         }
 
-                        if (textdataFileStream != null) {
-                            saveData(ringBuffer[inPtr]);
-                        }
+                        // in case a sample has been lost
+                        for(int j=0;j<nTrans;j++) {
+                            if (j==1) Log.d(TAG,"duplic sample");
+                            if (textdataFileStream != null) {
+                                saveData(ringBuffer[inPtr]);
+                            }
 
-                        if (dataListener != null) {
-                            dataListener.gotData(sampleNumber, ringBuffer[inPtr]);
-                        }
+                            if (dataListener != null) {
+                                dataListener.gotData(sampleNumber, ringBuffer[inPtr]);
+                            }
 
-                        timestamp = timestamp + 1.0 / getSamplingRateInHz();
-                        sampleNumber++;
-                        inPtr++;
-                        if (inPtr == nMem) {
-                            inPtr = 0;
+                            timestamp = timestamp + 1.0 / getSamplingRateInHz();
+                            sampleNumber++;
+                            inPtr++;
+                            if (inPtr == nMem) {
+                                inPtr = 0;
+                            }
                         }
 
                     } else {
