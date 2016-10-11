@@ -471,15 +471,9 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Log.d(TAG, String.format("Back button pressed"));
-        if (!attysComm.hasActiveConnection()) {
-            attysComm.cancel();
-        }
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_HOME);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+        killAttysComm();
+        finish();
     }
-
 
     /**
      * Called when the activity is first created.

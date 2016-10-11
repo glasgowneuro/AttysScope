@@ -24,6 +24,12 @@
  * <p>
  * Modified code from:
  * https://developer.android.com/guide/topics/connectivity/bluetooth.html
+ * <p>
+ * Modified code from:
+ * https://developer.android.com/guide/topics/connectivity/bluetooth.html
+ * <p>
+ * Modified code from:
+ * https://developer.android.com/guide/topics/connectivity/bluetooth.html
  */
 
 /**
@@ -90,9 +96,9 @@ public class AttysComm extends Thread {
             "m/s^2",
             "m/s^2",
             "m/s^2",
-            "\u00b0"+"/s",
-            "\u00b0"+"/s",
-            "\u00b0"+"/s",
+            "\u00b0" + "/s",
+            "\u00b0" + "/s",
+            "\u00b0" + "/s",
             "T",
             "T",
             "T",
@@ -110,18 +116,20 @@ public class AttysComm extends Thread {
     // to the actual sampling rate
     public final static int[] ADC_SAMPLINGRATE = {125, 250, 500, 1000};
     // the actual sampling rate in terms of the sampling rate index
-    private byte adc_rate_index = ADC_DEFAULT_RATE;
+    private static byte adc_rate_index = ADC_DEFAULT_RATE;
+
     public void setAdc_samplingrate_index(byte idx) {
         adc_rate_index = idx;
     }
+
     // get the sampling rate in Hz (not index number)
     public int getSamplingRateInHz() {
         return ADC_SAMPLINGRATE[adc_rate_index];
     }
+
     public byte getAdc_samplingrate_index() {
         return adc_rate_index;
     }
-
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -141,19 +149,22 @@ public class AttysComm extends Thread {
     public final static int[] ADC_GAIN_FACTOR = {6, 1, 2, 3, 4, 8, 12};
     // the voltage reference of the ADC in volts
     public final static float ADC_REF = 2.42F;
+
     public float getADCFullScaleRange(int channel) {
         return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
     }
+
     public void setAdc0_gain_index(byte idx) {
         adc0_gain_index = idx;
     }
+
     public void setAdc1_gain_index(byte idx) {
         adc1_gain_index = idx;
     }
-    // initial gain factor is 6 for both channels
-    private byte adc0_gain_index = 0;
-    private byte adc1_gain_index = 0;
 
+    // initial gain factor is 6 for both channels
+    private static byte adc0_gain_index = 0;
+    private static byte adc1_gain_index = 0;
 
 
     /////////////////////////////////////////////////////////////////////
@@ -164,16 +175,19 @@ public class AttysComm extends Thread {
     public final static byte ADC_CURRENT_22NA = 1;
     public final static byte ADC_CURRENT_6UA = 2;
     public final static byte ADC_CURRENT_22UA = 3;
-    private byte current_index = 0;
-    private byte current_mask = 0;
+    private static byte current_index = 0;
+    private static byte current_mask = 0;
+
     // sets the bias current which can be switched on
     public void setBiasCurrent(byte currIndex) {
         current_index = currIndex;
     }
+
     // gets the bias current as in index
     public byte getBiasCurrent() {
         return current_index;
     }
+
     // switches the currents on
     public void enableCurrents(boolean pos_ch1, boolean neg_ch1, boolean pos_ch2) {
         current_mask = 0;
@@ -189,7 +203,6 @@ public class AttysComm extends Thread {
     }
 
 
-
     //////////////////////////////////////////////////////////////////////////////
     // selectable different input mux settings
     // for the ADC channels
@@ -199,15 +212,16 @@ public class AttysComm extends Thread {
     public final static byte ADC_MUX_TEMPERATURE = 4;
     public final static byte ADC_MUX_TEST_SIGNAL = 5;
     public final static byte ADC_MUX_ECG_EINTHOVEN = 6;
-    private byte adc0_mux_index = ADC_MUX_NORMAL;
-    private byte adc1_mux_index = ADC_MUX_NORMAL;
+    private static byte adc0_mux_index = ADC_MUX_NORMAL;
+    private static byte adc1_mux_index = ADC_MUX_NORMAL;
+
     public void setAdc0_mux_index(byte idx) {
         adc0_mux_index = idx;
     }
+
     public void setAdc1_mux_index(byte idx) {
         adc1_mux_index = idx;
     }
-
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -217,15 +231,16 @@ public class AttysComm extends Thread {
     public final static byte ACCEL_8G = 2;
     public final static byte ACCEL_16G = 3;
     public final static float oneG = 9.80665F; // m/s^2
-    public final static float[] ACCEL_FULL_SCALE = {2*oneG, 4*oneG, 8*oneG, 16*oneG}; // m/s^2
-    private byte accel_full_scale_index = ACCEL_16G;
+    public final static float[] ACCEL_FULL_SCALE = {2 * oneG, 4 * oneG, 8 * oneG, 16 * oneG}; // m/s^2
+    private static byte accel_full_scale_index = ACCEL_16G;
+
     public float getAccelFullScaleRange() {
         return ACCEL_FULL_SCALE[accel_full_scale_index];
     }
+
     public void setAccel_full_scale_index(byte idx) {
         accel_full_scale_index = idx;
     }
-
 
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -235,15 +250,18 @@ public class AttysComm extends Thread {
     public final static byte GYRO_500DPS = 1;
     public final static byte GYRO_1000DPS = 2;
     public final static byte GYRO_2000DPS = 3;
-    private byte gyro_full_scale_index = GYRO_2000DPS;
+    private static byte gyro_full_scale_index = GYRO_2000DPS;
+
     public float getGyroFullScaleRange() {
         return GYRO_FULL_SCALE[gyro_full_scale_index];
     }
+
     public void setGyro_full_scale_index(byte idx) {
         gyro_full_scale_index = idx;
     }
 
     public final static float MAG_FULL_SCALE = 4800.0E-6F; // TESLA
+
     public float getMagFullScaleRange() {
         return MAG_FULL_SCALE;
     }
@@ -279,7 +297,7 @@ public class AttysComm extends Thread {
 
     ////////////////////////////////////////////////
     // sample counter
-    private long sampleNumber = 0;
+    private static long sampleNumber = 0;
 
     public long getSampleNumber() {
         return sampleNumber;
@@ -326,7 +344,7 @@ public class AttysComm extends Thread {
         void haveMessage(int msg);
     }
 
-    private MessageListener messageListener = null;
+    private static MessageListener messageListener = null;
 
     public void registerMessageListener(MessageListener m) {
         messageListener = m;
@@ -342,6 +360,7 @@ public class AttysComm extends Thread {
     public boolean hasActiveConnection() {
         return isConnected;
     }
+
     public boolean hasFatalError() {
         return fatalError;
     }
@@ -396,6 +415,7 @@ public class AttysComm extends Thread {
         }
         return null;
     }
+
     // stops it
     public void stopRec() {
         if (textdataFileStream != null) {
@@ -404,11 +424,11 @@ public class AttysComm extends Thread {
             textdataFileStream = null;
         }
     }
+
     // are we recording?
     public boolean isRecording() {
         return (textdataFileStream != null);
     }
-
 
 
     /////////////////////////////////////////////////
@@ -437,34 +457,31 @@ public class AttysComm extends Thread {
     }
 
 
-
     ///////////////////////////////////////////////////////
     // from here it's private
-    private BluetoothSocket mmSocket;
-    private Scanner inScanner = null;
-    private boolean doRun;
-    private float[][] ringBuffer = null;
-    final private int nMem = 1000;
-    private int inPtr = 0;
-    private int outPtr = 0;
-    private ConnectThread connectThread = null;
-    private boolean isConnected = false;
-    private InputStream mmInStream = null;
-    private OutputStream mmOutStream = null;
+    private static BluetoothSocket mmSocket = null;
+    private static Scanner inScanner = null;
+    private static boolean doRun = false;
+    private static float[][] ringBuffer = null;
+    final static private int nMem = 1000;
+    private static int inPtr = 0;
+    private static int outPtr = 0;
+    private static ConnectThread connectThread = null;
+    private static boolean isConnected = false;
+    private static InputStream mmInStream = null;
+    private static OutputStream mmOutStream = null;
     private static final String TAG = "AttysComm";
-    private boolean fatalError = false;
-    private byte[] adcMuxRegister = null;
-    private byte[] adcGainRegister = null;
-    private boolean[] adcCurrNegOn = null;
-    private boolean[] adcCurrPosOn = null;
-    private byte expectedTimestamp = 0;
-    private PrintWriter textdataFileStream = null;
-    private double timestamp = 0.0; // in secs
+    private static boolean fatalError = false;
+    private static byte[] adcMuxRegister = null;
+    private static byte[] adcGainRegister = null;
+    private static boolean[] adcCurrNegOn = null;
+    private static boolean[] adcCurrPosOn = null;
+    private static byte expectedTimestamp = 0;
+    private static PrintWriter textdataFileStream = null;
+    private static double timestamp = 0.0; // in secs
 
 
-
-    private class ConnectThread extends Thread {
-        private BluetoothSocket mmSocket;
+    private static class ConnectThread extends Thread {
         private boolean connectionEstablished;
         BluetoothDevice bluetoothDevice = null;
         // standard SPP uid
@@ -545,12 +562,14 @@ public class AttysComm extends Thread {
                         if (mmSocket != null) {
                             mmSocket.close();
                         }
-                    } catch (IOException e1) {}
+                    } catch (IOException e1) {
+                    }
 
                     // let's just wait a bit
                     try {
                         sleep(100);
-                    } catch (InterruptedException e1) {}
+                    } catch (InterruptedException e1) {
+                    }
 
                     try {
                         mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
@@ -652,25 +671,36 @@ public class AttysComm extends Thread {
         }
     }
 
-
-    private void stopADC() {
+    // brute force stop of the Attys
+    // bluetooth is so terrible in full duplex that this is required!
+    private static synchronized void stopADC() throws IOException {
         String s = "\r\n\r\n\r\nx=0\r";
         byte[] bytes = s.getBytes();
+        if (!mmSocket.isConnected()) throw new IOException();
         for (int j = 0; j < 100; j++) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "Trying to stop the data acquisition. Attempt #" + (j + 1) + ".");
             }
             try {
-                if (mmOutStream != null) {
-                    mmOutStream.flush();
-                    mmOutStream.write(bytes);
-                    mmOutStream.flush();
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "flushing stream");
                 }
+                if (mmOutStream == null) throw new IOException();
+                mmOutStream.flush();
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Sending x=0");
+                }
+                if (mmOutStream == null) throw new IOException();
+                mmOutStream.write(bytes);
+                if (mmOutStream == null) throw new IOException();
+                mmOutStream.flush();
             } catch (IOException e) {
                 if (Log.isLoggable(TAG, Log.ERROR)) {
                     Log.e(TAG, "Could not send 'x=0' (=stop requ) to the Attys:" + e.getMessage());
                 }
+                throw new IOException(e);
             }
+            if (inScanner == null) return;
             for (int i = 0; i < 100; i++) {
                 if (inScanner != null) {
                     if (inScanner.hasNextLine()) {
@@ -695,7 +725,7 @@ public class AttysComm extends Thread {
     }
 
 
-    private void startADC() {
+    private static synchronized void startADC() throws IOException {
         String s = "x=1\r";
         byte[] bytes = s.getBytes();
         try {
@@ -713,11 +743,12 @@ public class AttysComm extends Thread {
             if (Log.isLoggable(TAG, Log.ERROR)) {
                 Log.e(TAG, "Could not send x=1 to the Attys.");
             }
+            throw new IOException(e);
         }
     }
 
 
-    private void sendSyncCommand(String s) {
+    private static synchronized void sendSyncCommand(String s) throws IOException {
         byte[] bytes = s.getBytes();
 
         try {
@@ -733,8 +764,9 @@ public class AttysComm extends Thread {
             }
         } catch (IOException e) {
             if (Log.isLoggable(TAG, Log.ERROR)) {
-                Log.e(TAG, "Could not write to stream.");
+                Log.e(TAG, "Could not send: "+s);
             }
+            throw new IOException(e);
         }
         for (int j = 0; j < 100; j++) {
             if (inScanner != null) {
@@ -757,29 +789,31 @@ public class AttysComm extends Thread {
             }
         }
         Log.e(TAG, "ATTYS hasn't replied with OK after command: " + s + ".");
+        throw new IOException();
     }
 
 
-    private void sendSamplingRate() {
+    private static synchronized void sendSamplingRate() throws IOException {
         sendSyncCommand("r=" + adc_rate_index);
     }
 
-    private void sendFullscaleGyroRange() {
+    private static synchronized void sendFullscaleGyroRange() throws IOException {
         sendSyncCommand("g=" + gyro_full_scale_index);
     }
 
-    private void sendFullscaleAccelRange() {
+    private static synchronized void sendFullscaleAccelRange() throws IOException {
         sendSyncCommand("t=" + accel_full_scale_index);
     }
 
-    private void sendCurrentMask() {
+    private static synchronized void sendCurrentMask() throws IOException {
         sendSyncCommand("c=" + current_mask);
     }
-    private void sendBiasCurrent() {
+
+    private static synchronized void sendBiasCurrent() throws IOException {
         sendSyncCommand("i=" + current_index);
     }
 
-    private void sendGainMux(int channel, byte gain, byte mux) {
+    private static synchronized void sendGainMux(int channel, byte gain, byte mux) throws IOException {
         int v = (mux & 0x0f) | ((gain & 0x0f) << 4);
         switch (channel) {
             case 0:
@@ -793,15 +827,15 @@ public class AttysComm extends Thread {
         adcMuxRegister[channel] = mux;
     }
 
-    private void setADCGain(int channel, byte gain) {
+    private static synchronized void setADCGain(int channel, byte gain) throws IOException {
         sendGainMux(channel, gain, adcMuxRegister[channel]);
     }
 
-    private void setADCMux(int channel, byte mux) {
+    private static synchronized void setADCMux(int channel, byte mux) throws IOException {
         sendGainMux(channel, adcGainRegister[channel], mux);
     }
 
-    private boolean sendInit() {
+    private static synchronized void sendInit() throws IOException {
         stopADC();
         // switching to base64 encoding
         sendSyncCommand("d=1");
@@ -813,7 +847,6 @@ public class AttysComm extends Thread {
         sendCurrentMask();
         sendBiasCurrent();
         startADC();
-        return true;
     }
 
     private void saveData(float[] data) {
@@ -895,6 +928,7 @@ public class AttysComm extends Thread {
             if (messageListener != null) {
                 messageListener.haveMessage(MESSAGE_ERROR);
             }
+            return;
         }
 
         // we only enter in the main loop if we have connected
@@ -903,7 +937,16 @@ public class AttysComm extends Thread {
         if (messageListener != null) {
             messageListener.haveMessage(MESSAGE_CONFIGURE);
         }
-        sendInit();
+
+        try {
+            sendInit();
+        } catch (IOException e) {
+            Log.e(TAG, "Attys init failure");
+            if (messageListener != null) {
+                messageListener.haveMessage(MESSAGE_ERROR);
+            }
+            return;
+        }
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Starting main data acquistion loop");
@@ -955,7 +998,7 @@ public class AttysComm extends Thread {
                                 ts = raw[7];
                                 if ((ts - expectedTimestamp) > 0) {
                                     nTrans = 1 + (ts - expectedTimestamp);
-                                    Log.d(TAG,String.format("Timestamp=%s,expected=%d",ts,expectedTimestamp));
+                                    Log.d(TAG, String.format("Timestamp=%s,expected=%d", ts, expectedTimestamp));
                                 }
                             }
                             // update timestamp
@@ -977,7 +1020,7 @@ public class AttysComm extends Thread {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         getAccelFullScaleRange();
                             } catch (Exception e) {
-                                    sample[i] = 0;
+                                sample[i] = 0;
                             }
                         }
 
@@ -988,7 +1031,7 @@ public class AttysComm extends Thread {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         getGyroFullScaleRange();
                             } catch (Exception e) {
-                                    sample[i] = 0;
+                                sample[i] = 0;
                             }
                         }
 
@@ -999,7 +1042,7 @@ public class AttysComm extends Thread {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         MAG_FULL_SCALE;
                             } catch (Exception e) {
-                                    sample[i] = 0;
+                                sample[i] = 0;
                             }
                         }
 
@@ -1009,12 +1052,12 @@ public class AttysComm extends Thread {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]];
                             } catch (Exception e) {
-                                    sample[i] = 0;
+                                sample[i] = 0;
                             }
                         }
 
                         // in case a sample has been lost
-                        for(int j=0;j<nTrans;j++) {
+                        for (int j = 0; j < nTrans; j++) {
                             if (textdataFileStream != null) {
                                 saveData(sample);
                             }
@@ -1048,11 +1091,17 @@ public class AttysComm extends Thread {
         }
     }
 
-    /* Call this from the main activity to shutdown the connection */
-    public void cancel() {
-        if (connectThread != null) {
-            connectThread.cancel();
+    private static synchronized void sendMasterReset() {
+        String s = "\r\n\r\n\r\nm=1\r";
+        byte[] bytes = s.getBytes();
+        try {
+            mmOutStream.write(bytes);
+        } catch (IOException e) {
         }
+    }
+
+    /* Call this from the main activity to shutdown the connection */
+    public static synchronized void cancel() {
         doRun = false;
         if (inScanner != null) {
             inScanner.close();
@@ -1069,11 +1118,13 @@ public class AttysComm extends Thread {
             } catch (IOException e) {
             }
         }
-        if (mmSocket != null) {
+        if (connectThread != null) {
+            connectThread.cancel();
             try {
-                mmSocket.close();
-            } catch (IOException e) {
+                connectThread.join();
+            } catch (Exception e) {
             }
+            ;
         }
         mmSocket = null;
         isConnected = false;
