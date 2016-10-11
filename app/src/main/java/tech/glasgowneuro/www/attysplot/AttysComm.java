@@ -15,33 +15,12 @@
  * <p>
  * Modified code from:
  * https://developer.android.com/guide/topics/connectivity/bluetooth.html
- * <p>
- * Modified code from:
- * https://developer.android.com/guide/topics/connectivity/bluetooth.html
- * <p>
- * Modified code from:
- * https://developer.android.com/guide/topics/connectivity/bluetooth.html
- * <p>
- * Modified code from:
- * https://developer.android.com/guide/topics/connectivity/bluetooth.html
- * <p>
- * Modified code from:
- * https://developer.android.com/guide/topics/connectivity/bluetooth.html
- * <p>
- * Modified code from:
- * https://developer.android.com/guide/topics/connectivity/bluetooth.html
- */
-
-/**
- * Modified code from:
- * https://developer.android.com/guide/topics/connectivity/bluetooth.html
  */
 
 package tech.glasgowneuro.www.attysplot;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.os.ParcelUuid;
 import android.util.Base64;
 import android.util.Log;
 
@@ -434,7 +413,9 @@ public class AttysComm extends Thread {
     /////////////////////////////////////////////////
     // Constructor: takes the bluetooth device as an argument
     // it then tries to connect to the Attys
-    public AttysComm(BluetoothDevice device) {
+    public AttysComm(BluetoothDevice _device) {
+
+        bluetoothDevice = _device;
 
         adcMuxRegister = new byte[2];
         adcMuxRegister[0] = 0;
@@ -449,11 +430,6 @@ public class AttysComm extends Thread {
         adcCurrPosOn[0] = false;
         adcCurrNegOn[1] = false;
 
-        connectThread = new ConnectThread(device);
-        // let's try to connect
-        // b/c it's blocking we do it in another thread
-        connectThread.start();
-
     }
 
 
@@ -466,7 +442,6 @@ public class AttysComm extends Thread {
     final static private int nMem = 1000;
     private static int inPtr = 0;
     private static int outPtr = 0;
-    private static ConnectThread connectThread = null;
     private static boolean isConnected = false;
     private static InputStream mmInStream = null;
     private static OutputStream mmOutStream = null;
@@ -479,200 +454,164 @@ public class AttysComm extends Thread {
     private static byte expectedTimestamp = 0;
     private static PrintWriter textdataFileStream = null;
     private static double timestamp = 0.0; // in secs
+    private static boolean connectionEstablished;
+    private static BluetoothDevice bluetoothDevice;
 
+    // standard SPP uid
+    UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
 
-    private static class ConnectThread extends Thread {
-        private boolean connectionEstablished;
-        BluetoothDevice bluetoothDevice = null;
-        // standard SPP uid
-        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+    public void connectToAttys() throws IOException {
 
-        public BluetoothSocket getBluetoothSocket() {
-            return mmSocket;
-        }
+        connectionEstablished = false;
+        mmSocket = null;
 
-        public boolean hasActiveConnection() {
-            return connectionEstablished;
-        }
-
-        public ConnectThread(BluetoothDevice device) {
-            // Use a temporary object that is later assigned to mmSocket,
-            // because mmSocket is final
-            bluetoothDevice = device;
-            connectionEstablished = false;
-
-            if (device == null) {
-                if (Log.isLoggable(TAG, Log.ERROR)) {
-                    Log.e(TAG, "Bluetooth device is null.");
-                }
+        if (bluetoothDevice == null) {
+            if (Log.isLoggable(TAG, Log.ERROR)) {
+                Log.e(TAG, "Bluetooth device is null.");
             }
+            throw new IOException();
         }
 
-        // this is all a bit of a mystery / woodoo
-        // the connect command is terribly unreliable so we try out
-        // different strategies
-        public void run() {
+        if (bluetoothDevice == null) throw new IOException();
+        // Get a BluetoothSocket to connect with the given BluetoothDevice
 
-            if (bluetoothDevice == null) return;
-            // Get a BluetoothSocket to connect with the given BluetoothDevice
+        if (messageListener != null) {
+            messageListener.haveMessage(MESSAGE_CONNECTING);
+        }
 
-            if (messageListener != null) {
-                messageListener.haveMessage(MESSAGE_CONNECTING);
+        try {
+            mmSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid);
+        } catch (Exception ex) {
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "Could not get rfComm socket:", ex);
             }
-
             try {
-                mmSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid);
-            } catch (Exception ex) {
-                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "Could not get rfComm socket:", ex);
+                mmSocket.close();
+            } catch (Exception closeExeption) {
+            }
+            mmSocket = null;
+            throw new IOException(ex);
+        }
+
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            Log.v(TAG, "Got rfComm socket!");
+        }
+
+        try {
+            sleep(100);
+        } catch (Exception esleep) {
+        }
+
+        if (mmSocket != null) {
+            try {
+                if (mmSocket != null) {
+                    mmSocket.connect();
                 }
-                try {
-                    mmSocket.close();
-                } catch (Exception closeExeption) {
-                }
-                mmSocket = null;
+            } catch (IOException connectException) {
+
+                // connection failed
                 if (messageListener != null) {
-                    messageListener.haveMessage(MESSAGE_ERROR);
+                    messageListener.haveMessage(MESSAGE_RETRY);
                 }
-                return;
-            }
 
-            if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                Log.v(TAG, "Got rfComm socket!");
-            }
+                try {
+                    if (mmSocket != null) {
+                        mmSocket.close();
+                    }
+                } catch (IOException e1) {
+                }
 
-            try {
-                sleep(100);
-            } catch (Exception esleep) {
-            }
+                // let's just wait a bit
+                try {
+                    sleep(100);
+                } catch (InterruptedException e1) {
+                }
 
-            if (mmSocket != null) {
+                try {
+                    mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
+                } catch (Exception ex) {
+                    if (Log.isLoggable(TAG, Log.DEBUG)) {
+                        Log.d(TAG, "Could not get rfComm socket:", ex);
+                    }
+                    try {
+                        if (mmSocket != null) {
+                            mmSocket.close();
+                        }
+                    } catch (Exception closeExeption) {
+                    }
+                    mmSocket = null;
+                    throw new IOException(ex);
+                }
+
+                // let's try to connect
                 try {
                     if (mmSocket != null) {
                         mmSocket.connect();
                     }
-                } catch (IOException connectException) {
+                } catch (IOException e2) {
 
-                    // connection failed
-                    if (messageListener != null) {
-                        messageListener.haveMessage(MESSAGE_RETRY);
-                    }
-
-                    try {
-                        if (mmSocket != null) {
-                            mmSocket.close();
-                        }
-                    } catch (IOException e1) {
-                    }
-
-                    // let's just wait a bit
                     try {
                         sleep(100);
-                    } catch (InterruptedException e1) {
+                    } catch (InterruptedException e3) {
                     }
 
                     try {
-                        mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
-                    } catch (Exception ex) {
                         if (Log.isLoggable(TAG, Log.DEBUG)) {
-                            Log.d(TAG, "Could not get rfComm socket:", ex);
+                            Log.d(TAG, "Last resort: we try the hidden API");
                         }
-                        try {
-                            if (mmSocket != null) {
-                                mmSocket.close();
-                            }
-                        } catch (Exception closeExeption) {
+                        mmSocket.close();
+                        mmSocket = null;
+                        Method createMethod = bluetoothDevice.getClass().
+                                getMethod("createInsecureRfcommSocket", new Class[]{int.class});
+                        mmSocket = (BluetoothSocket) createMethod.invoke(bluetoothDevice, 1);
+                    } catch (Exception e) {
+                        if (Log.isLoggable(TAG, Log.ERROR)) {
+                            Log.e(TAG, "Could not get non-UUID based bluetooth socket!", e);
                         }
                         mmSocket = null;
-                        if (messageListener != null) {
-                            messageListener.haveMessage(MESSAGE_ERROR);
-                        }
-                        return;
+                        throw new IOException(e);
                     }
 
-                    // let's try to connect
+                    try {
+                        sleep(100);
+                    } catch (InterruptedException e3) {
+                    }
+
                     try {
                         if (mmSocket != null) {
                             mmSocket.connect();
                         }
-                    } catch (IOException e2) {
-
-                        try {
-                            sleep(100);
-                        } catch (InterruptedException e3) {
-                        }
-
-                        try {
-                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Last resort: we try the hidden API");
-                            }
-                            mmSocket.close();
-                            mmSocket = null;
-                            Method createMethod = bluetoothDevice.getClass().
-                                    getMethod("createInsecureRfcommSocket", new Class[]{int.class});
-                            mmSocket = (BluetoothSocket) createMethod.invoke(bluetoothDevice, 1);
-                        } catch (Exception e) {
-                            if (Log.isLoggable(TAG, Log.ERROR)) {
-                                Log.e(TAG, "Could not get non-UUID based bluetooth socket!", e);
-                            }
-                            mmSocket = null;
-                            return;
-                        }
-
-                        try {
-                            sleep(100);
-                        } catch (InterruptedException e3) {
-                        }
+                    } catch (IOException e4) {
 
                         try {
                             if (mmSocket != null) {
-                                mmSocket.connect();
+                                mmSocket.close();
                             }
-                        } catch (IOException e4) {
-
-                            try {
-                                if (mmSocket != null) {
-                                    mmSocket.close();
-                                }
-                                mmSocket = null;
-                            } catch (IOException e) {
-                            }
-
-                            connectionEstablished = false;
-                            fatalError = true;
-                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Could not establish connection to Attys: " +
-                                        e4.getMessage());
-                            }
-                            if (messageListener != null) {
-                                messageListener.haveMessage(MESSAGE_ERROR);
-                            }
-
-                            return;
+                            mmSocket = null;
+                        } catch (IOException e) {
                         }
+
+                        connectionEstablished = false;
+                        fatalError = true;
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "Could not establish connection to Attys: " +
+                                    e4.getMessage());
+                        }
+                        throw new IOException(e4);
                     }
                 }
-                connectionEstablished = true;
-                if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                    Log.v(TAG, "Connected to socket!");
-                }
             }
-        }
-
-        /** Will cancel an in-progress connection, and close the socket */
-        public void cancel() {
-            try {
-                if (mmSocket != null) {
-                    mmSocket.close();
-                }
-            } catch (IOException e) {
+            connectionEstablished = true;
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                Log.v(TAG, "Connected to socket!");
             }
-            mmSocket = null;
         }
     }
 
+
     // brute force stop of the Attys
     // bluetooth is so terrible in full duplex that this is required!
+
     private static synchronized void stopADC() throws IOException {
         String s = "\r\n\r\n\r\nx=0\r";
         byte[] bytes = s.getBytes();
@@ -764,7 +703,7 @@ public class AttysComm extends Thread {
             }
         } catch (IOException e) {
             if (Log.isLoggable(TAG, Log.ERROR)) {
-                Log.e(TAG, "Could not send: "+s);
+                Log.e(TAG, "Could not send: " + s);
             }
             throw new IOException(e);
         }
@@ -885,29 +824,7 @@ public class AttysComm extends Thread {
         int nTrans = 1;
 
         try {
-            // let's wait until we are connected
-            if (connectThread != null) {
-                connectThread.join();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            isConnected = false;
-        }
-
-        if (connectThread != null) {
-            if (!connectThread.hasActiveConnection()) {
-                isConnected = false;
-                return;
-            }
-        } else {
-            return;
-        }
-
-        try {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "Getting streams");
-            }
-            mmSocket = connectThread.getBluetoothSocket();
+            connectToAttys();
             if (mmSocket != null) {
                 mmInStream = mmSocket.getInputStream();
                 mmOutStream = mmSocket.getOutputStream();
@@ -917,7 +834,7 @@ public class AttysComm extends Thread {
             }
         } catch (IOException e) {
             if (Log.isLoggable(TAG, Log.ERROR)) {
-                Log.e(TAG, "Could not get streams");
+                Log.e(TAG, "Could not get streams",e);
             }
             isConnected = false;
             fatalError = true;
@@ -1118,13 +1035,10 @@ public class AttysComm extends Thread {
             } catch (IOException e) {
             }
         }
-        if (connectThread != null) {
-            connectThread.cancel();
+        if (mmSocket!=null) {
             try {
-                connectThread.join();
-            } catch (Exception e) {
-            }
-            ;
+                mmSocket.close();
+            } catch (Exception e) {}
         }
         mmSocket = null;
         isConnected = false;
@@ -1133,7 +1047,6 @@ public class AttysComm extends Thread {
         mmOutStream = null;
         inScanner = null;
         ringBuffer = null;
-        connectThread = null;
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Stopped data acquisition. All streams have been shut down successfully.");
         }
