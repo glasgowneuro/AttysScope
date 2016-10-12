@@ -21,12 +21,12 @@ android {
     sourceSets {
         main {
             res.srcDirs = ['src/main/res', 'src/main/res/menu']
-            String osj = '../../science-journal/OpenScienceJournal'
+            String osj = '../../science-journal/api/ScalarInputApi/src/main'
             aidl {
-                srcDir osj + '/whistlepunk_library/src/api/scalarinput/aidl'
+                srcDir osj + '/aidl'
             }
             java {
-                srcDir osj + '/whistlepunk_library/src/api/scalarinput/java'
+                srcDir osj + '/java'
             }
         }
     }
