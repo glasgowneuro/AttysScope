@@ -157,7 +157,9 @@ public class AttysPlot extends AppCompatActivity {
                     }
                     try {
                         attysComm.join();
-                    } catch (Exception ee) {};
+                    } catch (Exception ee) {
+                    }
+                    ;
                     progress.dismiss();
                     finish();
                     break;
@@ -264,12 +266,11 @@ public class AttysPlot extends AppCompatActivity {
 
             String m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
 
-            if ( (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
+            if ((theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
                     (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Y) ||
-                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Z) )
-            {
+                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Z)) {
                 v = v * 1E6F;
-                m_unit = "\u00b5"+m_unit;
+                m_unit = "\u00b5" + m_unit;
             }
 
             switch (dataAnalysis) {
@@ -472,7 +473,10 @@ public class AttysPlot extends AppCompatActivity {
     public void onBackPressed() {
         Log.d(TAG, String.format("Back button pressed"));
         killAttysComm();
-        finish();
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     /**
@@ -486,8 +490,7 @@ public class AttysPlot extends AppCompatActivity {
 
         attysdir = new File(Environment.getExternalStorageDirectory().getPath(),
                 ATTYS_SUBDIR);
-        if (!attysdir.exists())
-        {
+        if (!attysdir.exists()) {
             attysdir.mkdirs();
         }
 
@@ -640,7 +643,7 @@ public class AttysPlot extends AppCompatActivity {
 
         final List files = new ArrayList();
         final String[] list = attysdir.list();
-        for(String file : list) {
+        for (String file : list) {
             files.add(file);
         }
         Collections.sort(files);
@@ -669,15 +672,15 @@ public class AttysPlot extends AppCompatActivity {
                         Intent sendIntent = new Intent();
                         sendIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
                         ArrayList<Uri> files = new ArrayList<Uri>();
-                        for(int i = 0;i< listview.getCount();i++) {
+                        for (int i = 0; i < listview.getCount(); i++) {
                             if (checked.get(i)) {
                                 String filename = list[i];
-                                File fp = new File(attysdir,filename);
+                                File fp = new File(attysdir, filename);
                                 files.add(Uri.fromFile(fp));
-                                Log.d(TAG,filename);
+                                Log.d(TAG, filename);
                             }
                         }
-                        sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM,files);
+                        sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files);
                         sendIntent.setType("text/*");
                         startActivity(Intent.createChooser(sendIntent, "Send your files"));
                     }
@@ -714,7 +717,7 @@ public class AttysPlot extends AppCompatActivity {
                     attysComm.stopRec();
                 } else {
                     if (dataFilename != null) {
-                        File file = new File(attysdir,dataFilename.trim());
+                        File file = new File(attysdir, dataFilename.trim());
                         attysComm.setDataSeparator(dataSeparator);
                         java.io.FileNotFoundException e = attysComm.startRec(file);
                         if (e != null) {
@@ -752,21 +755,21 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch1notch:
                 if (iirNotch[9] == null) {
                     iirNotch[9] = new Butterworth();
-                    iirNotch[9].bandStop(notchOrder,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
+                    iirNotch[9].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
                     iirNotch[9] = null;
                 }
-                item.setChecked( iirNotch[9] != null);
+                item.setChecked(iirNotch[9] != null);
                 return true;
 
             case R.id.Ch2notch:
                 if (iirNotch[10] == null) {
                     iirNotch[10] = new Butterworth();
-                    iirNotch[10].bandStop(notchOrder,attysComm.getSamplingRateInHz(),powerlineHz,notchBW);
+                    iirNotch[10].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
                     iirNotch[10] = null;
                 }
-                item.setChecked( iirNotch[10] != null);
+                item.setChecked(iirNotch[10] != null);
                 return true;
 
             case R.id.Ch1invert:
@@ -848,9 +851,9 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == 1) {
-            if(resultCode == Activity.RESULT_OK){
-                String result=data.getDataString();
-                Log.d(TAG,"result="+result);
+            if (resultCode == Activity.RESULT_OK) {
+                String result = data.getDataString();
+                Log.d(TAG, "result=" + result);
             }
         }
     }//onActivityResult
@@ -924,10 +927,10 @@ public class AttysPlot extends AppCompatActivity {
         showCh1 = prefs.getBoolean("ch1", true);
         showCh2 = prefs.getBoolean("ch2", true);
 
-        powerlineHz = Float.parseFloat(prefs.getString("powerline","50"));
-        Log.d(TAG,"powerline="+powerlineHz);
+        powerlineHz = Float.parseFloat(prefs.getString("powerline", "50"));
+        Log.d(TAG, "powerline=" + powerlineHz);
 
-        samplingRate = (byte)Integer.parseInt(prefs.getString("samplingrate","0"));
+        samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "0"));
         if (samplingRate > 1) samplingRate = 1;
 
         attysComm.setAdc_samplingrate_index(samplingRate);
