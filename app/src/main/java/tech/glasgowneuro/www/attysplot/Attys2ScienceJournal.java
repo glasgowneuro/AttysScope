@@ -96,8 +96,12 @@ public class Attys2ScienceJournal extends Service {
         sensorAppearanceResources[9].iconId = R.drawable.ic_attys_channel1_bold;
         sensorAppearanceResources[10].iconId = R.drawable.ic_attys_channel2_bold;
 
-        Log.d(TAG,"ch1/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units);
-        Log.d(TAG,"ch2/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units);
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG,"ch1/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units);
+        }
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG,"ch2/dim="+sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units);
+        }
     }
 
     @Override
@@ -348,7 +352,7 @@ public class Attys2ScienceJournal extends Service {
 
                             switch (adc2Mode) {
                                 case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
-                                    attysComm.setBiasCurrent((byte) AttysComm.ADC_CURRENT_22UA);
+                                    attysComm.setBiasCurrent(AttysComm.ADC_CURRENT_22UA);
                                     attysComm.enableCurrents(false, false, true);
                                     break;
                                 default:
@@ -386,7 +390,7 @@ public class Attys2ScienceJournal extends Service {
                                                     }
                                                 }
                                                 observer[i].onNewData(
-                                                        (long) Math.round(timestamp),
+                                                        Math.round(timestamp),
                                                         v * gainFactor[i]);
                                                 onDataUsed = true;
                                                 // Log.d(TAG, String.format("timestamp=%d,data=%f",
@@ -416,12 +420,16 @@ public class Attys2ScienceJournal extends Service {
 
                                                 timestamp = timestamp + offset;
                                             } catch (RemoteException e) {
-                                                Log.e(TAG, "onNewData exception:", e);
+                                                if (Log.isLoggable(TAG, Log.ERROR)) {
+                                                    Log.e(TAG, "onNewData exception:", e);
+                                                }
                                             }
                                         }
                                     }
                                     if (!onDataUsed) {
-                                        Log.d(TAG, String.format("All observers are NULL"));
+                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                            Log.d(TAG,"All observers are NULL");
+                                        }
                                     }
                                 }
                             };
@@ -504,13 +512,15 @@ public class Attys2ScienceJournal extends Service {
                         // check if we observe something on another sensor
                         for (int i = 0; i < AttysComm.NCHANNELS; i++) {
                             if (observer[i] != null) {
-                                Log.d(TAG, String.format("Keep connection alive."));
+                                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                    Log.d(TAG,"Keep connection alive.");
+                                }
                                 return;
                             }
                         }
 
                         if (Log.isLoggable(TAG, Log.DEBUG)) {
-                            Log.d(TAG, String.format("Shutting down the connection."));
+                            Log.d(TAG,"Shutting down the connection.");
                         }
                         // we no longer need an active bluetooth connection so we kill it off
                         if (attysComm != null) {
@@ -528,6 +538,3 @@ public class Attys2ScienceJournal extends Service {
         };
     }
 }
-
-
-

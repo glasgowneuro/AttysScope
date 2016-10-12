@@ -212,7 +212,9 @@ public class AttysPlot extends AppCompatActivity {
         BA = BluetoothAdapter.getDefaultAdapter();
 
         if (BA == null) {
-            Log.d(TAG, "no bluetooth adapter!");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "no bluetooth adapter!");
+            }
             finish();
         }
 
@@ -220,15 +222,21 @@ public class AttysPlot extends AppCompatActivity {
         pairedDevices = BA.getBondedDevices();
 
         if (pairedDevices == null) {
-            Log.d(TAG, "No paired devices available. Exiting.");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "No paired devices available. Exiting.");
+            }
             finish();
         }
 
         for (BluetoothDevice bt : pairedDevices) {
             String b = bt.getName();
-            Log.d(TAG, b);
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG,"Paired dev="+b);
+            }
             if (b.startsWith("GN-ATTYS")) {
-                Log.d(TAG, "Found an Attys");
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Found an Attys");
+                }
                 return bt;
             }
         }
@@ -471,7 +479,9 @@ public class AttysPlot extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        Log.d(TAG, String.format("Back button pressed"));
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Back button pressed"));
+        }
         killAttysComm();
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
@@ -551,7 +561,9 @@ public class AttysPlot extends AppCompatActivity {
                         try {
                             theChannelWeDoAnalysis = actualChannelIdx[chNo];
                         } catch (Exception e) {
-                            Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
+                            if (Log.isLoggable(TAG, Log.ERROR)) {
+                                Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
+                            }
                         }
                     }
                 });
@@ -677,7 +689,9 @@ public class AttysPlot extends AppCompatActivity {
                                 String filename = list[i];
                                 File fp = new File(attysdir, filename);
                                 files.add(Uri.fromFile(fp));
-                                Log.d(TAG, filename);
+                                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                    Log.d(TAG,"filename="+filename);
+                                }
                             }
                         }
                         sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files);
@@ -721,11 +735,15 @@ public class AttysPlot extends AppCompatActivity {
                         attysComm.setDataSeparator(dataSeparator);
                         java.io.FileNotFoundException e = attysComm.startRec(file);
                         if (e != null) {
-                            Log.d(TAG, "Could not open data file: " + e.getMessage());
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Could not open data file: " + e.getMessage());
+                            }
                             return true;
                         }
                         if (attysComm.isRecording()) {
-                            Log.d(TAG, "Saving to " + file.getAbsolutePath());
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Saving to " + file.getAbsolutePath());
+                            }
                         }
                     } else {
                         Toast.makeText(getApplicationContext(),
@@ -849,17 +867,6 @@ public class AttysPlot extends AppCompatActivity {
 
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == 1) {
-            if (resultCode == Activity.RESULT_OK) {
-                String result = data.getDataString();
-                Log.d(TAG, "result=" + result);
-            }
-        }
-    }//onActivityResult
-
-
-    @Override
     public void onStart() {
         super.onStart();
 
@@ -888,7 +895,9 @@ public class AttysPlot extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        Log.d(TAG, String.format("Destroy!"));
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Destroy!"));
+        }
         killAttysComm();
     }
 
@@ -896,7 +905,9 @@ public class AttysPlot extends AppCompatActivity {
     private void getsetAttysPrefs() {
         byte mux = 0;
 
-        Log.d(TAG, String.format("Setting preferences"));
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Setting preferences"));
+        }
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(this);
         boolean ecg_mode = prefs.getBoolean("ECG_mode", false);
@@ -928,7 +939,9 @@ public class AttysPlot extends AppCompatActivity {
         showCh2 = prefs.getBoolean("ch2", true);
 
         powerlineHz = Float.parseFloat(prefs.getString("powerline", "50"));
-        Log.d(TAG, "powerline=" + powerlineHz);
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "powerline=" + powerlineHz);
+        }
 
         samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "0"));
         if (samplingRate > 1) samplingRate = 1;
@@ -940,7 +953,9 @@ public class AttysPlot extends AppCompatActivity {
     protected void onRestart() {
         super.onRestart();
 
-        Log.d(TAG, String.format("Restarting"));
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Restarting"));
+        }
         realtimePlotView.resetX();
         killAttysComm();
         attysComm = new AttysComm(btAttysDevice);
@@ -954,7 +969,9 @@ public class AttysPlot extends AppCompatActivity {
     public void onStop() {
         super.onStop();
 
-        Log.d(TAG, String.format("Stopped"));
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Stopped"));
+        }
 
         killAttysComm();
 
