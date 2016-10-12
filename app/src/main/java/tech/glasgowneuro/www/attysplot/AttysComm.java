@@ -452,6 +452,7 @@ public class AttysComm extends Thread {
     private static boolean[] adcCurrNegOn = null;
     private static boolean[] adcCurrPosOn = null;
     private static byte expectedTimestamp = 0;
+    private static boolean correctTimestampDifference = false;
     private static PrintWriter textdataFileStream = null;
     private static double timestamp = 0.0; // in secs
     private static boolean connectionEstablished;
@@ -914,8 +915,15 @@ public class AttysComm extends Thread {
                             if (raw.length > 8) {
                                 ts = raw[7];
                                 if ((ts - expectedTimestamp) > 0) {
-                                    nTrans = 1 + (ts - expectedTimestamp);
-                                    Log.d(TAG, String.format("Timestamp=%s,expected=%d", ts, expectedTimestamp));
+                                    if (correctTimestampDifference) {
+                                        nTrans = 1 + (ts - expectedTimestamp);
+                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                            Log.d(TAG, String.format("Timestamp=%s,expected=%d",
+                                                    ts, expectedTimestamp));
+                                        }
+                                    } else {
+                                        correctTimestampDifference = true;
+                                    }
                                 }
                             }
                             // update timestamp
