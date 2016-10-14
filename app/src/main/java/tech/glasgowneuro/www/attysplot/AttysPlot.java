@@ -113,6 +113,12 @@ public class AttysPlot extends AppCompatActivity {
 
     private DataAnalysis dataAnalysis = DataAnalysis.NONE;
 
+    // for 1000 steps
+    private int ignoreECGdetector = 1000;
+
+    // debugging the ECG detector, commented out for production
+    //double ecgDetOut;
+
     // for data analysis
     private double max, min;
     private float t2 = 0;
@@ -122,7 +128,8 @@ public class AttysPlot extends AppCompatActivity {
     private int analysisPtr = 0;
     private float v2 = 0;
 
-    Highpass ecgHighpass = new Highpass();
+    Butterworth ecgDetector = new Butterworth();
+    Butterworth ecgDetNotch = new Butterworth();
 
     String[] labels = {
             "Acc x", "Acc y", "Acc z",
@@ -284,15 +291,20 @@ public class AttysPlot extends AppCompatActivity {
             switch (dataAnalysis) {
                 case ECG:
                     if (theChannelWeDoAnalysis > 8) {
-                        double h = ecgHighpass.filter(v * 1000);
-                        v2 = v;
-                        if (h < 0) h = 0;
-                        h = h * h * h;
+                        double h = ecgDetNotch.filter(v * 1000);
+                        h = ecgDetector.filter(h);
+                        if (ignoreECGdetector>0) {
+                            ignoreECGdetector--;
+                            h = 0;
+                        }
+                        h = h * h;
+                        // debugging
+                        //ecgDetOut = h;
                         if (h > max) {
                             max = h;
                         }
                         max = max - 0.1 * max / attysComm.getSamplingRateInHz();
-                        // Log.d(TAG,"h="+h+",max="+max);
+                        //Log.d(TAG,"h="+h+",max="+max);
                         if (doNotDetect > 0) {
                             doNotDetect--;
                         } else {
@@ -356,7 +368,6 @@ public class AttysPlot extends AppCompatActivity {
                 if (!attysComm.hasActiveConnection()) return;
             }
             int nCh = 0;
-            if (attysComm != null) ecgHighpass.setAlpha(10.0F / attysComm.getSamplingRateInHz());
             if (attysComm != null) nCh = attysComm.NCHANNELS;
             if (attysComm != null) {
                 float[] tmpSample = new float[nCh];
@@ -374,6 +385,8 @@ public class AttysPlot extends AppCompatActivity {
                         }
                         if (sample != null) {
                             doAnalysis(sample[theChannelWeDoAnalysis]);
+                            // debug ECG detector
+                            // sample[10] = (float)ecgDetOut;
                             timestamp++;
                             for (int j = 0; j < nCh; j++) {
                                 float v = sample[j];
@@ -549,6 +562,12 @@ public class AttysPlot extends AppCompatActivity {
 
         for (int i = 0; i < nChannels; i++) {
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
+        }
+
+        if (attysComm != null) {
+            // this fakes an R peak so we have a matched filter!
+            ecgDetector.bandPass(2,250,20,15);
+            ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
         }
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
