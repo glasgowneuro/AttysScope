@@ -238,7 +238,7 @@ public class AttysPlot extends AppCompatActivity {
         for (BluetoothDevice bt : pairedDevices) {
             String b = bt.getName();
             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG,"Paired dev="+b);
+                Log.d(TAG, "Paired dev=" + b);
             }
             if (b.startsWith("GN-ATTYS")) {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -293,7 +293,7 @@ public class AttysPlot extends AppCompatActivity {
                     if (theChannelWeDoAnalysis > 8) {
                         double h = ecgDetNotch.filter(v * 1000);
                         h = ecgDetector.filter(h);
-                        if (ignoreECGdetector>0) {
+                        if (ignoreECGdetector > 0) {
                             ignoreECGdetector--;
                             h = 0;
                         }
@@ -524,20 +524,7 @@ public class AttysPlot extends AppCompatActivity {
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
-        btAttysDevice = connect2Bluetooth();
-        if (btAttysDevice == null) {
-            Context context = getApplicationContext();
-            CharSequence text = "Could not find any paired Attys devices.";
-            int duration = Toast.LENGTH_LONG;
-            Toast toast = Toast.makeText(context, text, duration);
-            toast.show();
-            finish();
-        }
-
-        attysComm = new AttysComm(btAttysDevice);
-        attysComm.registerMessageListener(messageListener);
-
-        int nChannels = attysComm.NCHANNELS;
+        int nChannels = AttysComm.NCHANNELS;
         highpass = new Highpass[nChannels];
         gain = new float[nChannels];
         iirNotch = new Butterworth[nChannels];
@@ -553,22 +540,49 @@ public class AttysPlot extends AppCompatActivity {
                 gain[i] = 50;
             }
         }
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    }
+
+    // this is called whenever the app is starting or re-starting
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        client.connect();
+        viewAction = Action.newAction(
+                Action.TYPE_VIEW,
+                "Attys Homepage",
+                Uri.parse("http://www.attys.tech")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
+
+        btAttysDevice = connect2Bluetooth();
+        if (btAttysDevice == null) {
+            Context context = getApplicationContext();
+            CharSequence text = "Could not find any paired Attys devices.";
+            int duration = Toast.LENGTH_LONG;
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+            finish();
+        }
+
+        attysComm = new AttysComm(btAttysDevice);
+        attysComm.registerMessageListener(messageListener);
+
         // 1sec
         analysisBuffer = new float[(int) attysComm.getSamplingRateInHz()];
 
         getsetAttysPrefs();
 
-        attysComm.start();
-
-        for (int i = 0; i < nChannels; i++) {
+        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
         }
 
-        if (attysComm != null) {
-            // this fakes an R peak so we have a matched filter!
-            ecgDetector.bandPass(2,250,20,15);
-            ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
-        }
+        // this fakes an R peak so we have a matched filter!
+        ecgDetector.bandPass(2, 250, 20, 15);
+        ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
@@ -591,13 +605,59 @@ public class AttysPlot extends AppCompatActivity {
         infoView.setZOrderOnTop(true);
         infoView.setZOrderMediaOverlay(true);
 
+        attysComm.start();
+
         timer = new Timer();
         UpdatePlotTask updatePlotTask = new UpdatePlotTask();
         timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
+    }
 
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    private void killAttysComm() {
+        if (attysComm != null) {
+            attysComm.cancel();
+            try {
+                attysComm.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            attysComm = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Destroy!"));
+        }
+        killAttysComm();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Restarting"));
+        }
+        realtimePlotView.resetX();
+        killAttysComm();
+    }
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Stopped"));
+        }
+
+        killAttysComm();
+
+        AppIndex.AppIndexApi.end(client, viewAction);
+        client.disconnect();
     }
 
 
@@ -711,7 +771,7 @@ public class AttysPlot extends AppCompatActivity {
                                 File fp = new File(attysdir, filename);
                                 files.add(Uri.fromFile(fp));
                                 if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                    Log.d(TAG,"filename="+filename);
+                                    Log.d(TAG, "filename=" + filename);
                                 }
                             }
                         }
@@ -893,42 +953,6 @@ public class AttysPlot extends AppCompatActivity {
     }
 
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
-        client.connect();
-        viewAction = Action.newAction(
-                Action.TYPE_VIEW,
-                "Attys Homepage",
-                Uri.parse("http://www.attys.tech")
-        );
-        AppIndex.AppIndexApi.start(client, viewAction);
-    }
-
-    private void killAttysComm() {
-        if (attysComm != null) {
-            attysComm.cancel();
-            try {
-                attysComm.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            attysComm = null;
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Destroy!"));
-        }
-        killAttysComm();
-    }
-
-
     private void getsetAttysPrefs() {
         byte mux = 0;
 
@@ -976,33 +1000,4 @@ public class AttysPlot extends AppCompatActivity {
         attysComm.setAdc_samplingrate_index(samplingRate);
     }
 
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Restarting"));
-        }
-        realtimePlotView.resetX();
-        killAttysComm();
-        attysComm = new AttysComm(btAttysDevice);
-        attysComm.registerMessageListener(messageListener);
-        getsetAttysPrefs();
-        attysComm.start();
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Stopped"));
-        }
-
-        killAttysComm();
-
-        AppIndex.AppIndexApi.end(client, viewAction);
-        client.disconnect();
-    }
 }

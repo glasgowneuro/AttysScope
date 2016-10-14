@@ -29,13 +29,13 @@
                 <item
                     android:id="@+id/Ch1notch"
                     android:checked="false"
-                    android:title="Ch1 notch" />
+                    android:title="Ch1 mains filter" />
             </group>
 
             <item
                 android:id="@+id/Ch1setGain"
                 android:checked="true"
-                android:title="Set Channel 1 gain">
+                android:title="Ch1 gain">
 
                 <menu>
                     <item
@@ -83,13 +83,13 @@
                 <item
                     android:id="@+id/Ch2notch"
                     android:checked="false"
-                    android:title="Ch2 notch" />
+                    android:title="Ch2 mains filter" />
             </group>
 
             <item
                 android:id="@+id/Ch2setGain"
                 android:checked="true"
-                android:title="Set channel 2 gain">
+                android:title="Ch2 gain">
 
                 <menu>
                     <item

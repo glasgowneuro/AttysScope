@@ -278,7 +278,6 @@ public class Attys2ScienceJournal extends Service {
                         // that they can be served at once from the Attys callback
                         // when a new set of samples arrives
                         listener[sensorIndex] = theListener;
-                        theListener.onSensorConnecting();
                         observer[sensorIndex] = theObserver;
 
                         int adc1Mode = Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this);
@@ -292,6 +291,7 @@ public class Attys2ScienceJournal extends Service {
 
                         // are we the first sensor? Then let's start a proper connection
                         if (attysComm == null) {
+                            theListener.onSensorConnecting();
                             bluetoothDevice = findPairedAttys();
 
                             if (bluetoothDevice == null) {
@@ -458,6 +458,9 @@ public class Attys2ScienceJournal extends Service {
                                                 try {
                                                     if (listener[i] != null) {
                                                         listener[i].onSensorConnected();
+                                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                                            Log.d(TAG, "Sensor connected: "+i);
+                                                        }
                                                     }
                                                 } catch (RemoteException e) {
                                                     if (Log.isLoggable(TAG, Log.ERROR)) {

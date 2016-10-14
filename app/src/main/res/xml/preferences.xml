@@ -5,17 +5,17 @@
         android:defaultValue="true"
         android:summary="Show the ADC 1 channel"
         android:title="ADC 1" />
-    <CheckBoxPreference
-        android:key="ch2"
-        android:defaultValue="true"
-        android:summary="Show the ADC 2 channel"
-        android:title="ADC 2" />
     <ListPreference
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"
         android:key="ch1_gainpref"
         android:summary="ADC Channel 1 full scale range in Volts"
         android:title="ADC 1 range" />
+    <CheckBoxPreference
+        android:key="ch2"
+        android:defaultValue="true"
+        android:summary="Show the ADC 2 channel"
+        android:title="ADC 2" />
     <ListPreference
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"
