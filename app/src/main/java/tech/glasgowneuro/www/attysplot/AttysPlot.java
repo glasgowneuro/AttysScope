@@ -638,8 +638,10 @@ public class AttysPlot extends AppCompatActivity {
                                     dataFilename = dataFilename + ".csv";
                                     break;
                                 case AttysComm.DATA_SEPARATOR_SPACE:
-                                case AttysComm.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".dat";
+                                    break;
+                                case AttysComm.DATA_SEPARATOR_TAB:
+                                    dataFilename = dataFilename + ".tsv";
                             }
                         }
                         Toast.makeText(getApplicationContext(),
@@ -752,6 +754,12 @@ public class AttysPlot extends AppCompatActivity {
                     if (dataFilename != null) {
                         File file = new File(attysdir, dataFilename.trim());
                         attysComm.setDataSeparator(dataSeparator);
+                        if (file.exists()) {
+                            Toast.makeText(getApplicationContext(),
+                                    "File exists already. Enter a different one.",
+                                    Toast.LENGTH_LONG).show();
+                            return true;
+                        }
                         java.io.FileNotFoundException e = attysComm.startRec(file);
                         if (e != null) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
