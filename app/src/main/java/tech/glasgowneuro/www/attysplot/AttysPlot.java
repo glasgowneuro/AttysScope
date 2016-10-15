@@ -71,7 +71,7 @@ public class AttysPlot extends AppCompatActivity {
 
     private Timer timer = null;
     // screen refresh rate
-    private final int REFRESH_IN_MS = 150;
+    private final int REFRESH_IN_MS = 200;
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
