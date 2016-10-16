@@ -71,7 +71,7 @@ public class AttysPlot extends AppCompatActivity {
 
     private Timer timer = null;
     // screen refresh rate
-    private final int REFRESH_IN_MS = 200;
+    private final int REFRESH_IN_MS = 250;
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
@@ -100,7 +100,7 @@ public class AttysPlot extends AppCompatActivity {
     private float ch1Div = 1;
     private float ch2Div = 1;
 
-    private int theChannelWeDoAnalysis = 9;
+    private int theChannelWeDoAnalysis = 0;
 
     private int[] actualChannelIdx;
 
@@ -111,7 +111,9 @@ public class AttysPlot extends AppCompatActivity {
         ECG
     }
 
-    private DataAnalysis dataAnalysis = DataAnalysis.NONE;
+    private boolean doAnnotate = true;
+
+    private DataAnalysis dataAnalysis = DataAnalysis.DC;
 
     // for 1000 steps
     private int ignoreECGdetector = 1000;
@@ -253,9 +255,9 @@ public class AttysPlot extends AppCompatActivity {
 
     private class UpdatePlotTask extends TimerTask {
 
-
         private void annotatePlot(String largeText) {
             String small = new String();
+            if (!doAnnotate) return;
             if (showCh1) {
                 small = small + new String().format("ADC1 = %fV/div", ch1Div);
             }
@@ -268,10 +270,16 @@ public class AttysPlot extends AppCompatActivity {
             if (showCh1 || showCh2) {
                 small = small + ", ";
             }
-            small = small + new String().format("readings from %s", labels[theChannelWeDoAnalysis]);
+            if (largeText != null) {
+                largeText = new String().format("%s: ", labels[theChannelWeDoAnalysis])+largeText;
+            }
             if (infoView != null) {
                 if (attysComm != null) {
-                    infoView.drawText(largeText, small);
+                    if (largeText != null) {
+                        infoView.drawText(largeText, small);
+                    } else {
+                        infoView.drawText("", small);
+                    }
                 }
             }
         }
@@ -322,12 +330,16 @@ public class AttysPlot extends AppCompatActivity {
                     }
                     break;
                 case NONE:
+                    int interval = (int) attysComm.getSamplingRateInHz();
+                    if ((timestamp % interval) == 0) {
+                        annotatePlot(null);
+                    }
                     break;
                 case DC:
                     double a = 1.0 / (double) (attysComm.getSamplingRateInHz());
                     // 1st order lowpass IIR filter
                     max = v * a + (1 - a) * max;
-                    int interval = (int) attysComm.getSamplingRateInHz();
+                    interval = (int) attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
                         annotatePlot(String.format("%1.05f%s", max, m_unit));
                     }
@@ -355,7 +367,7 @@ public class AttysPlot extends AppCompatActivity {
             }
         }
 
-        public void run() {
+        public synchronized void run() {
 
             if (attysComm != null) {
                 if (attysComm.hasFatalError()) {
@@ -367,6 +379,7 @@ public class AttysPlot extends AppCompatActivity {
             if (attysComm != null) {
                 if (!attysComm.hasActiveConnection()) return;
             }
+
             int nCh = 0;
             if (attysComm != null) nCh = attysComm.NCHANNELS;
             if (attysComm != null) {
@@ -377,7 +390,7 @@ public class AttysPlot extends AppCompatActivity {
                 String[] tmpLabels = new String[nCh];
                 int n = attysComm.getNumSamplesAvilable();
                 if (realtimePlotView != null) {
-                    realtimePlotView.startAddSamples(n);
+                    if (!realtimePlotView.startAddSamples(n)) return;
                     for (int i = 0; ((i < n) && (attysComm != null)); i++) {
                         float[] sample = null;
                         if (attysComm != null) {
@@ -417,6 +430,7 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpLabels[nRealChN] = labels[9];
                                     actualChannelIdx[nRealChN] = 9;
                                     tmpSample[nRealChN++] = sample[9];
+                                    theChannelWeDoAnalysis = 9;
                                 }
                             }
                             if (showCh2) {
@@ -431,6 +445,7 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpLabels[nRealChN] = labels[10];
                                     actualChannelIdx[nRealChN] = 10;
                                     tmpSample[nRealChN++] = sample[10];
+                                    theChannelWeDoAnalysis = 10;
                                 }
                             }
                             if (showAcc) {
@@ -586,6 +601,7 @@ public class AttysPlot extends AppCompatActivity {
 
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
+        realtimePlotView.init();
 
         realtimePlotView.registerTouchEventListener(
                 new RealtimePlotView.TouchEventListener() {
@@ -593,6 +609,10 @@ public class AttysPlot extends AppCompatActivity {
                     public void touchedChannel(int chNo) {
                         try {
                             theChannelWeDoAnalysis = actualChannelIdx[chNo];
+                            doAnnotate = !doAnnotate;
+                            if (!doAnnotate) {
+                                infoView.removeText();
+                            }
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.ERROR)) {
                                 Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
@@ -641,7 +661,6 @@ public class AttysPlot extends AppCompatActivity {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, String.format("Restarting"));
         }
-        realtimePlotView.resetX();
         killAttysComm();
     }
 
@@ -655,6 +674,10 @@ public class AttysPlot extends AppCompatActivity {
         }
 
         killAttysComm();
+
+        realtimePlotView = null;
+
+        infoView = null;
 
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
@@ -925,7 +948,6 @@ public class AttysPlot extends AppCompatActivity {
 
             case R.id.largeStatusOff:
                 dataAnalysis = DataAnalysis.NONE;
-                infoView.removeText();
                 return true;
 
             case R.id.largeStatusAC:
