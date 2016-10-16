@@ -271,7 +271,7 @@ public class AttysPlot extends AppCompatActivity {
                 small = small + ", ";
             }
             if (largeText != null) {
-                largeText = new String().format("%s: ", labels[theChannelWeDoAnalysis])+largeText;
+                largeText = new String().format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
             if (infoView != null) {
                 if (attysComm != null) {
@@ -430,7 +430,6 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpLabels[nRealChN] = labels[9];
                                     actualChannelIdx[nRealChN] = 9;
                                     tmpSample[nRealChN++] = sample[9];
-                                    theChannelWeDoAnalysis = 9;
                                 }
                             }
                             if (showCh2) {
@@ -445,7 +444,6 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpLabels[nRealChN] = labels[10];
                                     actualChannelIdx[nRealChN] = 10;
                                     tmpSample[nRealChN++] = sample[10];
-                                    theChannelWeDoAnalysis = 10;
                                 }
                             }
                             if (showAcc) {
@@ -555,6 +553,7 @@ public class AttysPlot extends AppCompatActivity {
                 gain[i] = 50;
             }
         }
+
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
@@ -590,6 +589,18 @@ public class AttysPlot extends AppCompatActivity {
         analysisBuffer = new float[(int) attysComm.getSamplingRateInHz()];
 
         getsetAttysPrefs();
+
+        if (showCh1) {
+            theChannelWeDoAnalysis = AttysComm.INDEX_Analogue_channel_1;
+        } else if (showCh2) {
+            theChannelWeDoAnalysis = AttysComm.INDEX_Analogue_channel_2;
+        } else if (showAcc) {
+            theChannelWeDoAnalysis = AttysComm.INDEX_Acceleration_X;
+        } else if (showGyr) {
+            theChannelWeDoAnalysis = AttysComm.INDEX_Rotation_X;
+        } else if (showMag) {
+            theChannelWeDoAnalysis = AttysComm.INDEX_Magnetic_field_X;
+        }
 
         for (int i = 0; i < AttysComm.NCHANNELS; i++) {
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
