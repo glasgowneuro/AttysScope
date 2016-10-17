@@ -109,6 +109,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
+        //Log.d(TAG,"Surface destroyed");
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
@@ -144,7 +145,9 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     public synchronized void stopAddSamples() {
         if (holder != null) {
             if (canvas != null) {
-                holder.unlockCanvasAndPost(canvas);
+                try {
+                    holder.unlockCanvasAndPost(canvas);
+                } catch (Exception e) {};
                 canvas = null;
             }
         }

@@ -495,10 +495,7 @@ public class AttysPlot extends AppCompatActivity {
             Log.d(TAG, String.format("Back button pressed"));
         }
         killAttysComm();
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_HOME);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+        finish();
     }
 
     /**
@@ -645,9 +642,14 @@ public class AttysPlot extends AppCompatActivity {
             timer.cancel();
             timer.purge();
             timer = null;
+            Log.d(TAG,"Killed timer");
         }
 
-        updatePlotTask = null;
+        if (updatePlotTask != null) {
+            updatePlotTask.cancel();
+            updatePlotTask = null;
+            Log.d(TAG,"Killed update Plot Task");
+        }
 
         if (attysComm != null) {
             attysComm.cancel();
@@ -657,6 +659,7 @@ public class AttysPlot extends AppCompatActivity {
                 e.printStackTrace();
             }
             attysComm = null;
+            Log.d(TAG,"Killed AttysComm");
         }
     }
 
@@ -701,10 +704,6 @@ public class AttysPlot extends AppCompatActivity {
         }
 
         killAttysComm();
-
-        realtimePlotView = null;
-
-        infoView = null;
 
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
@@ -910,7 +909,8 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch1notch:
                 if (iirNotch[AttysComm.INDEX_Analogue_channel_1] == null) {
                     iirNotch[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
-                    iirNotch[AttysComm.INDEX_Analogue_channel_1].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+                    iirNotch[AttysComm.INDEX_Analogue_channel_1].bandStop(notchOrder,
+                            attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
                     iirNotch[AttysComm.INDEX_Analogue_channel_1] = null;
                 }
@@ -920,7 +920,8 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch2notch:
                 if (iirNotch[AttysComm.INDEX_Analogue_channel_2] == null) {
                     iirNotch[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
-                    iirNotch[AttysComm.INDEX_Analogue_channel_2].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+                    iirNotch[AttysComm.INDEX_Analogue_channel_2].bandStop(notchOrder,
+                            attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
                     iirNotch[AttysComm.INDEX_Analogue_channel_2] = null;
                 }

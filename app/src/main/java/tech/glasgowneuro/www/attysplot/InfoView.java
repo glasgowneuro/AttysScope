@@ -19,12 +19,12 @@ import android.view.SurfaceView;
  */
 public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
 
-    private String TAG="InfoView";
+    static private String TAG="InfoView";
 
-    private SurfaceHolder holder;
-    private Canvas canvas = null;
-    private Paint paintLarge = new Paint();
-    private Paint paintSmall = new Paint();
+    static private SurfaceHolder holder = null;
+    static private Canvas canvas = null;
+    static private Paint paintLarge = new Paint();
+    static private Paint paintSmall = new Paint();
 
     public InfoView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
@@ -72,7 +72,8 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
         holder.unlockCanvasAndPost(canvas);
     }
 
-    public void drawText(String text, String smallText) {
+    public synchronized void drawText(String text, String smallText) {
+        if (canvas != null) return;
         Surface surface = holder.getSurface();
         if (surface.isValid()) {
             Rect bounds = new Rect();
@@ -103,6 +104,7 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
             holder.unlockCanvasAndPost(canvas);
+            canvas = null;
         }
     }
 }
