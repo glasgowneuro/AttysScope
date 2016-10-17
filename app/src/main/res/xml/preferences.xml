@@ -10,6 +10,7 @@
         android:entryValues="@array/gainValues"
         android:key="ch1_gainpref"
         android:summary="ADC Channel 1 full scale range in Volts"
+        android:defaultValue="1"
         android:title="ADC 1 range" />
     <CheckBoxPreference
         android:key="ch2"
@@ -21,15 +22,18 @@
         android:entryValues="@array/gainValues"
         android:key="ch2_gainpref"
         android:summary="ADC Channel 2 full scanel range in Volts"
+        android:defaultValue="1"
         android:title="ADC 2 range" />
     <ListPreference
         android:entries="@array/currentOptions"
         android:entryValues="@array/currentValues"
         android:key="ch2_current"
         android:summary="ADC channel 2 current towards ground for resistance measurements"
+        android:defaultValue="-1"
         android:title="ADC 2 current" />
     <CheckBoxPreference
         android:key="ECG_mode"
+        android:defaultValue="false"
         android:summary="Ch1+ and Ch2 internally connected for ECG Einthoven I,II"
         android:title="Connect Ch1+ with Ch2" />
     <CheckBoxPreference
@@ -37,11 +41,13 @@
         android:summary="Show accelerometer channels"
         android:defaultValue="true"
         android:title="Accelerometer" />
-    <CheckBoxPreference
-        android:key="gyr"
-        android:summary="Show gyroscope channels"
-        android:defaultValue="true"
-        android:title="Gyroscope" />
+    <ListPreference
+        android:entries="@array/accOptions"
+        android:entryValues="@array/accValues"
+        android:summary="Full scale range of the accelerometer"
+        android:key="accFullscale"
+        android:defaultValue="1"
+        android:title="Accelerometer full scale" />
     <CheckBoxPreference
         android:key="mag"
         android:summary="Show magnetometer channels"
@@ -52,17 +58,20 @@
         android:entryValues="@array/textDataFileSeparatorValues"
         android:summary="Separator between the values in the datafile saved to the SD card"
         android:key="data_separator"
+        android:defaultValue="2"
         android:title="Separator (TSV, CSV or SSV)" />
     <ListPreference
         android:entries="@array/powerlineOptions"
         android:entryValues="@array/powerlineValues"
         android:summary="The frequency of your mains AC supply (US: 60Hz, EU: 50Hz, ...)"
         android:key="powerline"
+        android:defaultValue="50"
         android:title="Powerline frequency" />
     <ListPreference
         android:entries="@array/samplingRateOptions"
         android:entryValues="@array/samplingRateValues"
         android:summary="Sampling rate the Attys is acquiring the data and transmitting it"
         android:key="samplingrate"
+        android:defaultValue="125"
         android:title="Sampling rate" />
 </PreferenceScreen>

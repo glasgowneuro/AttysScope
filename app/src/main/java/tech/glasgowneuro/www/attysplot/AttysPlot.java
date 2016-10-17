@@ -71,7 +71,7 @@ public class AttysPlot extends AppCompatActivity {
 
     private Timer timer = null;
     // screen refresh rate
-    private final int REFRESH_IN_MS = 250;
+    private final int REFRESH_IN_MS = 50;
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
@@ -80,6 +80,8 @@ public class AttysPlot extends AppCompatActivity {
     private AttysComm attysComm = null;
     private BluetoothDevice btAttysDevice = null;
     private byte samplingRate = AttysComm.ADC_RATE_250HZ;
+
+    UpdatePlotTask updatePlotTask = null;
 
     private static final String TAG = "AttysPlot";
 
@@ -92,7 +94,6 @@ public class AttysPlot extends AppCompatActivity {
     private float powerlineHz = 50;
 
     private boolean showAcc = true;
-    private boolean showGyr = true;
     private boolean showMag = true;
     private boolean showCh1 = true;
     private boolean showCh2 = true;
@@ -110,8 +111,6 @@ public class AttysPlot extends AppCompatActivity {
         DC,
         ECG
     }
-
-    private boolean doAnnotate = true;
 
     private DataAnalysis dataAnalysis = DataAnalysis.DC;
 
@@ -135,7 +134,6 @@ public class AttysPlot extends AppCompatActivity {
 
     String[] labels = {
             "Acc x", "Acc y", "Acc z",
-            "Gyr x", "Gyr y", "Gyr z",
             "Mag x", "Mag y", "Mag z",
             "ADC 1", "ADC 2"};
 
@@ -257,7 +255,6 @@ public class AttysPlot extends AppCompatActivity {
 
         private void annotatePlot(String largeText) {
             String small = new String();
-            if (!doAnnotate) return;
             if (showCh1) {
                 small = small + new String().format("ADC1 = %fV/div", ch1Div);
             }
@@ -298,7 +295,7 @@ public class AttysPlot extends AppCompatActivity {
 
             switch (dataAnalysis) {
                 case ECG:
-                    if (theChannelWeDoAnalysis > 8) {
+                    if (theChannelWeDoAnalysis >= AttysComm.INDEX_Analogue_channel_1) {
                         double h = ecgDetNotch.filter(v * 1000);
                         h = ecgDetector.filter(h);
                         if (ignoreECGdetector > 0) {
@@ -399,11 +396,11 @@ public class AttysPlot extends AppCompatActivity {
                         if (sample != null) {
                             doAnalysis(sample[theChannelWeDoAnalysis]);
                             // debug ECG detector
-                            // sample[10] = (float)ecgDetOut;
+                            // sample[AttysComm.INDEX_Analogue_channel_2] = (float)ecgDetOut;
                             timestamp++;
                             for (int j = 0; j < nCh; j++) {
                                 float v = sample[j];
-                                if (j > 8) {
+                                if (j >= AttysComm.INDEX_Analogue_channel_1) {
                                     v = highpass[j].filter(v);
                                     if (iirNotch[j] != null) {
                                         v = (float) iirNotch[j].filter((double) v);
@@ -422,28 +419,29 @@ public class AttysPlot extends AppCompatActivity {
                                 if (attysComm != null) {
                                     tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                                     tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
-                                    ch1Div = 1.0F / (float) gain[9];
+                                    ch1Div = 1.0F / (float) gain[AttysComm.INDEX_Analogue_channel_1];
                                     if (attysComm.getADCFullScaleRange(0) < 1) {
                                         ch1Div = ch1Div / 10;
                                     }
-                                    tmpTick[nRealChN] = ch1Div * gain[9];
-                                    tmpLabels[nRealChN] = labels[9];
-                                    actualChannelIdx[nRealChN] = 9;
-                                    tmpSample[nRealChN++] = sample[9];
+                                    tmpTick[nRealChN] = ch1Div * gain[AttysComm.INDEX_Analogue_channel_1];
+                                    tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_1];
+                                    actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_1;
+                                    tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_1];
                                 }
                             }
                             if (showCh2) {
                                 if (attysComm != null) {
                                     tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                                     tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
-                                    ch2Div = 1.0F / (float) gain[10];
+                                    ch2Div = 1.0F / (float) gain[AttysComm.INDEX_Analogue_channel_2];
                                     if (attysComm.getADCFullScaleRange(1) < 1) {
                                         ch2Div = ch2Div / 10;
                                     }
-                                    tmpTick[nRealChN] = ch2Div * gain[10];
-                                    tmpLabels[nRealChN] = labels[10];
-                                    actualChannelIdx[nRealChN] = 10;
-                                    tmpSample[nRealChN++] = sample[10];
+                                    tmpTick[nRealChN] = ch2Div * gain[AttysComm.INDEX_Analogue_channel_2];
+                                    tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_2];
+                                    actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_2;
+                                    ;
+                                    tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_2];
                                 }
                             }
                             if (showAcc) {
@@ -461,37 +459,25 @@ public class AttysPlot extends AppCompatActivity {
                                     }
                                 }
                             }
-                            if (showGyr) {
-                                if (attysComm != null) {
-                                    float min = -attysComm.getGyroFullScaleRange();
-                                    float max = attysComm.getGyroFullScaleRange();
-                                    for (int k = 0; k < 3; k++) {
-                                        tmpMin[nRealChN] = min;
-                                        tmpMax[nRealChN] = max;
-                                        tmpTick[nRealChN] = gain[k + 3] * 1000.0F; // 1000DPS
-                                        tmpLabels[nRealChN] = labels[k + 3];
-                                        actualChannelIdx[nRealChN] = k + 3;
-                                        tmpSample[nRealChN++] = sample[k + 3];
-                                    }
-                                }
-                            }
                             if (showMag) {
                                 if (attysComm != null) {
                                     for (int k = 0; k < 3; k++) {
                                         tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
                                         tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
-                                        tmpLabels[nRealChN] = labels[k + 6];
-                                        actualChannelIdx[nRealChN] = k + 6;
+                                        tmpLabels[nRealChN] = labels[k + 3];
+                                        actualChannelIdx[nRealChN] = k + 3;
                                         tmpTick[nRealChN] = 1000.0E-6F; //1000uT
-                                        tmpSample[nRealChN++] = sample[k + 6];
+                                        tmpSample[nRealChN++] = sample[k + 3];
                                     }
                                 }
                             }
-                            realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
-                                    Arrays.copyOfRange(tmpMin, 0, nRealChN),
-                                    Arrays.copyOfRange(tmpMax, 0, nRealChN),
-                                    Arrays.copyOfRange(tmpTick, 0, nRealChN),
-                                    Arrays.copyOfRange(tmpLabels, 0, nRealChN));
+                            if (realtimePlotView != null) {
+                                realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
+                                        Arrays.copyOfRange(tmpMin, 0, nRealChN),
+                                        Arrays.copyOfRange(tmpMax, 0, nRealChN),
+                                        Arrays.copyOfRange(tmpTick, 0, nRealChN),
+                                        Arrays.copyOfRange(tmpLabels, 0, nRealChN));
+                            }
                         }
                     }
                     if (realtimePlotView != null) {
@@ -547,10 +533,10 @@ public class AttysPlot extends AppCompatActivity {
             highpass[i] = new Highpass();
             iirNotch[i] = null;
             // set it to 1st ADC channel
-            actualChannelIdx[i] = 9;
+            actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
             gain[i] = 1;
-            if ((i > 5) && (i < 9)) {
-                gain[i] = 50;
+            if ((i >= AttysComm.INDEX_Magnetic_field_X) && (i <= AttysComm.INDEX_Magnetic_field_Z)) {
+                gain[i] = 20;
             }
         }
 
@@ -563,6 +549,22 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
+
+        startDAQ();
+
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        //startDAQ();
+
+    }
+
+
+    public void startDAQ() {
 
         client.connect();
         viewAction = Action.newAction(
@@ -596,8 +598,6 @@ public class AttysPlot extends AppCompatActivity {
             theChannelWeDoAnalysis = AttysComm.INDEX_Analogue_channel_2;
         } else if (showAcc) {
             theChannelWeDoAnalysis = AttysComm.INDEX_Acceleration_X;
-        } else if (showGyr) {
-            theChannelWeDoAnalysis = AttysComm.INDEX_Rotation_X;
         } else if (showMag) {
             theChannelWeDoAnalysis = AttysComm.INDEX_Magnetic_field_X;
         }
@@ -620,10 +620,6 @@ public class AttysPlot extends AppCompatActivity {
                     public void touchedChannel(int chNo) {
                         try {
                             theChannelWeDoAnalysis = actualChannelIdx[chNo];
-                            doAnnotate = !doAnnotate;
-                            if (!doAnnotate) {
-                                infoView.removeText();
-                            }
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.ERROR)) {
                                 Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
@@ -639,11 +635,20 @@ public class AttysPlot extends AppCompatActivity {
         attysComm.start();
 
         timer = new Timer();
-        UpdatePlotTask updatePlotTask = new UpdatePlotTask();
+        updatePlotTask = new UpdatePlotTask();
         timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
     }
 
     private void killAttysComm() {
+
+        if (timer != null) {
+            timer.cancel();
+            timer.purge();
+            timer = null;
+        }
+
+        updatePlotTask = null;
+
         if (attysComm != null) {
             attysComm.cancel();
             try {
@@ -673,6 +678,17 @@ public class AttysPlot extends AppCompatActivity {
             Log.d(TAG, String.format("Restarting"));
         }
         killAttysComm();
+    }
+
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, String.format("Paused"));
+        }
+
     }
 
 
@@ -878,50 +894,50 @@ public class AttysPlot extends AppCompatActivity {
                 return true;
 
             case R.id.Ch1toggleDC:
-                boolean a = highpass[9].getIsActive();
+                boolean a = highpass[AttysComm.INDEX_Analogue_channel_1].getIsActive();
                 a = !a;
                 item.setChecked(a);
-                highpass[9].setActive(a);
+                highpass[AttysComm.INDEX_Analogue_channel_1].setActive(a);
                 return true;
 
             case R.id.Ch2toggleDC:
-                a = highpass[10].getIsActive();
+                a = highpass[AttysComm.INDEX_Analogue_channel_2].getIsActive();
                 a = !a;
                 item.setChecked(a);
-                highpass[10].setActive(a);
+                highpass[AttysComm.INDEX_Analogue_channel_2].setActive(a);
                 return true;
 
             case R.id.Ch1notch:
-                if (iirNotch[9] == null) {
-                    iirNotch[9] = new Butterworth();
-                    iirNotch[9].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+                if (iirNotch[AttysComm.INDEX_Analogue_channel_1] == null) {
+                    iirNotch[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
+                    iirNotch[AttysComm.INDEX_Analogue_channel_1].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
-                    iirNotch[9] = null;
+                    iirNotch[AttysComm.INDEX_Analogue_channel_1] = null;
                 }
-                item.setChecked(iirNotch[9] != null);
+                item.setChecked(iirNotch[AttysComm.INDEX_Analogue_channel_1] != null);
                 return true;
 
             case R.id.Ch2notch:
-                if (iirNotch[10] == null) {
-                    iirNotch[10] = new Butterworth();
-                    iirNotch[10].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+                if (iirNotch[AttysComm.INDEX_Analogue_channel_2] == null) {
+                    iirNotch[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
+                    iirNotch[AttysComm.INDEX_Analogue_channel_2].bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
-                    iirNotch[10] = null;
+                    iirNotch[AttysComm.INDEX_Analogue_channel_2] = null;
                 }
-                item.setChecked(iirNotch[10] != null);
+                item.setChecked(iirNotch[AttysComm.INDEX_Analogue_channel_2] != null);
                 return true;
 
             case R.id.Ch1invert:
-                a = invert[9];
+                a = invert[AttysComm.INDEX_Analogue_channel_1];
                 a = !a;
-                invert[9] = a;
+                invert[AttysComm.INDEX_Analogue_channel_1] = a;
                 item.setChecked(a);
                 return true;
 
             case R.id.Ch2invert:
-                a = invert[10];
+                a = invert[AttysComm.INDEX_Analogue_channel_2];
                 a = !a;
-                invert[10] = a;
+                invert[AttysComm.INDEX_Analogue_channel_2] = a;
                 item.setChecked(a);
                 return true;
 
@@ -936,7 +952,7 @@ public class AttysPlot extends AppCompatActivity {
             case R.id.Ch1gain500:
                 String t = item.getTitle().toString();
                 int g = Integer.parseInt(t);
-                gain[9] = (float) g;
+                gain[AttysComm.INDEX_Analogue_channel_1] = (float) g;
                 Toast.makeText(getApplicationContext(),
                         String.format("Channel 1 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 return true;
@@ -954,7 +970,7 @@ public class AttysPlot extends AppCompatActivity {
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
                         String.format("Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
-                gain[10] = (float) g;
+                gain[AttysComm.INDEX_Analogue_channel_2] = (float) g;
                 return true;
 
             case R.id.largeStatusOff:
@@ -1016,8 +1032,11 @@ public class AttysPlot extends AppCompatActivity {
         byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
         attysComm.setDataSeparator(data_separator);
 
+        int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
+
+        attysComm.setAccel_full_scale_index((byte) fullscaleAcc);
+
         showAcc = prefs.getBoolean("acc", true);
-        showGyr = prefs.getBoolean("gyr", true);
         showMag = prefs.getBoolean("mag", true);
         showCh1 = prefs.getBoolean("ch1", true);
         showCh2 = prefs.getBoolean("ch2", true);

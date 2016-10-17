@@ -46,23 +46,17 @@ public class AttysComm extends Thread {
     public static final int INDEX_Acceleration_X = 0;
     public static final int INDEX_Acceleration_Y = 1;
     public static final int INDEX_Acceleration_Z = 2;
-    public static final int INDEX_Rotation_X = 3;
-    public static final int INDEX_Rotation_Y = 4;
-    public static final int INDEX_Rotation_Z = 5;
-    public static final int INDEX_Magnetic_field_X = 6;
-    public static final int INDEX_Magnetic_field_Y = 7;
-    public static final int INDEX_Magnetic_field_Z = 8;
-    public static final int INDEX_Analogue_channel_1 = 9;
-    public static final int INDEX_Analogue_channel_2 = 10;
+    public static final int INDEX_Magnetic_field_X = 3;
+    public static final int INDEX_Magnetic_field_Y = 4;
+    public static final int INDEX_Magnetic_field_Z = 5;
+    public static final int INDEX_Analogue_channel_1 = 6;
+    public static final int INDEX_Analogue_channel_2 = 7;
 
     // descriptions the channels in text form
     public final static String[] CHANNEL_DESCRIPTION = {
             "Acceleration X",
             "Acceleration Y",
             "Acceleration Z",
-            "Rotation X",
-            "Rotation Y",
-            "Rotation Z",
             "Magnetic field X",
             "Magnetic field Y",
             "Magnetic field Z",
@@ -75,9 +69,6 @@ public class AttysComm extends Thread {
             "m/s^2",
             "m/s^2",
             "m/s^2",
-            "\u00b0" + "/s",
-            "\u00b0" + "/s",
-            "\u00b0" + "/s",
             "T",
             "T",
             "T",
@@ -222,23 +213,9 @@ public class AttysComm extends Thread {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // gyroscope
-    public final static float[] GYRO_FULL_SCALE = {250, 500, 1000, 2000}; //DPS
-    public final static byte GYRO_250DPS = 0;
-    public final static byte GYRO_500DPS = 1;
-    public final static byte GYRO_1000DPS = 2;
-    public final static byte GYRO_2000DPS = 3;
-    private byte gyro_full_scale_index = GYRO_2000DPS;
-
-    public float getGyroFullScaleRange() {
-        return GYRO_FULL_SCALE[gyro_full_scale_index];
-    }
-
-    public void setGyro_full_scale_index(byte idx) {
-        gyro_full_scale_index = idx;
-    }
-
+    ///////////////////////////////////////////////////
+    // magnetometer
+    //
     public final static float MAG_FULL_SCALE = 4800.0E-6F; // TESLA
 
     public float getMagFullScaleRange() {
@@ -616,7 +593,9 @@ public class AttysComm extends Thread {
     private synchronized void stopADC() throws IOException {
         String s = "\r\n\r\n\r\nx=0\r";
         byte[] bytes = s.getBytes();
-        if (!mmSocket.isConnected()) throw new IOException();
+        if (mmSocket != null) {
+            if (!mmSocket.isConnected()) throw new IOException();
+        }
         for (int j = 0; j < 100; j++) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "Trying to stop the data acquisition. Attempt #" + (j + 1) + ".");
@@ -728,7 +707,7 @@ public class AttysComm extends Thread {
                 }
             }
         }
-        if (Log.isLoggable(TAG,Log.ERROR)) {
+        if (Log.isLoggable(TAG, Log.ERROR)) {
             Log.e(TAG, "ATTYS hasn't replied with OK after command: " + s + ".");
         }
         throw new IOException();
@@ -737,10 +716,6 @@ public class AttysComm extends Thread {
 
     private synchronized void sendSamplingRate() throws IOException {
         sendSyncCommand("r=" + adc_rate_index);
-    }
-
-    private synchronized void sendFullscaleGyroRange() throws IOException {
-        sendSyncCommand("g=" + gyro_full_scale_index);
     }
 
     private synchronized void sendFullscaleAccelRange() throws IOException {
@@ -782,7 +757,6 @@ public class AttysComm extends Thread {
         // switching to base64 encoding
         sendSyncCommand("d=1");
         sendSamplingRate();
-        sendFullscaleGyroRange();
         sendFullscaleAccelRange();
         sendGainMux(0, adc0_gain_index, adc0_mux_index);
         sendGainMux(1, adc1_gain_index, adc1_mux_index);
@@ -837,7 +811,7 @@ public class AttysComm extends Thread {
             }
         } catch (IOException e) {
             if (Log.isLoggable(TAG, Log.ERROR)) {
-                Log.e(TAG, "Could not get streams",e);
+                Log.e(TAG, "Could not get streams", e);
             }
             isConnected = false;
             fatalError = true;
@@ -894,24 +868,25 @@ public class AttysComm extends Thread {
                         try {
                             raw = Base64.decode(oneLine, Base64.DEFAULT);
 
-                            // adc data def there
-                            if (raw.length > 9) {
-                                for (int i = 0; i < 2; i++) {
-                                    long v = (raw[i * 3] & 0xff)
-                                            | ((raw[i * 3 + 1] & 0xff) << 8)
-                                            | ((raw[i * 3 + 2] & 0xff) << 16);
-                                    data[9 + i] = v;
-                                }
+                            for (int i = 0; i < 2; i++) {
+                                long v = (raw[i * 3] & 0xff)
+                                        | ((raw[i * 3 + 1] & 0xff) << 8)
+                                        | ((raw[i * 3 + 2] & 0xff) << 16);
+                                data[INDEX_Analogue_channel_1 + i] = v;
                             }
 
-                            // all data def there
-                            if (raw.length > 25) {
-                                for (int i = 0; i < 9; i++) {
-                                    long v = (raw[8 + i * 2] & 0xff)
-                                            | ((raw[8 + i * 2 + 1] & 0xff) << 8);
-                                    data[i] = v;
-                                }
+                            for (int i = 0; i < 6; i++) {
+                                long v = (raw[8 + i * 2] & 0xff)
+                                        | ((raw[8 + i * 2 + 1] & 0xff) << 8);
+                                data[i] = v;
                             }
+
+                            /**
+                            Log.d(TAG,String.format("%d,%d,%d, %d,%d,%d, %d,%d",
+                                    data[0],data[1],data[2],
+                                    data[3],data[4],data[5],
+                                    data[6],data[7]));
+                            **/
 
                             // check that the timestamp is the expected one
                             byte ts = 0;
@@ -943,43 +918,39 @@ public class AttysComm extends Thread {
                         }
 
                         // acceleration
-                        for (int i = 0; i < 3; i++) {
+                        for (int i = AttysComm.INDEX_Acceleration_X;
+                             i <= AttysComm.INDEX_Acceleration_Z; i++) {
                             float norm = 0x8000;
                             try {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         getAccelFullScaleRange();
                             } catch (Exception e) {
-                                sample[i] = 0;
-                            }
-                        }
-
-                        // gyroscope
-                        for (int i = 3; i < 6; i++) {
-                            float norm = 0x8000;
-                            try {
-                                sample[i] = ((float) data[i] - norm) / norm *
-                                        getGyroFullScaleRange();
-                            } catch (Exception e) {
+                                Log.d(TAG,"Acc conv err");
                                 sample[i] = 0;
                             }
                         }
 
                         // magnetometer
-                        for (int i = 6; i < 9; i++) {
+                        for (int i = AttysComm.INDEX_Magnetic_field_X;
+                             i <= AttysComm.INDEX_Magnetic_field_Z; i++) {
                             float norm = 0x8000;
                             try {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         MAG_FULL_SCALE;
+                                //Log.d(TAG,"i="+i+","+sample[i]);
                             } catch (Exception e) {
+                                Log.d(TAG,"Mag conv err");
                                 sample[i] = 0;
                             }
                         }
 
-                        for (int i = 9; i < 11; i++) {
+                        for (int i = AttysComm.INDEX_Analogue_channel_1;
+                             i <= AttysComm.INDEX_Analogue_channel_2; i++) {
                             float norm = 0x800000;
                             try {
                                 sample[i] = ((float) data[i] - norm) / norm *
-                                        ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i - 9]];
+                                        ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[i
+                                        - AttysComm.INDEX_Analogue_channel_1]];
                             } catch (Exception e) {
                                 sample[i] = 0;
                             }
@@ -1047,10 +1018,11 @@ public class AttysComm extends Thread {
             } catch (IOException e) {
             }
         }
-        if (mmSocket!=null) {
+        if (mmSocket != null) {
             try {
                 mmSocket.close();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
         mmSocket = null;
         isConnected = false;

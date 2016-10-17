@@ -305,7 +305,6 @@ public class Attys2ScienceJournal extends Service {
                             attysComm = new AttysComm(bluetoothDevice);
                             attysComm.setAdc_samplingrate_index(AttysComm.ADC_RATE_125HZ);
                             attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
-                            attysComm.setGyro_full_scale_index(AttysComm.GYRO_2000DPS);
 
                             attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
                             attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);

@@ -122,7 +122,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
 
     public synchronized boolean startAddSamples(int n) {
         if (canvas != null) {
-            Log.d(TAG,"Canvas still locked.");
+            //Log.d(TAG,"Canvas still locked.");
             return false;
         }
         int width = getWidth();
