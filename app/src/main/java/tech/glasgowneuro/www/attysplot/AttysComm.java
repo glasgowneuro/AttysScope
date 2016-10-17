@@ -39,8 +39,7 @@ import java.util.UUID;
  */
 public class AttysComm extends Thread {
 
-    // 11 channels will be always sent back
-    public final static int NCHANNELS = 11;
+    public final static int NCHANNELS = 8;
 
     // index numbers of the channels returned in the data array
     public static final int INDEX_Acceleration_X = 0;

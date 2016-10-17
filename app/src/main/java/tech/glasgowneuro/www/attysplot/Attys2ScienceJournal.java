@@ -41,7 +41,6 @@ public class Attys2ScienceJournal extends Service {
 
     private float[] gainFactor = {
             1, 1, 1, // acceleration
-            1, 1, 1, // rotation
             1E6F, 1E6F, 1E6F, // magnetic field
             1, 1 // adc channels
     };
@@ -80,23 +79,18 @@ public class Attys2ScienceJournal extends Service {
         }
 
         // acc
-        sensorAppearanceResources[0].iconId = R.drawable.ic_attys_acc_x_24dp;
-        sensorAppearanceResources[1].iconId = R.drawable.ic_attys_acc_y_24dp;
-        sensorAppearanceResources[2].iconId = R.drawable.ic_attys_acc_z_24dp;
-
-        // gyro
-        sensorAppearanceResources[3].iconId = R.drawable.ic_attys_acc_x_24dp;
-        sensorAppearanceResources[4].iconId = R.drawable.ic_attys_acc_y_24dp;
-        sensorAppearanceResources[5].iconId = R.drawable.ic_attys_acc_z_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Acceleration_X].iconId = R.drawable.ic_attys_acc_x_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Acceleration_Y].iconId = R.drawable.ic_attys_acc_y_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Acceleration_Z].iconId = R.drawable.ic_attys_acc_z_24dp;
 
         // mag
-        sensorAppearanceResources[6].iconId = R.drawable.ic_attys_acc_x_24dp;
-        sensorAppearanceResources[7].iconId = R.drawable.ic_attys_acc_y_24dp;
-        sensorAppearanceResources[8].iconId = R.drawable.ic_attys_acc_z_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_X].iconId = R.drawable.ic_attys_acc_x_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_Y].iconId = R.drawable.ic_attys_acc_y_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_Z].iconId = R.drawable.ic_attys_acc_z_24dp;
 
         // ADC
-        sensorAppearanceResources[9].iconId = R.drawable.ic_attys_channel1_bold;
-        sensorAppearanceResources[10].iconId = R.drawable.ic_attys_channel2_bold;
+        sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].iconId = R.drawable.ic_attys_channel1_bold;
+        sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].iconId = R.drawable.ic_attys_channel2_bold;
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "ch1/dim=" + sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units);
@@ -239,20 +233,17 @@ public class Attys2ScienceJournal extends Service {
                             i, AttysComm.CHANNEL_DESCRIPTION[i]);
                     String channelDescr = "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i];
                     behaviour[i].loggingId = loggingID;
-                    if (i < 9) {
-                        behaviour[i].settingsIntent = settingsIntent;
-                    } else {
-                        if (i == 9) {
+                    behaviour[i].settingsIntent = settingsIntent;
+                        if (i == AttysComm.INDEX_Analogue_channel_1) {
                             behaviour[i].settingsIntent =
                                     Attys2ScienceJournalADC1Settings.getPendingIntent(
                                             Attys2ScienceJournal.this);
                         }
-                        if (i == 10) {
+                        if (i == AttysComm.INDEX_Analogue_channel_2) {
                             behaviour[i].settingsIntent =
                                     Attys2ScienceJournalADC2Settings.getPendingIntent(
                                             Attys2ScienceJournal.this);
                         }
-                    }
                     c.onSensorFound("" + i, // sensorAddress = ch index number
                             channelDescr, // name
                             behaviour[i],
