@@ -5,6 +5,7 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.os.DeadObjectException;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -21,16 +22,16 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppe
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorBehavior;
 
 import java.util.Set;
+import java.util.concurrent.Exchanger;
 
 public class Attys2ScienceJournal extends Service {
     public static final String DEVICE_ID = "AttysDevice";
     public static final String SENSOR_PREF_NAME = "attys_sensors";
     private static final String TAG = "Attys2ScienceJournal";
     private static AttysComm attysComm = null;
+    private static boolean isConnecting = true;
     private static ISensorObserver[] observer = null;
     private static ISensorStatusListener[] listener = null;
-    private static ISensorStatusListener theFirstListener = null;
-    private static BluetoothDevice bluetoothDevice = null;
     private static double timestamp = 0;
 
     private final static SensorAppearanceResources[] sensorAppearanceResources =
@@ -142,6 +143,266 @@ public class Attys2ScienceJournal extends Service {
         }
     }
 
+
+    private synchronized void startObservingSync(final int sensorIndex,
+                                                 final ISensorObserver theObserver,
+                                                 final ISensorStatusListener theListener,
+                                                 String settingsKey) throws RemoteException {
+
+        // we keep all open listeners and observers in an array so
+        // that they can be served at once from the Attys callback
+        // when a new set of samples arrives
+        theListener.onSensorConnecting();
+
+        listener[sensorIndex] = theListener;
+        observer[sensorIndex] = theObserver;
+
+
+        int adc1Mode = Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this);
+        final int adc2Mode = Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this);
+
+        int[] adcpowerline = {
+                Attys2ScienceJournalADC1Settings.getIndexForPowerline(Attys2ScienceJournal.this),
+                Attys2ScienceJournalADC2Settings.getIndexForPowerline(Attys2ScienceJournal.this)
+        };
+
+        BluetoothDevice bluetoothDevice = findPairedAttys();
+        if (bluetoothDevice == null) {
+            theListener.onSensorError("No paired Attys available");
+            return;
+        }
+
+        // are we the first sensor? Then let's start a proper connection
+        if ((attysComm == null)) {
+            Log.d(TAG, "First sensor:" + sensorIndex + " we open the connection!");
+            Log.d(TAG, "Service hash: " + getClass().hashCode());
+            theListener.onSensorConnecting();
+
+            attysComm = new AttysComm(bluetoothDevice);
+            attysComm.setAdc_samplingrate_index(AttysComm.ADC_RATE_125HZ);
+            attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
+
+            attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
+            attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
+
+            for (int i = 0; i < 2; i++) {
+                switch (adcpowerline[i]) {
+                    case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_50HZ:
+                        notch[i] = new Butterworth();
+                        notch[i].bandStop(2, (double) attysComm.getSamplingRateInHz(), 50, 5);
+                        break;
+                    case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_60HZ:
+                        notch[i] = new Butterworth();
+                        notch[i].bandStop(2, (double) attysComm.getSamplingRateInHz(), 60, 5);
+                        break;
+                    default:
+                        notch[i] = null;
+                }
+                highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
+            }
+            switch (adc1Mode) {
+                case Attys2ScienceJournalADC1Settings.MODE_AC:
+                case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                    highpass[0].setActive(true);
+                    break;
+                default:
+                    highpass[0].setActive(false);
+                    break;
+            }
+            switch (adc1Mode) {
+                case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_6);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1000;
+                    break;
+                default:
+                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1;
+                    break;
+            }
+            switch (adc2Mode) {
+                case Attys2ScienceJournalADC2Settings.MODE_AC:
+                    highpass[1].setActive(true);
+                    break;
+                default:
+                    highpass[1].setActive(false);
+                    break;
+            }
+
+            switch (adc2Mode) {
+                case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
+                    attysComm.setBiasCurrent(AttysComm.ADC_CURRENT_22UA);
+                    attysComm.enableCurrents(false, false, true);
+                    break;
+                default:
+                    attysComm.enableCurrents(false, false, false);
+                    break;
+            }
+
+            AttysComm.DataListener dataListener = new AttysComm.DataListener() {
+                @Override
+                public void gotData(long samplenumber, float[] data) {
+                    boolean onDataUsed = false;
+                    // Log.d(TAG, String.format("Got data: timestamp=%d",
+                    //                                       timestamp));
+                    for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                        if (observer[i] != null) {
+                            try {
+                                if (timestamp == 0) {
+                                    timestamp = (double) System.currentTimeMillis();
+                                }
+                                float v = data[i];
+                                if (i == AttysComm.INDEX_Analogue_channel_1) {
+                                    if (notch[0] != null) {
+                                        v = (float) notch[0].filter((double) v);
+                                    }
+                                    v = highpass[0].filter(v);
+                                }
+                                if (i == AttysComm.INDEX_Analogue_channel_2) {
+                                    if (notch[1] != null) {
+                                        v = (float) notch[1].filter((double) v);
+                                        //Log.d(TAG,""+v);
+                                    }
+                                    v = highpass[1].filter(v);
+                                    if (adc2Mode == Attys2ScienceJournalADC2Settings.MODE_RESISTANCE) {
+                                        v = v / 22E-6F;
+                                    }
+                                }
+                                try {
+                                    observer[i].onNewData(
+                                            Math.round(timestamp),
+                                            v * gainFactor[i]);
+                                } catch (DeadObjectException e) {
+                                    killAttys();
+                                }
+                                onDataUsed = true;
+                                // Log.d(TAG, String.format("timestamp=%d,data=%f",
+                                //        timestamp, data[i]));
+
+                                double timeNow = System.currentTimeMillis();
+                                // let see if we drift apart which happens because
+                                // the clock in the Attys might be slightly
+                                // faster or slower
+                                // so if the timestamp is lagging behind the
+                                // system time we speed up our timestamp a bit
+                                double timeDiff = timeNow - timestamp;
+
+                                // let's gently stay in sync with the system
+                                // time but let the ADC clock dominate the
+                                // timing because we know that they arrive at
+                                // the sampling rate (+/- a small drift)
+                                double offset = timeDiff / 100 +
+                                        1000 / ((long) attysComm.getSamplingRateInHz());
+
+                                // prevent of going back in time!
+                                if (offset < 0) {
+                                    offset = 0;
+                                }
+
+                                //Log.d(TAG, "offset=" + offset);
+
+                                timestamp = timestamp + offset;
+                            } catch (RemoteException e) {
+                                if (Log.isLoggable(TAG, Log.ERROR)) {
+                                    Log.e(TAG, "onNewData exception:", e);
+                                }
+                            }
+                        }
+                    }
+                    /**
+                     if (!onDataUsed) {
+                     if (Log.isLoggable(TAG, Log.DEBUG)) {
+                     Log.d(TAG, "All observers are NULL");
+                     }
+                     }
+                     **/
+                }
+            };
+
+            attysComm.registerDataListener(dataListener);
+
+            AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
+                @Override
+                public void haveMessage(int msg) {
+                    switch (msg) {
+                        case AttysComm.MESSAGE_ERROR:
+                            for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                try {
+                                    if (listener[i] != null) {
+                                        listener[i].onSensorError("Attys connection problem");
+                                    }
+                                } catch (RemoteException e) {
+                                    if (Log.isLoggable(TAG, Log.ERROR)) {
+                                        Log.e(TAG, "Cannot report BT error to open science journal", e);
+                                    }
+                                }
+                            }
+                            break;
+                        case AttysComm.MESSAGE_CONNECTED:
+                            for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+                                try {
+                                    if (listener[i] != null) {
+                                        listener[i].onSensorConnected();
+                                    }
+                                } catch (RemoteException e) {
+                                    if (Log.isLoggable(TAG, Log.ERROR)) {
+                                        Log.e(TAG, "Cannot announce connect", e);
+                                    }
+                                }
+                            }
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Connected");
+                            }
+                            break;
+                        case AttysComm.MESSAGE_CONFIGURE:
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Configuring Attys");
+                            }
+                            break;
+                        case AttysComm.MESSAGE_RETRY:
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Retrying to connect");
+                            }
+                            break;
+                    }
+
+                }
+            };
+
+            attysComm.registerMessageListener(messageListener);
+
+            // this is async in the background and might take a second or two
+            attysComm.start();
+        } else {
+            // all good already
+            theListener.onSensorConnected();
+        }
+    }
+
+
+    synchronized void stopObservingSync(int sensorIndex) throws RemoteException {
+        if (listener[sensorIndex] != null) {
+            listener[sensorIndex].onSensorDisconnected();
+            listener[sensorIndex] = null;
+        }
+        observer[sensorIndex] = null;
+
+        // check if we observe something on another sensor
+        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+            if (observer[i] != null) {
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Keep connection alive.");
+                }
+                return;
+            }
+        }
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Shutting down the connection.");
+        }
+        killAttys();
+    }
+
+
     private ISensorDiscoverer.Stub mDiscoverer = null;
 
     @Nullable
@@ -162,7 +423,7 @@ public class Attys2ScienceJournal extends Service {
         BluetoothAdapter BA = BluetoothAdapter.getDefaultAdapter();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "Finding paired attys");
+            Log.d(TAG, "findPairedAttys");
         }
 
         if (BA == null) {
@@ -194,6 +455,21 @@ public class Attys2ScienceJournal extends Service {
         return null;
     }
 
+    private void killAttys() {
+        if (attysComm != null) {
+            attysComm.cancel();
+            try {
+                attysComm.join();
+            } catch (InterruptedException e) {
+            }
+            attysComm = null;
+        }
+        timestamp = 0;
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "Attys killed");
+        }
+    }
+
 
     private ISensorDiscoverer.Stub createDiscoverer() {
         return new ISensorDiscoverer.Stub() {
@@ -213,7 +489,7 @@ public class Attys2ScienceJournal extends Service {
                     return;
                 }
 
-                bluetoothDevice = findPairedAttys();
+                BluetoothDevice bluetoothDevice = findPairedAttys();
 
                 if (bluetoothDevice == null) {
                     return;
@@ -234,16 +510,16 @@ public class Attys2ScienceJournal extends Service {
                     String channelDescr = "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i];
                     behaviour[i].loggingId = loggingID;
                     behaviour[i].settingsIntent = settingsIntent;
-                        if (i == AttysComm.INDEX_Analogue_channel_1) {
-                            behaviour[i].settingsIntent =
-                                    Attys2ScienceJournalADC1Settings.getPendingIntent(
-                                            Attys2ScienceJournal.this);
-                        }
-                        if (i == AttysComm.INDEX_Analogue_channel_2) {
-                            behaviour[i].settingsIntent =
-                                    Attys2ScienceJournalADC2Settings.getPendingIntent(
-                                            Attys2ScienceJournal.this);
-                        }
+                    if (i == AttysComm.INDEX_Analogue_channel_1) {
+                        behaviour[i].settingsIntent =
+                                Attys2ScienceJournalADC1Settings.getPendingIntent(
+                                        Attys2ScienceJournal.this);
+                    }
+                    if (i == AttysComm.INDEX_Analogue_channel_2) {
+                        behaviour[i].settingsIntent =
+                                Attys2ScienceJournalADC2Settings.getPendingIntent(
+                                        Attys2ScienceJournal.this);
+                    }
                     c.onSensorFound("" + i, // sensorAddress = ch index number
                             channelDescr, // name
                             behaviour[i],
@@ -267,226 +543,11 @@ public class Attys2ScienceJournal extends Service {
                             Log.d(TAG, "Start observing on sensorID:" + sensorIndex);
                         }
 
-                        // we keep all open listeners and observers in an array so
-                        // that they can be served at once from the Attys callback
-                        // when a new set of samples arrives
-                        listener[sensorIndex] = theListener;
-                        observer[sensorIndex] = theObserver;
+                        if (observer[sensorIndex] != null) return;
+                        if (listener[sensorIndex] != null) return;
 
-                        int adc1Mode = Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this);
-                        final int adc2Mode = Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this);
+                        startObservingSync(sensorIndex, theObserver, theListener, settingsKey);
 
-                        int[] adcpowerline = {
-                                Attys2ScienceJournalADC1Settings.getIndexForPowerline(Attys2ScienceJournal.this),
-                                Attys2ScienceJournalADC2Settings.getIndexForPowerline(Attys2ScienceJournal.this)
-                        };
-
-
-                        // are we the first sensor? Then let's start a proper connection
-                        if (attysComm == null) {
-                            theListener.onSensorConnecting();
-                            theFirstListener = theListener;
-                            bluetoothDevice = findPairedAttys();
-
-                            if (bluetoothDevice == null) {
-                                theListener.onSensorError("No paired Attys available");
-                                return;
-                            }
-
-                            attysComm = new AttysComm(bluetoothDevice);
-                            attysComm.setAdc_samplingrate_index(AttysComm.ADC_RATE_125HZ);
-                            attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
-
-                            attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
-                            attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
-
-                            for (int i = 0; i < 2; i++) {
-                                switch (adcpowerline[i]) {
-                                    case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_50HZ:
-                                        notch[i] = new Butterworth();
-                                        notch[i].bandStop(2, (double) attysComm.getSamplingRateInHz(), 50, 5);
-                                        break;
-                                    case Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_60HZ:
-                                        notch[i] = new Butterworth();
-                                        notch[i].bandStop(2, (double) attysComm.getSamplingRateInHz(), 60, 5);
-                                        break;
-                                    default:
-                                        notch[i] = null;
-                                }
-                                highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
-                            }
-                            switch (adc1Mode) {
-                                case Attys2ScienceJournalADC1Settings.MODE_AC:
-                                case Attys2ScienceJournalADC1Settings.MODE_BIO:
-                                    highpass[0].setActive(true);
-                                    break;
-                                default:
-                                    highpass[0].setActive(false);
-                                    break;
-                            }
-                            switch (adc1Mode) {
-                                case Attys2ScienceJournalADC1Settings.MODE_BIO:
-                                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_6);
-                                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1000;
-                                    break;
-                                default:
-                                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
-                                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1;
-                                    break;
-                            }
-                            switch (adc2Mode) {
-                                case Attys2ScienceJournalADC2Settings.MODE_AC:
-                                    highpass[1].setActive(true);
-                                    break;
-                                default:
-                                    highpass[1].setActive(false);
-                                    break;
-                            }
-
-                            switch (adc2Mode) {
-                                case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
-                                    attysComm.setBiasCurrent(AttysComm.ADC_CURRENT_22UA);
-                                    attysComm.enableCurrents(false, false, true);
-                                    break;
-                                default:
-                                    attysComm.enableCurrents(false, false, false);
-                                    break;
-                            }
-
-                            AttysComm.DataListener dataListener = new AttysComm.DataListener() {
-                                @Override
-                                public void gotData(long samplenumber, float[] data) {
-                                    boolean onDataUsed = false;
-                                    // Log.d(TAG, String.format("Got data: timestamp=%d",
-                                    //                                       timestamp));
-                                    for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                                        if (observer[i] != null) {
-                                            try {
-                                                if (timestamp == 0) {
-                                                    timestamp = (double) System.currentTimeMillis();
-                                                }
-                                                float v = data[i];
-                                                if (i == AttysComm.INDEX_Analogue_channel_1) {
-                                                    if (notch[0] != null) {
-                                                        v = (float) notch[0].filter((double) v);
-                                                    }
-                                                    v = highpass[0].filter(v);
-                                                }
-                                                if (i == AttysComm.INDEX_Analogue_channel_2) {
-                                                    if (notch[1] != null) {
-                                                        v = (float) notch[1].filter((double) v);
-                                                        //Log.d(TAG,""+v);
-                                                    }
-                                                    v = highpass[1].filter(v);
-                                                    if (adc2Mode == Attys2ScienceJournalADC2Settings.MODE_RESISTANCE) {
-                                                        v = v / 22E-6F;
-                                                    }
-                                                }
-                                                observer[i].onNewData(
-                                                        Math.round(timestamp),
-                                                        v * gainFactor[i]);
-                                                onDataUsed = true;
-                                                // Log.d(TAG, String.format("timestamp=%d,data=%f",
-                                                //        timestamp, data[i]));
-
-                                                double timeNow = System.currentTimeMillis();
-                                                // let see if we drift apart which happens because
-                                                // the clock in the Attys might be slightly
-                                                // faster or slower
-                                                // so if the timestamp is lagging behind the
-                                                // system time we speed up our timestamp a bit
-                                                double timeDiff = timeNow - timestamp;
-
-                                                // let's gently stay in sync with the system
-                                                // time but let the ADC clock dominate the
-                                                // timing because we know that they arrive at
-                                                // the sampling rate (+/- a small drift)
-                                                double offset = timeDiff / 100 +
-                                                        1000 / ((long) attysComm.getSamplingRateInHz());
-
-                                                // prevent of going back in time!
-                                                if (offset < 0) {
-                                                    offset = 0;
-                                                }
-
-                                                //Log.d(TAG, "offset=" + offset);
-
-                                                timestamp = timestamp + offset;
-                                            } catch (RemoteException e) {
-                                                if (Log.isLoggable(TAG, Log.ERROR)) {
-                                                    Log.e(TAG, "onNewData exception:", e);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (!onDataUsed) {
-                                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                            Log.d(TAG, "All observers are NULL");
-                                        }
-                                    }
-                                }
-                            };
-
-                            attysComm.registerDataListener(dataListener);
-
-                            AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
-                                @Override
-                                public void haveMessage(int msg) {
-                                    switch (msg) {
-                                        case AttysComm.MESSAGE_ERROR:
-                                            for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                                                try {
-                                                    if (listener[i] != null) {
-                                                        listener[i].onSensorError("Attys connection problem");
-                                                    }
-                                                } catch (RemoteException e) {
-                                                    if (Log.isLoggable(TAG, Log.ERROR)) {
-                                                        Log.e(TAG, "Cannot report BT error to open science journal", e);
-                                                    }
-                                                }
-                                            }
-                                            break;
-                                        case AttysComm.MESSAGE_CONNECTED:
-                                            try {
-                                                if (theFirstListener != null) {
-                                                    theFirstListener.onSensorConnected();
-                                                    if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                                        Log.d(TAG, "Sensor connected");
-                                                    }
-                                                }
-                                            } catch (RemoteException e) {
-                                                if (Log.isLoggable(TAG, Log.ERROR)) {
-                                                    Log.e(TAG, "Cannot announce connect", e);
-                                                }
-                                            }
-                                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                                Log.d(TAG, "Connected");
-                                            }
-                                            break;
-                                        case AttysComm.MESSAGE_CONFIGURE:
-                                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                                Log.d(TAG, "Configuring Attys");
-                                            }
-                                            break;
-                                        case AttysComm.MESSAGE_RETRY:
-                                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                                Log.d(TAG, "Retrying to connect");
-                                            }
-                                            break;
-                                    }
-
-                                }
-                            };
-
-                            attysComm.registerMessageListener(messageListener);
-
-                            // this is async in the background and might take a second or two
-                            attysComm.start();
-                        } else {
-                            if (!theListener.equals(theFirstListener)) {
-                                theListener.onSensorConnected();
-                            }
-                        }
                     }
 
                     @Override
@@ -497,35 +558,7 @@ public class Attys2ScienceJournal extends Service {
                             Log.d(TAG, String.format("shutting down sensor %d.", sensorIndex));
                         }
 
-                        if (listener[sensorIndex] != null) {
-                            listener[sensorIndex].onSensorDisconnected();
-                            listener[sensorIndex] = null;
-                        }
-                        observer[sensorIndex] = null;
-
-                        // check if we observe something on another sensor
-                        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                            if (observer[i] != null) {
-                                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                    Log.d(TAG, "Keep connection alive.");
-                                }
-                                return;
-                            }
-                        }
-
-                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                            Log.d(TAG, "Shutting down the connection.");
-                        }
-                        // we no longer need an active bluetooth connection so we kill it off
-                        if (attysComm != null) {
-                            attysComm.cancel();
-                            try {
-                                attysComm.join();
-                            } catch (InterruptedException e) {
-                            }
-                            attysComm = null;
-                        }
-                        timestamp = 0;
+                        stopObservingSync(sensorIndex);
                     }
                 };
             }
