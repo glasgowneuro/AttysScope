@@ -777,16 +777,14 @@ public class AttysComm extends Thread {
                 s = 9;
                 break;
         }
+        String tmp = String.format("%f%c", timestamp, s);
+        for (int i = 0; i < (data.length - 1); i++) {
+            tmp = tmp + String.format("%f%c", data[i], s);
+        }
+        tmp = tmp + String.format("%f", data[data.length - 1]);
+
         if (textdataFileStream != null) {
-            textdataFileStream.format("%f%c", timestamp, s);
-            for (int i = 0; i < (data.length - 1); i++) {
-                if (textdataFileStream != null) {
-                    textdataFileStream.format("%f%c", data[i], s);
-                }
-            }
-            if (textdataFileStream != null) {
-                textdataFileStream.format("%f\n", data[data.length - 1]);
-            }
+            textdataFileStream.format("%s\n",tmp);
         }
     }
 
@@ -881,11 +879,11 @@ public class AttysComm extends Thread {
                             }
 
                             /**
-                            Log.d(TAG,String.format("%d,%d,%d, %d,%d,%d, %d,%d",
-                                    data[0],data[1],data[2],
-                                    data[3],data[4],data[5],
-                                    data[6],data[7]));
-                            **/
+                             Log.d(TAG,String.format("%d,%d,%d, %d,%d,%d, %d,%d",
+                             data[0],data[1],data[2],
+                             data[3],data[4],data[5],
+                             data[6],data[7]));
+                             **/
 
                             // check that the timestamp is the expected one
                             byte ts = 0;
@@ -924,7 +922,7 @@ public class AttysComm extends Thread {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         getAccelFullScaleRange();
                             } catch (Exception e) {
-                                Log.d(TAG,"Acc conv err");
+                                Log.d(TAG, "Acc conv err");
                                 sample[i] = 0;
                             }
                         }
@@ -938,7 +936,7 @@ public class AttysComm extends Thread {
                                         MAG_FULL_SCALE;
                                 //Log.d(TAG,"i="+i+","+sample[i]);
                             } catch (Exception e) {
-                                Log.d(TAG,"Mag conv err");
+                                Log.d(TAG, "Mag conv err");
                                 sample[i] = 0;
                             }
                         }
