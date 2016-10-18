@@ -791,7 +791,6 @@ public class AttysPlot extends AppCompatActivity {
         for (String file : list) {
             files.add(file);
         }
-        Collections.sort(files);
 
         final ListView listview = new ListView(this);
         ArrayAdapter adapter = new ArrayAdapter(this,
