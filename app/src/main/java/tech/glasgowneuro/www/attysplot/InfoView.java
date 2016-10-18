@@ -26,6 +26,8 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
     static private Paint paintLarge = new Paint();
     static private Paint paintSmall = new Paint();
 
+    static private int textHeight = 0;
+
     public InfoView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init();
@@ -72,12 +74,16 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
         holder.unlockCanvasAndPost(canvas);
     }
 
+    public int getInfoHeight() {
+        return textHeight;
+    }
+
     public synchronized void drawText(String text, String smallText) {
         if (canvas != null) return;
         Surface surface = holder.getSurface();
         if (surface.isValid()) {
             Rect bounds = new Rect();
-            paintSmall.setTextSize(getHeight()/20);
+            paintSmall.setTextSize(getHeight()/25);
             int txtDiv = 7;
             int x;
             do {
@@ -90,14 +96,13 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
             paintSmall.getTextBounds(smallText, 0, smallText.length(), bounds);
             //Log.d(TAG,smallText);
             int y2 = bounds.height();
-            int x2 = bounds.width();
             canvas = holder.lockCanvas();
             if (canvas != null) {
                 Paint paint = new Paint();
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
                 canvas.drawPaint(paint);
                 canvas.drawText(text,x,y+y2*10/9, paintLarge);
-                canvas.drawText(smallText,getWidth()/10,y2, paintSmall);
+                canvas.drawText(smallText,getWidth()/100,y2, paintSmall);
             } else {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Canvas==null");
@@ -105,6 +110,11 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
             }
             holder.unlockCanvasAndPost(canvas);
             canvas = null;
+            if (text.length()==0) {
+                textHeight = y;
+            } else {
+                textHeight = y2 + y;
+            }
         }
     }
 }

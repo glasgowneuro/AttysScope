@@ -10,10 +10,31 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:title="ADC"
+        android:title="Settings"
         app:showAsAction="ifRoom|withText">
 
         <menu>
+
+            <item
+                android:id="@+id/largeStatus"
+                android:checked="true"
+                android:title="Info displays">
+
+                <menu>
+                    <item
+                        android:id="@+id/largeStatusOff"
+                        android:title="off" />
+                    <item
+                        android:id="@+id/largeStatusAC"
+                        android:title="peak-peak" />
+                    <item
+                        android:id="@+id/largeStatusDC"
+                        android:title="DC" />
+                    <item
+                        android:id="@+id/largeStatusBPM"
+                        android:title="ECG/bpm" />
+                </menu>
+            </item>
 
             <group
                 android:id="@+id/adc1_checkboxes"
@@ -21,21 +42,21 @@
                 <item
                     android:id="@+id/Ch1toggleDC"
                     android:checked="true"
-                    android:title="Ch1 DC filter" />
+                    android:title="ADC 1 DC filter" />
                 <item
                     android:id="@+id/Ch1invert"
                     android:checked="false"
-                    android:title="Ch1 invert" />
+                    android:title="ADC 1 invert" />
                 <item
                     android:id="@+id/Ch1notch"
                     android:checked="false"
-                    android:title="Ch1 mains filter" />
+                    android:title="ADC 1 mains filter" />
             </group>
 
             <item
                 android:id="@+id/Ch1setGain"
                 android:checked="true"
-                android:title="Ch1 gain">
+                android:title="ADC 1 gain">
 
                 <menu>
                     <item
@@ -75,21 +96,21 @@
                 <item
                     android:id="@+id/Ch2toggleDC"
                     android:checked="true"
-                    android:title="Ch2 DC filter" />
+                    android:title="ADC 2 DC filter" />
                 <item
                     android:id="@+id/Ch2invert"
                     android:checked="false"
-                    android:title="Ch2 invert" />
+                    android:title="ADC 2 invert" />
                 <item
                     android:id="@+id/Ch2notch"
                     android:checked="false"
-                    android:title="Ch2 mains filter" />
+                    android:title="ADC 2 mains filter" />
             </group>
 
             <item
                 android:id="@+id/Ch2setGain"
                 android:checked="true"
-                android:title="Ch2 gain">
+                android:title="ADC 2 gain">
 
                 <menu>
                     <item
@@ -125,34 +146,13 @@
     </item>
 
     <item
-        android:id="@+id/enterFilename"
-        android:title="Enter Filename" />
-
-    <item
         android:id="@+id/preferences"
         android:title="Preferences"
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/largeStatus"
-        android:checked="true"
-        android:title="Signal readings / coordinate system">
-
-        <menu>
-            <item
-                android:id="@+id/largeStatusOff"
-                android:title="off" />
-            <item
-                android:id="@+id/largeStatusAC"
-                android:title="peak-peak" />
-            <item
-                android:id="@+id/largeStatusDC"
-                android:title="DC" />
-            <item
-                android:id="@+id/largeStatusBPM"
-                android:title="ECG/bpm" />
-        </menu>
-    </item>
+        android:id="@+id/enterFilename"
+        android:title="Enter Filename" />
 
     <item
         android:id="@+id/filebrowser"

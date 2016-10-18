@@ -50,7 +50,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     static private int xtic = 250;
     static private float[] yZero = null;
     static private float yHeight = 0;
-    static private String TAG="RealtimePlotView";
+    static private String TAG = "RealtimePlotView";
 
     public interface TouchEventListener {
         void touchedChannel(int chNo);
@@ -147,7 +147,9 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
             if (canvas != null) {
                 try {
                     holder.unlockCanvasAndPost(canvas);
-                } catch (Exception e) {};
+                } catch (Exception e) {
+                }
+                ;
                 canvas = null;
             }
         }
@@ -155,8 +157,8 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
 
 
     public int getChannelIdFromY(int y) {
-        for(int i=0;i<nMaxChannels;i++) {
-            if ((Math.abs(y-yZero[i])) < yHeight ) {
+        for (int i = 0; i < nMaxChannels; i++) {
+            if ((Math.abs(y - yZero[i])) < yHeight) {
                 return i;
             }
         }
@@ -168,7 +170,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     public boolean onTouchEvent(MotionEvent event) {
 
         float y = event.getY();
-        int idx = getChannelIdFromY((int)y);
+        int idx = getChannelIdFromY((int) y);
         if (idx != -1) {
             if (touchEventListener != null) {
                 touchEventListener.touchedChannel(idx);
@@ -178,29 +180,31 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     }
 
 
-    public synchronized void addSamples(float[] newData, float[] minV, float[] maxV, float[] ytick,
-                           String[] label) {
+    public synchronized void addSamples(float[] newData,
+                                        float[] minV, float[] maxV, float[] ytick,
+                                        String[] label,
+                                        int ygap) {
         int width = getWidth();
-        int height = getHeight();
+        int height = getHeight()-ygap;
 
         int nCh = newData.length;
         if (nCh == 0) return;
 
         float base = height / nCh;
-        yHeight = base/2;
+        yHeight = base / 2;
 
         if (ypos == null) initYpos(width);
 
         if (nMaxChannels == 0) return;
         Surface surface = holder.getSurface();
         if (surface.isValid()) {
-            Rect rect = new Rect(xpos, 0, xpos + gap, height);
+            Rect rect = new Rect(xpos, 0, xpos + gap, height+ygap);
             if (canvas != null) {
-                paintLabel.setTextSize(canvas.getHeight()/30);
+                paintLabel.setTextSize(canvas.getHeight() / 30);
                 canvas.drawRect(rect, paintBlack);
                 for (int i = 0; i < nCh; i++) {
                     float dy = (float) base / (float) (maxV[i] - minV[i]);
-                    yZero[i] = base * (i + 1) - ((0 - minV[i]) * dy);
+                    yZero[i] = ygap + base * (i + 1) - ((0 - minV[i]) * dy);
                     float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
                     canvas.drawPoint(xpos, yZero[i], paintXCoord);
@@ -215,16 +219,16 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                             yTmpTicNeg = base * (i + 1) - ((-ytick[i] * ticCtr - minV[i]) * dy);
                             doCoord = yTmpTicPos > yTmpTicTicPosBorder;
                             if (doCoord) {
-                                canvas.drawPoint(xpos, yTmpTicPos, paintXCoord);
-                                canvas.drawPoint(xpos, yTmpTicNeg, paintXCoord);
+                                canvas.drawPoint(xpos, yTmpTicPos+ygap, paintXCoord);
+                                canvas.drawPoint(xpos, yTmpTicNeg+ygap, paintXCoord);
                             }
                             ticCtr++;
                         } while (doCoord);
                     }
                     if ((xpos % xtic) == 0) {
-                        canvas.drawLine(xpos, 0, xpos, height, paintYCoord);
+                        canvas.drawLine(xpos, ygap, xpos, height+ygap, paintYCoord);
                     }
-                    canvas.drawLine(xpos, ypos[i][xpos], xpos + 1, ypos[i][xpos + 1], paint);
+                    canvas.drawLine(xpos, ypos[i][xpos]+ygap, xpos + 1, ypos[i][xpos + 1]+ygap, paint);
                     canvas.drawText(label[i], 0F, yZero[i] - 1, paintLabel);
                 }
             }

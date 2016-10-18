@@ -112,6 +112,8 @@ public class AttysPlot extends AppCompatActivity {
         ECG
     }
 
+    int ygapForInfo = 0;
+
     private DataAnalysis dataAnalysis = DataAnalysis.DC;
 
     // for 1000 steps
@@ -256,16 +258,13 @@ public class AttysPlot extends AppCompatActivity {
         private void annotatePlot(String largeText) {
             String small = new String();
             if (showCh1) {
-                small = small + new String().format("ADC1 = %fV/div", ch1Div);
-            }
-            if (showCh1 && showCh2) {
-                small = small + ", ";
+                small = small + new String().format("ADC1 = %1.04fV/div (X%d),", ch1Div,(int)gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + new String().format("ADC2 = %fV/div", ch2Div);
+                small = small + new String().format("ADC2 = %f1.04fV/div (X%d),", ch2Div,(int)gain[AttysComm.INDEX_Analogue_channel_2]);
             }
-            if (showCh1 || showCh2) {
-                small = small + ", ";
+            if (attysComm.isRecording()) {
+                small = small + " !!RECORDING!! ";
             }
             if (largeText != null) {
                 largeText = new String().format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
@@ -471,12 +470,16 @@ public class AttysPlot extends AppCompatActivity {
                                     }
                                 }
                             }
+                            if (infoView != null) {
+                                ygapForInfo = infoView.getInfoHeight();
+                            }
                             if (realtimePlotView != null) {
                                 realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
                                         Arrays.copyOfRange(tmpMin, 0, nRealChN),
                                         Arrays.copyOfRange(tmpMax, 0, nRealChN),
                                         Arrays.copyOfRange(tmpTick, 0, nRealChN),
-                                        Arrays.copyOfRange(tmpLabels, 0, nRealChN));
+                                        Arrays.copyOfRange(tmpLabels, 0, nRealChN),
+                                        ygapForInfo);
                             }
                         }
                     }
