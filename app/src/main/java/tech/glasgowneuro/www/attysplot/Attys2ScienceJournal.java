@@ -29,10 +29,10 @@ public class Attys2ScienceJournal extends Service {
     public static final String SENSOR_PREF_NAME = "attys_sensors";
     private static final String TAG = "Attys2ScienceJournal";
     private static AttysComm attysComm = null;
-    private static boolean isConnecting = true;
     private static ISensorObserver[] observer = null;
     private static ISensorStatusListener[] listener = null;
     private static double timestamp = 0;
+    private static double samplingInterval = 0;
 
     private final static SensorAppearanceResources[] sensorAppearanceResources =
             new SensorAppearanceResources[AttysComm.NCHANNELS];
@@ -131,16 +131,7 @@ public class Attys2ScienceJournal extends Service {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Destroying service");
         }
-        if (attysComm != null) {
-            // we cancel sync the connection
-            attysComm.cancel();
-            try {
-                attysComm.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            attysComm = null;
-        }
+        killAttys();
     }
 
 
@@ -180,6 +171,8 @@ public class Attys2ScienceJournal extends Service {
 
             attysComm = new AttysComm(bluetoothDevice);
             attysComm.setAdc_samplingrate_index(AttysComm.ADC_RATE_125HZ);
+            samplingInterval = 1000.0 / attysComm.getSamplingRateInHz();
+            Log.d(TAG, "SamplingInterval: " + samplingInterval);
             attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
 
             attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
@@ -241,21 +234,22 @@ public class Attys2ScienceJournal extends Service {
             AttysComm.DataListener dataListener = new AttysComm.DataListener() {
                 @Override
                 public void gotData(long samplenumber, float[] data) {
-                    boolean onDataUsed = false;
                     // Log.d(TAG, String.format("Got data: timestamp=%d",
                     //                                       timestamp));
+                    if (timestamp == 0) {
+                        timestamp = (double) System.currentTimeMillis();
+                    }
                     for (int i = 0; i < AttysComm.NCHANNELS; i++) {
                         if (observer[i] != null) {
                             try {
-                                if (timestamp == 0) {
-                                    timestamp = (double) System.currentTimeMillis();
-                                }
                                 float v = data[i];
                                 if (i == AttysComm.INDEX_Analogue_channel_1) {
                                     if (notch[0] != null) {
                                         v = (float) notch[0].filter((double) v);
                                     }
                                     v = highpass[0].filter(v);
+                                    //Log.d(TAG, String.format("%f,%f",
+                                    //        timestamp, v));
                                 }
                                 if (i == AttysComm.INDEX_Analogue_channel_2) {
                                     if (notch[1] != null) {
@@ -273,34 +267,10 @@ public class Attys2ScienceJournal extends Service {
                                             v * gainFactor[i]);
                                 } catch (DeadObjectException e) {
                                     killAttys();
+                                    if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                        Log.d(TAG, "onNewData DeadObject:", e);
+                                    }
                                 }
-                                onDataUsed = true;
-                                // Log.d(TAG, String.format("timestamp=%d,data=%f",
-                                //        timestamp, data[i]));
-
-                                double timeNow = System.currentTimeMillis();
-                                // let see if we drift apart which happens because
-                                // the clock in the Attys might be slightly
-                                // faster or slower
-                                // so if the timestamp is lagging behind the
-                                // system time we speed up our timestamp a bit
-                                double timeDiff = timeNow - timestamp;
-
-                                // let's gently stay in sync with the system
-                                // time but let the ADC clock dominate the
-                                // timing because we know that they arrive at
-                                // the sampling rate (+/- a small drift)
-                                double offset = timeDiff / 100 +
-                                        1000 / ((long) attysComm.getSamplingRateInHz());
-
-                                // prevent of going back in time!
-                                if (offset < 0) {
-                                    offset = 0;
-                                }
-
-                                //Log.d(TAG, "offset=" + offset);
-
-                                timestamp = timestamp + offset;
                             } catch (RemoteException e) {
                                 if (Log.isLoggable(TAG, Log.ERROR)) {
                                     Log.e(TAG, "onNewData exception:", e);
@@ -308,13 +278,24 @@ public class Attys2ScienceJournal extends Service {
                             }
                         }
                     }
-                    /**
-                     if (!onDataUsed) {
-                     if (Log.isLoggable(TAG, Log.DEBUG)) {
-                     Log.d(TAG, "All observers are NULL");
-                     }
-                     }
-                     **/
+
+                    double timeNow = System.currentTimeMillis();
+                    // let see if we drift apart which happens because
+                    // the clock in the Attys might be slightly
+                    // faster or slower
+                    // so if the timestamp is lagging behind the
+                    // system time we speed up our timestamp a bit
+                    double timeDiff = timeNow - timestamp;
+
+                    // let's gently stay in sync with the system
+                    // time but let the ADC clock dominate the
+                    // timing because we know that they arrive at
+                    // the sampling rate (+/- a small drift)
+                    double offset = 0.1 * timeDiff / ((double) attysComm.getSamplingRateInHz());
+
+                    // Log.d(TAG, String.format("offset=%f,timeDiff=%f", offset, timeDiff));
+
+                    timestamp = timestamp + samplingInterval + offset;
                 }
             };
 
