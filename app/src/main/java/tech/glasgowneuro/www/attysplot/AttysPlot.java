@@ -101,6 +101,10 @@ public class AttysPlot extends AppCompatActivity {
     private float ch1Div = 1;
     private float ch2Div = 1;
 
+    private float magTick = 1000.0E-6F; //1000uT
+
+    private float accTick = AttysComm.oneG; // 1G
+
     private int theChannelWeDoAnalysis = 0;
 
     private int[] actualChannelIdx;
@@ -258,24 +262,26 @@ public class AttysPlot extends AppCompatActivity {
         private void annotatePlot(String largeText) {
             String small = new String();
             if (showCh1) {
-                small = small + new String().format("ADC1 = %1.04fV/div (X%d),", ch1Div,(int)gain[AttysComm.INDEX_Analogue_channel_1]);
+                small = small + new String().format("ADC1 = %1.04fV/div (X%d), ", ch1Div,(int)gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + new String().format("ADC2 = %f1.04fV/div (X%d),", ch2Div,(int)gain[AttysComm.INDEX_Analogue_channel_2]);
+                small = small + new String().format("ADC2 = %1.04fV/div (X%d), ", ch2Div,(int)gain[AttysComm.INDEX_Analogue_channel_2]);
+            }
+            if (showAcc) {
+                small = small + new String().format("ACC = %dG/div, ",Math.round(accTick/AttysComm.oneG));
+            }
+            if (showMag) {
+                small = small + new String().format("MAG = %d\u00b5T/div, ",Math.round(magTick/1E-6));
             }
             if (attysComm.isRecording()) {
-                small = small + " !!RECORDING!! ";
+                small = small + " !!RECORDING to:"+dataFilename;
             }
             if (largeText != null) {
                 largeText = new String().format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
             if (infoView != null) {
                 if (attysComm != null) {
-                    if (largeText != null) {
                         infoView.drawText(largeText, small);
-                    } else {
-                        infoView.drawText("", small);
-                    }
                 }
             }
         }
@@ -439,7 +445,6 @@ public class AttysPlot extends AppCompatActivity {
                                     tmpTick[nRealChN] = ch2Div * gain[AttysComm.INDEX_Analogue_channel_2];
                                     tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_2];
                                     actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_2;
-                                    ;
                                     tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_2];
                                 }
                             }
@@ -451,7 +456,7 @@ public class AttysPlot extends AppCompatActivity {
                                     for (int k = 0; k < 3; k++) {
                                         tmpMin[nRealChN] = min;
                                         tmpMax[nRealChN] = max;
-                                        tmpTick[nRealChN] = gain[k] * AttysComm.oneG;
+                                        tmpTick[nRealChN] = gain[k] * accTick;
                                         tmpLabels[nRealChN] = labels[k];
                                         actualChannelIdx[nRealChN] = k;
                                         tmpSample[nRealChN++] = sample[k];
@@ -461,11 +466,15 @@ public class AttysPlot extends AppCompatActivity {
                             if (showMag) {
                                 if (attysComm != null) {
                                     for (int k = 0; k < 3; k++) {
-                                        tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
-                                        tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
+                                        if (attysComm!=null) {
+                                            tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
+                                        }
+                                        if (attysComm!=null) {
+                                            tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
+                                        }
                                         tmpLabels[nRealChN] = labels[k + 3];
                                         actualChannelIdx[nRealChN] = k + 3;
-                                        tmpTick[nRealChN] = 1000.0E-6F; //1000uT
+                                        tmpTick[nRealChN] = magTick;
                                         tmpSample[nRealChN++] = sample[k + 3];
                                     }
                                 }

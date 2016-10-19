@@ -19,7 +19,7 @@ import android.view.SurfaceView;
  */
 public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
 
-    static private String TAG="InfoView";
+    static private String TAG = "InfoView";
 
     static private SurfaceHolder holder = null;
     static private Canvas canvas = null;
@@ -78,31 +78,43 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
         return textHeight;
     }
 
-    public synchronized void drawText(String text, String smallText) {
+    public synchronized void drawText(String largeText, String smallText) {
         if (canvas != null) return;
         Surface surface = holder.getSurface();
+        int width = getWidth();
+        int yLarge = 0;
+        int xLarge = 0;
         if (surface.isValid()) {
+            if (largeText != null) {
+                Rect bounds = new Rect();
+                int txtDiv = 7;
+                do {
+                    paintLarge.setTextSize(getHeight() / txtDiv);
+                    paintLarge.getTextBounds(largeText, 0, largeText.length(), bounds);
+                    xLarge = width - (bounds.width() * 10 / 9);
+                    txtDiv++;
+                } while (xLarge < 0);
+                String dummyText = "1.2424Vpp";
+                paintLarge.getTextBounds(dummyText, 0, dummyText.length(), bounds);
+                yLarge = bounds.height();
+            }
+            int txtDiv = 25;
             Rect bounds = new Rect();
-            paintSmall.setTextSize(getHeight()/25);
-            int txtDiv = 7;
-            int x;
             do {
-                paintLarge.setTextSize(getHeight() / txtDiv);
-                paintLarge.getTextBounds(text, 0, text.length(), bounds);
-                int width = getWidth();
-                x = width - (bounds.width() * 10 / 9);
-            } while (x<0);
-            int y = bounds.height();
-            paintSmall.getTextBounds(smallText, 0, smallText.length(), bounds);
-            //Log.d(TAG,smallText);
+                paintSmall.setTextSize(getHeight() / txtDiv);
+                paintSmall.getTextBounds(smallText, 0, smallText.length(), bounds);
+                txtDiv++;
+            } while ((width - (bounds.width() * 10 / 9)) < 0);
             int y2 = bounds.height();
             canvas = holder.lockCanvas();
             if (canvas != null) {
                 Paint paint = new Paint();
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
                 canvas.drawPaint(paint);
-                canvas.drawText(text,x,y+y2*10/9, paintLarge);
-                canvas.drawText(smallText,getWidth()/100,y2, paintSmall);
+                if (largeText != null) {
+                    canvas.drawText(largeText, xLarge, yLarge + y2 * 10 / 9, paintLarge);
+                }
+                canvas.drawText(smallText, getWidth() / 100, y2, paintSmall);
             } else {
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Canvas==null");
@@ -110,11 +122,7 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
             }
             holder.unlockCanvasAndPost(canvas);
             canvas = null;
-            if (text.length()==0) {
-                textHeight = y;
-            } else {
-                textHeight = y2 + y;
-            }
+            textHeight = y2 + yLarge;
         }
     }
 }

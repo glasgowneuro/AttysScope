@@ -54,6 +54,9 @@ public class Attys2ScienceJournal extends Service {
         for (int i = 0; i < AttysComm.NCHANNELS; i++) {
             sensorAppearanceResources[i] = new SensorAppearanceResources();
             sensorAppearanceResources[i].units = AttysComm.CHANNEL_UNITS[i];
+            if ((i >= AttysComm.INDEX_Magnetic_field_X) && (i <= AttysComm.INDEX_Magnetic_field_Z)) {
+               sensorAppearanceResources[i].units = "\u00b5"+sensorAppearanceResources[i].units;
+            }
             sensorAppearanceResources[i].shortDescription = AttysComm.CHANNEL_DESCRIPTION[i];
             behaviour[i] = new SensorBehavior();
             behaviour[i].shouldShowSettingsOnConnect = false;

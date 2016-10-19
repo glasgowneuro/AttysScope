@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="gainOptions">
-        <item>max +/-2.42V</item>
-        <item>max +/-1.21V</item>
-        <item>max +/-0.81V</item>
-        <item>max +/-0.61V</item>
-        <item>max +/-0.41V</item>
-        <item>max +/-0.31V</item>
-        <item>max +/-0.21V</item>
+        <item>max +/-2.42 V</item>
+        <item>max +/-1.21 V</item>
+        <item>max +/-0.81 V</item>
+        <item>max +/-0.61 V</item>
+        <item>max +/-0.41 V</item>
+        <item>max +/-0.31 V</item>
+        <item>max +/-0.21 V</item>
     </string-array>
     <string-array name="gainValues">
         <item>1</item>
@@ -21,9 +21,9 @@
 
     <string-array name="currentOptions">
         <item>off</item>
-        <item>6nA</item>
-        <item>22nA</item>
-        <item>6uA</item>
+        <item>0.006 \u00b5A</item>
+        <item>0.022 \u00b5A</item>
+        <item>6.000 \u00b5A</item>
     </string-array>
     <string-array name="currentValues">
         <item>-1</item>
@@ -62,10 +62,10 @@
     </string-array>
 
     <string-array name="accOptions">
-        <item>2G</item>
-        <item>4G</item>
-        <item>8G</item>
-        <item>16G</item>
+        <item>2 G</item>
+        <item>4 G</item>
+        <item>8 G</item>
+        <item>16 G</item>
     </string-array>
     <string-array name="accValues">
         <item>0</item>
