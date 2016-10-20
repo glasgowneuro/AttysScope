@@ -64,22 +64,34 @@ public class Attys2ScienceJournal extends Service {
 
         switch (Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this)) {
             case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Ch1 BIO mode: mV instead of V");
+                }
                 sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units =
                         "m" + AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_1];
                 break;
+            case Attys2ScienceJournalADC1Settings.MODE_AC:
+            case Attys2ScienceJournalADC1Settings.MODE_DC:
             default:
                 sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units =
                         AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_1];
+                break;
         }
 
         switch (Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this)) {
             case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Ch1 R mode: Ohm instead of V");
+                }
                 sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units =
                         "Ohm";
                 break;
+            case Attys2ScienceJournalADC2Settings.MODE_AC:
+            case Attys2ScienceJournalADC2Settings.MODE_DC:
             default:
                 sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units =
                         AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_2];
+                break;
         }
 
         // acc

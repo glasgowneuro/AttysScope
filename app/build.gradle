@@ -21,7 +21,7 @@ android {
     sourceSets {
         main {
             res.srcDirs = ['src/main/res', 'src/main/res/menu']
-            String osj = '../../science-journal/api/ScalarInputApi/src/main'
+            String osj = '../../science-journal/api/ScienceJournalApi/src/main'
             aidl {
                 srcDir osj + '/aidl'
             }
