@@ -23,11 +23,11 @@
         <activity
             android:name=".Attys2ScienceJournalADC1Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
-            android:taskAffinity="" android:theme="@android:style/Theme.Dialog" />
+            android:taskAffinity="" android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
         <activity
             android:name=".Attys2ScienceJournalADC2Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
-            android:taskAffinity="" android:theme="@android:style/Theme.Dialog" />
+            android:taskAffinity="" android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
         <!--
      ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.

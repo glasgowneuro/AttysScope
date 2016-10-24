@@ -23,8 +23,6 @@
         android:id="@+id/mode_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="#202020"
-        android:popupBackground="#808080"
         android:spinnerMode="dropdown"></Spinner>
 
     <TextView
@@ -37,8 +35,6 @@
         android:id="@+id/powerline_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="#202020"
-        android:popupBackground="#808080"
         android:spinnerMode="dropdown"></Spinner>
 
 
