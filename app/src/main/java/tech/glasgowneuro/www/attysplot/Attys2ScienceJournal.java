@@ -22,7 +22,6 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppe
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorBehavior;
 
 import java.util.Set;
-import java.util.concurrent.Exchanger;
 
 public class Attys2ScienceJournal extends Service {
     public static final String DEVICE_ID = "AttysDevice";
@@ -63,12 +62,21 @@ public class Attys2ScienceJournal extends Service {
         }
 
         switch (Attys2ScienceJournalADC1Settings.getIndexForMode(Attys2ScienceJournal.this)) {
-            case Attys2ScienceJournalADC1Settings.MODE_BIO:
+            case Attys2ScienceJournalADC1Settings.MODE_AC_MV:
+            case Attys2ScienceJournalADC1Settings.MODE_DC_MV:
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Ch1 BIO mode: mV instead of V");
                 }
                 sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units =
                         "m" + AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_1];
+                break;
+            case Attys2ScienceJournalADC1Settings.MODE_AC_UV:
+            case Attys2ScienceJournalADC1Settings.MODE_DC_UV:
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Ch1 BIO mode: µV instead of V");
+                }
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].units =
+                        "µ" + AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_1];
                 break;
             case Attys2ScienceJournalADC1Settings.MODE_AC:
             case Attys2ScienceJournalADC1Settings.MODE_DC:
@@ -79,6 +87,22 @@ public class Attys2ScienceJournal extends Service {
         }
 
         switch (Attys2ScienceJournalADC2Settings.getIndexForMode(Attys2ScienceJournal.this)) {
+            case Attys2ScienceJournalADC2Settings.MODE_AC_MV:
+            case Attys2ScienceJournalADC2Settings.MODE_DC_MV:
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Ch1 BIO mode: mV instead of V");
+                }
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units =
+                        "m" + AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_2];
+                break;
+            case Attys2ScienceJournalADC2Settings.MODE_AC_UV:
+            case Attys2ScienceJournalADC2Settings.MODE_DC_UV:
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Ch1 BIO mode: µV instead of V");
+                }
+                sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_2].units =
+                        "µ" + AttysComm.CHANNEL_UNITS[AttysComm.INDEX_Analogue_channel_2];
+                break;
             case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Ch1 R mode: Ohm instead of V");
@@ -190,8 +214,8 @@ public class Attys2ScienceJournal extends Service {
             Log.d(TAG, "SamplingInterval: " + samplingInterval);
             attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
 
-            attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
             attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
+            attysComm.setAdc2_gain_index(AttysComm.ADC_GAIN_1);
 
             for (int i = 0; i < 2; i++) {
                 switch (adcpowerline[i]) {
@@ -210,39 +234,67 @@ public class Attys2ScienceJournal extends Service {
             }
             switch (adc1Mode) {
                 case Attys2ScienceJournalADC1Settings.MODE_AC:
-                case Attys2ScienceJournalADC1Settings.MODE_BIO:
+                case Attys2ScienceJournalADC1Settings.MODE_AC_MV:
+                case Attys2ScienceJournalADC1Settings.MODE_AC_UV:
                     highpass[0].setActive(true);
                     break;
+                case Attys2ScienceJournalADC1Settings.MODE_DC:
+                case Attys2ScienceJournalADC1Settings.MODE_DC_MV:
+                case Attys2ScienceJournalADC1Settings.MODE_DC_UV:
                 default:
                     highpass[0].setActive(false);
                     break;
             }
-            switch (adc1Mode) {
-                case Attys2ScienceJournalADC1Settings.MODE_BIO:
-                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_6);
-                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1000;
-                    break;
-                default:
-                    attysComm.setAdc0_gain_index(AttysComm.ADC_GAIN_1);
-                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1;
-                    break;
-            }
             switch (adc2Mode) {
                 case Attys2ScienceJournalADC2Settings.MODE_AC:
+                case Attys2ScienceJournalADC2Settings.MODE_AC_MV:
+                case Attys2ScienceJournalADC2Settings.MODE_AC_UV:
                     highpass[1].setActive(true);
                     break;
+                case Attys2ScienceJournalADC2Settings.MODE_DC:
+                case Attys2ScienceJournalADC2Settings.MODE_DC_MV:
+                case Attys2ScienceJournalADC2Settings.MODE_DC_UV:
                 default:
                     highpass[1].setActive(false);
                     break;
             }
+            switch (adc1Mode) {
+                case Attys2ScienceJournalADC1Settings.MODE_AC_MV:
+                case Attys2ScienceJournalADC1Settings.MODE_DC_MV:
+                    attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_6);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1000;
+                    break;
+                case Attys2ScienceJournalADC1Settings.MODE_AC_UV:
+                case Attys2ScienceJournalADC1Settings.MODE_DC_UV:
+                    attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_12);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1000000;
+                    break;
+                default:
+                    attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_1] = 1;
+                    break;
+            }
 
             switch (adc2Mode) {
+                case Attys2ScienceJournalADC2Settings.MODE_AC_MV:
+                case Attys2ScienceJournalADC2Settings.MODE_DC_MV:
+                    attysComm.setAdc2_gain_index(AttysComm.ADC_GAIN_6);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_2] = 1000;
+                    break;
+                case Attys2ScienceJournalADC1Settings.MODE_AC_UV:
+                case Attys2ScienceJournalADC1Settings.MODE_DC_UV:
+                    attysComm.setAdc2_gain_index(AttysComm.ADC_GAIN_12);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_2] = 1000000;
+                    break;
                 case Attys2ScienceJournalADC2Settings.MODE_RESISTANCE:
+                    attysComm.setAdc2_gain_index(AttysComm.ADC_GAIN_1);
                     attysComm.setBiasCurrent(AttysComm.ADC_CURRENT_22UA);
                     attysComm.enableCurrents(false, false, true);
                     break;
                 default:
                     attysComm.enableCurrents(false, false, false);
+                    attysComm.setAdc2_gain_index(AttysComm.ADC_GAIN_1);
+                    gainFactor[AttysComm.INDEX_Analogue_channel_2] = 1;
                     break;
             }
 

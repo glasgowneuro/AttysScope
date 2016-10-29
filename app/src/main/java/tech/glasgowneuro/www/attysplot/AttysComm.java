@@ -123,11 +123,11 @@ public class AttysComm extends Thread {
         return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
     }
 
-    public void setAdc0_gain_index(byte idx) {
+    public void setAdc1_gain_index(byte idx) {
         adc0_gain_index = idx;
     }
 
-    public void setAdc1_gain_index(byte idx) {
+    public void setAdc2_gain_index(byte idx) {
         adc1_gain_index = idx;
     }
 

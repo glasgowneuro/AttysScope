@@ -17,8 +17,6 @@
 package tech.glasgowneuro.www.attysplot;
 
 import android.Manifest;
-import android.app.ActionBar;
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -27,8 +25,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.content.Context;
@@ -45,7 +41,6 @@ import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -59,7 +54,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
@@ -1029,10 +1023,10 @@ public class AttysPlot extends AppCompatActivity {
             mux = AttysComm.ADC_MUX_NORMAL;
         }
         byte gain0 = (byte) (Integer.parseInt(prefs.getString("ch1_gainpref", "0")));
-        attysComm.setAdc0_gain_index(gain0);
+        attysComm.setAdc1_gain_index(gain0);
         attysComm.setAdc0_mux_index(mux);
         byte gain1 = (byte) (Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
-        attysComm.setAdc1_gain_index(gain1);
+        attysComm.setAdc2_gain_index(gain1);
         attysComm.setAdc1_mux_index(mux);
         int current = Integer.parseInt(prefs.getString("ch2_current", "-1"));
         if (current < 0) {

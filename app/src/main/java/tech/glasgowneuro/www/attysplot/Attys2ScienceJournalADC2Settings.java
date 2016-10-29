@@ -21,10 +21,18 @@ public class Attys2ScienceJournalADC2Settings extends Activity {
     private static final String TAG="AttysADC2Settings";
 
     // different
-    public static final String[] adc_modes = {"DC/Volt", "AC/Volt", "R/Ohm"};
+    public static final String[] adc_modes = {
+            "DC/Volt", "AC/Volt",
+            "DC/mV", "AC/mV (BIO)",
+            "DC/µV", "AC/µV",
+            "R/Ohm"};
     public static final int MODE_DC = 0;
     public static final int MODE_AC = 1;
-    public static final int MODE_RESISTANCE = 2;
+    public static final int MODE_DC_MV = 2;
+    public static final int MODE_AC_MV = 3;
+    public static final int MODE_DC_UV = 4;
+    public static final int MODE_AC_UV = 5;
+    public static final int MODE_RESISTANCE = 6;
 
     // identical
     public static final String[] powerline_filter = Attys2ScienceJournalADC1Settings.powerline_filter;

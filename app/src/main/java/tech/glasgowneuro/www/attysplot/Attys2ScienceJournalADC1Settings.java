@@ -20,10 +20,16 @@ public class Attys2ScienceJournalADC1Settings extends Activity {
 
     private static final String TAG="AttysADC1Settings";
 
-    public static final String[] adc_modes = {"DC/Volt", "AC/Volt", "ECG&bio/mV"};
+    public static final String[] adc_modes = {
+            "DC/Volt", "AC/Volt",
+            "DC/mV", "AC/mV (BIO)",
+            "DC/µV", "AC/µV" };
     public static final int MODE_DC = 0;
     public static final int MODE_AC = 1;
-    public static final int MODE_BIO = 2;
+    public static final int MODE_DC_MV = 2;
+    public static final int MODE_AC_MV = 3;
+    public static final int MODE_DC_UV = 4;
+    public static final int MODE_AC_UV = 5;
 
     public static final String[] powerline_filter = {"off", "remove 50Hz", "remove 60Hz"};
     public static final int POWERLINE_FILTER_OFF = 0;

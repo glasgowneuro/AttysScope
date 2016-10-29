@@ -75,15 +75,6 @@
     </item>
     <item
         is-multidex="true"
-        jar="/home/bp1/.m2/repository/uk/me/berndporr/iirj/1.0.0-RC1/iirj-1.0.0-RC1.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="25686cc24ae6ad95555b96ac29e2e89ad14e39c4">
-        <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/iirj-1.0.0-RC1_d8e70b60efd20ae0685ab9d3422380ac37e7b7c3/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
         jar="/home/bp1/sandbox/AttysPlot/app/build/intermediates/exploded-aar/com.google.firebase/firebase-common/9.4.0/jars/classes.jar"
         jumboMode="true"
         optimize="true"
@@ -97,7 +88,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
-        sha1="3845c0f6d1ce66ddbb095f62c2d8efade0d8b3a7">
+        sha1="fe239c6b3971196b4892506c0ecaa1522b995d88">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_df1026115f4efaf472ec1a89fd844c020a7f2567/classes.dex" />
     </item>
     <item
@@ -106,7 +97,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
-        sha1="b899753279400b77ca7f4f734dc0e89f71bebae6">
+        sha1="301113a7a832455f26b3e1eca358527269f94d12">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_3a6f21391e140280a2fea0347ee609d97c1c5fd1/classes.dex" />
     </item>
     <item
@@ -117,6 +108,15 @@
         revision="24.0.1"
         sha1="8a36d229011e75f0caef408e1adf0d3fd4d94e02">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.google.android.gms-play-services-tasks-9.4.0_738c328f737559e66d64f4319da63bc5a4061e2c/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/bp1/.m2/repository/uk/me/berndporr/iirj/1.0.0/iirj-1.0.0.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="cd8dc65571a4218994d70a8f5de39ffc56637310">
+        <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/iirj-1.0.0_2a46097e467f4e1d840d6c1ba1131f2b7a4baa11/classes.dex" />
     </item>
     <item
         is-multidex="true"
