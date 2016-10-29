@@ -1,4 +1,4 @@
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attysplot;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;

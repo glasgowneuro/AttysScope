@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="tech.glasgowneuro.www.attysplot">
+    package="tech.glasgowneuro.attysplot">
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -21,11 +21,11 @@
             android:name=".PrefsActivity"
             android:theme="@android:style/Theme.Black.NoTitleBar" />
         <activity
-            android:name=".Attys2ScienceJournalADC1Settings"
+            android:name="attys2sciencejournal.ADC1Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
             android:taskAffinity="" android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
         <activity
-            android:name=".Attys2ScienceJournalADC2Settings"
+            android:name="attys2sciencejournal.ADC2Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
             android:taskAffinity="" android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
         <!--
@@ -36,7 +36,7 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
-        <service android:name=".Attys2ScienceJournal"
+        <service android:name="attys2sciencejournal.Attys2ScienceJournal"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

@@ -14,7 +14,7 @@
  * limitations under the License.
  **/
 
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attysplot;
 
 import android.content.Context;
 import android.graphics.Canvas;

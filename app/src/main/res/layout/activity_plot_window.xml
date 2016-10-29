@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <tech.glasgowneuro.www.attysplot.InfoView
+        <tech.glasgowneuro.attysplot.InfoView
             android:id="@+id/infoview"
             title="Plot Window"
             android:layout_width="fill_parent"
@@ -33,7 +33,7 @@
             android:layout_marginTop="10dp"
             android:layout_weight="1" />
 
-        <tech.glasgowneuro.www.attysplot.RealtimePlotView
+        <tech.glasgowneuro.attysplot.RealtimePlotView
             android:id="@+id/realtimeplotview"
             title="Plot Window"
             android:layout_width="fill_parent"

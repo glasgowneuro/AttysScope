@@ -14,7 +14,7 @@
  * limitations under the License.
  **/
 
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attysplot;
 
 import android.Manifest;
 import android.app.ProgressDialog;
@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import tech.glasgowneuro.attyscomm.AttysComm;
 import uk.me.berndporr.iirj.Butterworth;
 
 public class AttysPlot extends AppCompatActivity {

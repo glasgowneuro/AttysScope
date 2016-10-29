@@ -15,7 +15,7 @@
  **/
 
 
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attysplot;
 
 /**
  * Created by bp1 on 13/08/16.

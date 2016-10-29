@@ -17,7 +17,7 @@
  * https://developer.android.com/guide/topics/connectivity/bluetooth.html
  */
 
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attyscomm;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;

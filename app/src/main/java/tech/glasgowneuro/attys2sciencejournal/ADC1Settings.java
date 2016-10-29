@@ -1,4 +1,4 @@
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attys2sciencejournal;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -12,11 +12,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import tech.glasgowneuro.attysplot.R;
+
 /**
  * Created by Bernd Porr on 01/10/16.
  */
 
-public class Attys2ScienceJournalADC1Settings extends Activity {
+public class ADC1Settings extends Activity {
 
     private static final String TAG="AttysADC1Settings";
 
@@ -41,7 +43,7 @@ public class Attys2ScienceJournalADC1Settings extends Activity {
 
     public static PendingIntent getPendingIntent(Context context) {
         int flags = 0;
-        Intent intent = new Intent(context, Attys2ScienceJournalADC1Settings.class);
+        Intent intent = new Intent(context, ADC1Settings.class);
         return PendingIntent.getActivity(context, 0, intent, flags);
     }
 
@@ -63,7 +65,7 @@ public class Attys2ScienceJournalADC1Settings extends Activity {
         spinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                SharedPreferences prefs = getSensorPreferences(Attys2ScienceJournalADC1Settings.this);
+                SharedPreferences prefs = getSensorPreferences(ADC1Settings.this);
                 prefs.edit().putInt(PREF_KEY_MODE, position).apply();
             }
 
@@ -81,7 +83,7 @@ public class Attys2ScienceJournalADC1Settings extends Activity {
         spinnerPowerline.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                SharedPreferences prefs = getSensorPreferences(Attys2ScienceJournalADC1Settings.this);
+                SharedPreferences prefs = getSensorPreferences(ADC1Settings.this);
                 prefs.edit().putInt(PREF_KEY_POWERLINE, position).apply();
             }
 

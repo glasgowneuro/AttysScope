@@ -1,4 +1,4 @@
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.attys2sciencejournal;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -12,11 +12,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import tech.glasgowneuro.attysplot.R;
+
 /**
  * Created by Bernd Porr on 01/10/16.
  */
 
-public class Attys2ScienceJournalADC2Settings extends Activity {
+public class ADC2Settings extends Activity {
 
     private static final String TAG="AttysADC2Settings";
 
@@ -35,20 +37,20 @@ public class Attys2ScienceJournalADC2Settings extends Activity {
     public static final int MODE_RESISTANCE = 6;
 
     // identical
-    public static final String[] powerline_filter = Attys2ScienceJournalADC1Settings.powerline_filter;
+    public static final String[] powerline_filter = ADC1Settings.powerline_filter;
     public static final int POWERLINE_FILTER_OFF =
-            Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_OFF;
+            ADC1Settings.POWERLINE_FILTER_OFF;
     public static final int POWERLINE_FILTER_50HZ =
-            Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_50HZ;
+            ADC1Settings.POWERLINE_FILTER_50HZ;
     public static final int POWERLINE_FILTER_60HZ =
-            Attys2ScienceJournalADC1Settings.POWERLINE_FILTER_60HZ;
+            ADC1Settings.POWERLINE_FILTER_60HZ;
 
     private static final String PREF_KEY_MODE = "attys_adc2_mode";
     private static final String PREF_KEY_POWERLINE = "attys_adc2_powerline";
 
     public static PendingIntent getPendingIntent(Context context) {
         int flags = 0;
-        Intent intent = new Intent(context, Attys2ScienceJournalADC2Settings.class);
+        Intent intent = new Intent(context, ADC2Settings.class);
         return PendingIntent.getActivity(context, 0, intent, flags);
     }
 
@@ -70,7 +72,7 @@ public class Attys2ScienceJournalADC2Settings extends Activity {
         spinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                SharedPreferences prefs = getSensorPreferences(Attys2ScienceJournalADC2Settings.this);
+                SharedPreferences prefs = getSensorPreferences(ADC2Settings.this);
                 prefs.edit().putInt(PREF_KEY_MODE, position).apply();
             }
 
@@ -88,7 +90,7 @@ public class Attys2ScienceJournalADC2Settings extends Activity {
         spinnerPowerline.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                SharedPreferences prefs = getSensorPreferences(Attys2ScienceJournalADC2Settings.this);
+                SharedPreferences prefs = getSensorPreferences(ADC2Settings.this);
                 prefs.edit().putInt(PREF_KEY_POWERLINE, position).apply();
             }
 
