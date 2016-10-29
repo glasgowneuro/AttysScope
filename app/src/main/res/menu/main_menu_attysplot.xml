@@ -10,7 +10,7 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:title="Settings"
+        android:title="Channels"
         app:showAsAction="ifRoom|withText">
 
         <menu>
@@ -39,6 +39,10 @@
             <group
                 android:id="@+id/adc1_checkboxes"
                 android:checkableBehavior="all">
+                <item
+                    android:id="@+id/showCh1"
+                    android:checked="true"
+                    android:title="ADC 1" />
                 <item
                     android:id="@+id/Ch1toggleDC"
                     android:checked="true"
@@ -94,6 +98,10 @@
                 android:id="@+id/adc2_checkboxes"
                 android:checkableBehavior="all">
                 <item
+                    android:id="@+id/showCh2"
+                    android:checked="true"
+                    android:title="ADC 2" />
+                <item
                     android:id="@+id/Ch2toggleDC"
                     android:checked="true"
                     android:title="ADC 2 DC filter" />
@@ -142,6 +150,16 @@
                         android:title="500" />
                 </menu>
             </item>
+            <group
+                android:id="@+id/accmag_checkboxes"
+                android:checkableBehavior="all">
+                <item
+                    android:id="@+id/showaccelerometer"
+                    android:title="Accelerometer" />
+                <item
+                    android:id="@+id/showmagnetometer"
+                    android:title="Magnetometer" />
+            </group>
         </menu>
     </item>
 

@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <CheckBoxPreference
-        android:key="ch1"
-        android:defaultValue="true"
-        android:summary="Show the ADC 1 channel"
-        android:title="ADC 1" />
     <ListPreference
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"
@@ -12,11 +7,6 @@
         android:summary="ADC Channel 1 full scale range in Volts"
         android:defaultValue="1"
         android:title="ADC 1 range" />
-    <CheckBoxPreference
-        android:key="ch2"
-        android:defaultValue="true"
-        android:summary="Show the ADC 2 channel"
-        android:title="ADC 2" />
     <ListPreference
         android:entries="@array/gainOptions"
         android:entryValues="@array/gainValues"
@@ -36,11 +26,6 @@
         android:defaultValue="false"
         android:summary="Ch1+ and Ch2 internally connected for ECG Einthoven I,II"
         android:title="Connect Ch1+ with Ch2" />
-    <CheckBoxPreference
-        android:key="acc"
-        android:summary="Show accelerometer channels"
-        android:defaultValue="true"
-        android:title="Accelerometer" />
     <ListPreference
         android:entries="@array/accOptions"
         android:entryValues="@array/accValues"
@@ -48,11 +33,6 @@
         android:key="accFullscale"
         android:defaultValue="1"
         android:title="Accelerometer full scale" />
-    <CheckBoxPreference
-        android:key="mag"
-        android:summary="Show magnetometer channels"
-        android:defaultValue="true"
-        android:title="Magnetometer" />
     <ListPreference
         android:entries="@array/textDataFileSeparatorOptions"
         android:entryValues="@array/textDataFileSeparatorValues"

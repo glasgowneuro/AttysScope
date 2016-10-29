@@ -88,8 +88,8 @@ public class AttysPlot extends AppCompatActivity {
     private boolean[] invert;
     private float powerlineHz = 50;
 
-    private boolean showAcc = true;
-    private boolean showMag = true;
+    private boolean showAcc = false;
+    private boolean showMag = false;
     private boolean showCh1 = true;
     private boolean showCh2 = true;
 
@@ -894,6 +894,26 @@ public class AttysPlot extends AppCompatActivity {
                 }
                 return true;
 
+            case R.id.showCh1:
+                showCh1 = !showCh1;
+                item.setChecked(showCh1);
+                return true;
+
+            case R.id.showCh2:
+                showCh2 = !showCh2;
+                item.setChecked(showCh2);
+                return true;
+
+            case R.id.showaccelerometer:
+                showAcc = !showAcc;
+                item.setChecked(showAcc);
+                return true;
+
+            case R.id.showmagnetometer:
+                showMag = !showMag;
+                item.setChecked(showMag);
+                return true;
+
             case R.id.enterFilename:
                 enterFilename();
                 return true;
@@ -1042,11 +1062,6 @@ public class AttysPlot extends AppCompatActivity {
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
         attysComm.setAccel_full_scale_index((byte) fullscaleAcc);
-
-        showAcc = prefs.getBoolean("acc", true);
-        showMag = prefs.getBoolean("mag", true);
-        showCh1 = prefs.getBoolean("ch1", true);
-        showCh2 = prefs.getBoolean("ch2", true);
 
         powerlineHz = Float.parseFloat(prefs.getString("powerline", "50"));
         if (Log.isLoggable(TAG, Log.DEBUG)) {
