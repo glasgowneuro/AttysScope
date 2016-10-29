@@ -10,7 +10,7 @@ import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import uk.me.berndporr.iirj.*;
+import uk.me.berndporr.iirj.Butterworth;
 
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.IDeviceConsumer;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorConnector;
