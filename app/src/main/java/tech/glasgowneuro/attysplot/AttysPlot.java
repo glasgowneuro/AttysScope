@@ -26,6 +26,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.content.Context;
 import android.os.Environment;
@@ -167,7 +168,6 @@ public class AttysPlot extends AppCompatActivity {
                         attysComm.join();
                     } catch (Exception ee) {
                     }
-                    ;
                     progress.dismiss();
                     finish();
                     break;
@@ -255,24 +255,24 @@ public class AttysPlot extends AppCompatActivity {
     private class UpdatePlotTask extends TimerTask {
 
         private void annotatePlot(String largeText) {
-            String small = new String();
+            String small = "";
             if (showCh1) {
-                small = small + new String().format("ADC1 = %1.04fV/div (X%d), ", ch1Div,(int)gain[AttysComm.INDEX_Analogue_channel_1]);
+                small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div,(int)gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + new String().format("ADC2 = %1.04fV/div (X%d), ", ch2Div,(int)gain[AttysComm.INDEX_Analogue_channel_2]);
+                small = small + "".format("ADC2 = %1.04fV/div (X%d), ", ch2Div,(int)gain[AttysComm.INDEX_Analogue_channel_2]);
             }
             if (showAcc) {
-                small = small + new String().format("ACC = %dG/div, ",Math.round(accTick/AttysComm.oneG));
+                small = small + "".format("ACC = %dG/div, ",Math.round(accTick/AttysComm.oneG));
             }
             if (showMag) {
-                small = small + new String().format("MAG = %d\u00b5T/div, ",Math.round(magTick/1E-6));
+                small = small + "".format("MAG = %d\u00b5T/div, ",Math.round(magTick/1E-6));
             }
             if (attysComm.isRecording()) {
                 small = small + " !!RECORDING to:"+dataFilename;
             }
             if (largeText != null) {
-                largeText = new String().format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
+                largeText = "".format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
             if (infoView != null) {
                 if (attysComm != null) {
@@ -314,7 +314,7 @@ public class AttysPlot extends AppCompatActivity {
                             doNotDetect--;
                         } else {
                             if (h > (0.75 * max)) {
-                                float t = (float) (timestamp - t2) / attysComm.getSamplingRateInHz();
+                                float t = (timestamp - t2) / attysComm.getSamplingRateInHz();
                                 float bpm = 1 / t * 60;
                                 if ((bpm > 40) && (bpm < 300)) {
                                     annotatePlot(String.format("%03d BPM", (int) bpm));
@@ -327,7 +327,7 @@ public class AttysPlot extends AppCompatActivity {
                     }
                     break;
                 case NONE:
-                    int interval = (int) attysComm.getSamplingRateInHz();
+                    int interval = attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
                         annotatePlot(null);
                     }
@@ -336,7 +336,7 @@ public class AttysPlot extends AppCompatActivity {
                     double a = 1.0 / (double) (attysComm.getSamplingRateInHz());
                     // 1st order lowpass IIR filter
                     max = v * a + (1 - a) * max;
-                    interval = (int) attysComm.getSamplingRateInHz();
+                    interval = attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
                         annotatePlot(String.format("%1.05f%s", max, m_unit));
                     }
@@ -414,12 +414,11 @@ public class AttysPlot extends AppCompatActivity {
                                 }
                             }
                             int nRealChN = 0;
-                            int sn = 0;
                             if (showCh1) {
                                 if (attysComm != null) {
                                     tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
                                     tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
-                                    ch1Div = 1.0F / (float) gain[AttysComm.INDEX_Analogue_channel_1];
+                                    ch1Div = 1.0F / gain[AttysComm.INDEX_Analogue_channel_1];
                                     if (attysComm.getADCFullScaleRange(0) < 1) {
                                         ch1Div = ch1Div / 10;
                                     }
@@ -433,7 +432,7 @@ public class AttysPlot extends AppCompatActivity {
                                 if (attysComm != null) {
                                     tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
                                     tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
-                                    ch2Div = 1.0F / (float) gain[AttysComm.INDEX_Analogue_channel_2];
+                                    ch2Div = 1.0F / gain[AttysComm.INDEX_Analogue_channel_2];
                                     if (attysComm.getADCFullScaleRange(1) < 1) {
                                         ch2Div = ch2Div / 10;
                                     }
@@ -499,7 +498,7 @@ public class AttysPlot extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Back button pressed"));
+            Log.d(TAG, "Back button pressed");
         }
         killAttysComm();
         finish();
@@ -520,7 +519,9 @@ public class AttysPlot extends AppCompatActivity {
             attysdir.mkdirs();
         }
 
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
+        }
 
         setContentView(R.layout.activity_plot_window);
 
@@ -592,7 +593,7 @@ public class AttysPlot extends AppCompatActivity {
         attysComm.registerMessageListener(messageListener);
 
         // 1sec
-        analysisBuffer = new float[(int) attysComm.getSamplingRateInHz()];
+        analysisBuffer = new float[attysComm.getSamplingRateInHz()];
 
         getsetAttysPrefs();
 
@@ -649,13 +650,17 @@ public class AttysPlot extends AppCompatActivity {
             timer.cancel();
             timer.purge();
             timer = null;
-            Log.d(TAG,"Killed timer");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG,"Killed timer");
+            }
         }
 
         if (updatePlotTask != null) {
             updatePlotTask.cancel();
             updatePlotTask = null;
-            Log.d(TAG,"Killed update Plot Task");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG,"Killed update Plot Task");
+            }
         }
 
         if (attysComm != null) {
@@ -666,7 +671,9 @@ public class AttysPlot extends AppCompatActivity {
                 e.printStackTrace();
             }
             attysComm = null;
-            Log.d(TAG,"Killed AttysComm");
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG,"Killed AttysComm");
+            }
         }
     }
 
@@ -675,7 +682,7 @@ public class AttysPlot extends AppCompatActivity {
         super.onDestroy();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Destroy!"));
+            Log.d(TAG, "Destroy!");
         }
         killAttysComm();
     }
@@ -685,7 +692,7 @@ public class AttysPlot extends AppCompatActivity {
         super.onRestart();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Restarting"));
+            Log.d(TAG, "Restarting");
         }
         killAttysComm();
     }
@@ -696,7 +703,7 @@ public class AttysPlot extends AppCompatActivity {
         super.onPause();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Paused"));
+            Log.d(TAG, "Paused");
         }
 
     }
@@ -707,7 +714,7 @@ public class AttysPlot extends AppCompatActivity {
         super.onStop();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Stopped"));
+            Log.d(TAG, "Stopped");
         }
 
         killAttysComm();
@@ -793,7 +800,9 @@ public class AttysPlot extends AppCompatActivity {
         final List files = new ArrayList();
         final String[] list = attysdir.list();
         for (String file : list) {
-            files.add(file);
+            if (files != null) {
+                files.add(file);
+            }
         }
 
         final ListView listview = new ListView(this);
@@ -1030,10 +1039,10 @@ public class AttysPlot extends AppCompatActivity {
 
 
     private void getsetAttysPrefs() {
-        byte mux = 0;
+        byte mux;
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, String.format("Setting preferences"));
+            Log.d(TAG, "Setting preferences");
         }
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(this);

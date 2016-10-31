@@ -35,7 +35,10 @@ import java.util.UUID;
 
 
 /**
- * Created by Bernd Porr on 14/08/16.
+ * Attys Comm takes care of all low comms with the Attys.
+ * It creates a ring buffer, it can save data and
+ * it provides interfaces for both data and error
+ * listeners.
  */
 public class AttysComm extends Thread {
 
@@ -539,7 +542,7 @@ public class AttysComm extends Thread {
                         mmSocket.close();
                         mmSocket = null;
                         Method createMethod = bluetoothDevice.getClass().
-                                getMethod("createInsecureRfcommSocket", new Class[]{int.class});
+                                getMethod("createInsecureRfcommSocket", int.class);
                         mmSocket = (BluetoothSocket) createMethod.invoke(bluetoothDevice, 1);
                     } catch (Exception e) {
                         if (Log.isLoggable(TAG, Log.ERROR)) {
@@ -922,7 +925,9 @@ public class AttysComm extends Thread {
                                 sample[i] = ((float) data[i] - norm) / norm *
                                         getAccelFullScaleRange();
                             } catch (Exception e) {
-                                Log.d(TAG, "Acc conv err");
+                                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                    Log.d(TAG, "Acc conv err");
+                                }
                                 sample[i] = 0;
                             }
                         }
@@ -936,7 +941,9 @@ public class AttysComm extends Thread {
                                         MAG_FULL_SCALE;
                                 //Log.d(TAG,"i="+i+","+sample[i]);
                             } catch (Exception e) {
-                                Log.d(TAG, "Mag conv err");
+                                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                    Log.d(TAG, "Mag conv err");
+                                }
                                 sample[i] = 0;
                             }
                         }

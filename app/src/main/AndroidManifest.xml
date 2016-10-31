@@ -16,16 +16,26 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with "http://www.example.com/gizmos” -->
+                <data android:scheme="http"
+                    android:host="www.attys.tech" />
+                <data android:scheme="example"
+                    android:host="attysplot" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".PrefsActivity"
             android:theme="@android:style/Theme.Black.NoTitleBar" />
         <activity
-            android:name="attys2sciencejournal.ADC1Settings"
+            android:name="tech.glasgowneuro.attys2sciencejournal.ADC1Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
             android:taskAffinity="" android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
         <activity
-            android:name="attys2sciencejournal.ADC2Settings"
+            android:name="tech.glasgowneuro.attys2sciencejournal.ADC2Settings"
             android:excludeFromRecents="true" android:launchMode="singleInstance"
             android:taskAffinity="" android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
         <!--

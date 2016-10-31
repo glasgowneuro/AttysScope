@@ -15,7 +15,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 /**
- * Created by bp1 on 07/09/16.
+ * Overlay which prints all the infos on the screen in a semi transparent
+ * scope look.
  */
 public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
 

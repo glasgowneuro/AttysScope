@@ -22,14 +22,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 /**
- * Created by bp1 on 10/08/16.
+ * Plots the data on a surface view. Optimised for speed.
  */
 public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -128,12 +127,11 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
         }
         int width = getWidth();
         nLeft = n;
-        Rect rect = null;
         int xr = xpos + n + gap;
         if (xr > (width - 1)) {
             xr = width - 1;
         }
-        rect = new Rect(xpos, 0, xr, getHeight());
+        Rect rect = new Rect(xpos, 0, xr, getHeight());
         if (holder != null) {
             canvas = holder.lockCanvas(rect);
         } else {
@@ -149,7 +147,6 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     holder.unlockCanvasAndPost(canvas);
                 } catch (Exception e) {
                 }
-                ;
                 canvas = null;
             }
         }
@@ -203,7 +200,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                 paintLabel.setTextSize(canvas.getHeight() / 30);
                 canvas.drawRect(rect, paintBlack);
                 for (int i = 0; i < nCh; i++) {
-                    float dy = (float) base / (float) (maxV[i] - minV[i]);
+                    float dy = base / (maxV[i] - minV[i]);
                     yZero[i] = ygap + base * (i + 1) - ((0 - minV[i]) * dy);
                     float yTmp = base * (i + 1) - ((newData[i] - minV[i]) * dy);
                     ypos[i][xpos + 1] = yTmp;
@@ -212,7 +209,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     float yTmpTicPos;
                     float yTmpTicNeg;
                     int ticCtr = 1;
-                    boolean doCoord = true;
+                    boolean doCoord;
                     if ((xpos % 2) == 0) {
                         do {
                             yTmpTicPos = base * (i + 1) - ((ytick[i] * ticCtr - minV[i]) * dy);

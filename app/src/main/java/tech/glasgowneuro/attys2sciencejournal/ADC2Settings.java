@@ -15,7 +15,7 @@ import android.widget.TextView;
 import tech.glasgowneuro.attysplot.R;
 
 /**
- * Created by Bernd Porr on 01/10/16.
+ * Settings for the ADC channel 2
  */
 
 public class ADC2Settings extends Activity {

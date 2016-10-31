@@ -5,7 +5,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 
 /**
- * Created by bp1 on 04/09/16.
+ * Fires up the preferences
  */
 public class PrefsActivity extends PreferenceActivity {
 

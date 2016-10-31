@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:yourapp="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/toggleRec"
@@ -16,7 +15,6 @@
         <menu>
 
             <item
-                android:id="@+id/largeStatus"
                 android:checked="true"
                 android:title="Info displays">
 
@@ -36,9 +34,7 @@
                 </menu>
             </item>
 
-            <group
-                android:id="@+id/adc1_checkboxes"
-                android:checkableBehavior="all">
+            <group android:checkableBehavior="all">
                 <item
                     android:id="@+id/showCh1"
                     android:checked="true"
@@ -58,7 +54,6 @@
             </group>
 
             <item
-                android:id="@+id/Ch1setGain"
                 android:checked="true"
                 android:title="ADC 1 gain">
 
@@ -94,9 +89,7 @@
 
             </item>
 
-            <group
-                android:id="@+id/adc2_checkboxes"
-                android:checkableBehavior="all">
+            <group android:checkableBehavior="all">
                 <item
                     android:id="@+id/showCh2"
                     android:checked="true"
@@ -116,7 +109,6 @@
             </group>
 
             <item
-                android:id="@+id/Ch2setGain"
                 android:checked="true"
                 android:title="ADC 2 gain">
 
@@ -150,9 +142,7 @@
                         android:title="500" />
                 </menu>
             </item>
-            <group
-                android:id="@+id/accmag_checkboxes"
-                android:checkableBehavior="all">
+            <group android:checkableBehavior="all">
                 <item
                     android:id="@+id/showaccelerometer"
                     android:title="Accelerometer" />

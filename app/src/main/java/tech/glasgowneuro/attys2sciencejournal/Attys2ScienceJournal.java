@@ -10,8 +10,6 @@ import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import tech.glasgowneuro.attys2sciencejournal.ADC1Settings;
-import tech.glasgowneuro.attys2sciencejournal.ADC2Settings;
 import tech.glasgowneuro.attyscomm.AttysComm;
 import tech.glasgowneuro.attysplot.Highpass;
 import tech.glasgowneuro.attysplot.R;
@@ -124,14 +122,14 @@ public class Attys2ScienceJournal extends Service {
         }
 
         // acc
-        sensorAppearanceResources[AttysComm.INDEX_Acceleration_X].iconId = R.drawable.ic_attys_acc_x_24dp;
-        sensorAppearanceResources[AttysComm.INDEX_Acceleration_Y].iconId = R.drawable.ic_attys_acc_y_24dp;
-        sensorAppearanceResources[AttysComm.INDEX_Acceleration_Z].iconId = R.drawable.ic_attys_acc_z_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Acceleration_X].iconId = R.drawable.ic_attys_acc_x;
+        sensorAppearanceResources[AttysComm.INDEX_Acceleration_Y].iconId = R.drawable.ic_attys_acc_y;
+        sensorAppearanceResources[AttysComm.INDEX_Acceleration_Z].iconId = R.drawable.ic_attys_acc_z;
 
         // mag
-        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_X].iconId = R.drawable.ic_attys_acc_x_24dp;
-        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_Y].iconId = R.drawable.ic_attys_acc_y_24dp;
-        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_Z].iconId = R.drawable.ic_attys_acc_z_24dp;
+        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_X].iconId = R.drawable.ic_attys_acc_x;
+        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_Y].iconId = R.drawable.ic_attys_acc_y;
+        sensorAppearanceResources[AttysComm.INDEX_Magnetic_field_Z].iconId = R.drawable.ic_attys_acc_z;
 
         // ADC
         sensorAppearanceResources[AttysComm.INDEX_Analogue_channel_1].iconId = R.drawable.ic_attys_channel1_bold;
@@ -209,14 +207,18 @@ public class Attys2ScienceJournal extends Service {
 
         // are we the first sensor? Then let's start a proper connection
         if ((attysComm == null)) {
-            Log.d(TAG, "First sensor:" + sensorIndex + " we open the connection!");
-            Log.d(TAG, "Service hash: " + getClass().hashCode());
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "First sensor:" + sensorIndex + " we open the connection!");
+                Log.d(TAG, "Service hash: " + getClass().hashCode());
+            }
             theListener.onSensorConnecting();
 
             attysComm = new AttysComm(bluetoothDevice);
             attysComm.setAdc_samplingrate_index(AttysComm.ADC_RATE_125HZ);
             samplingInterval = 1000.0 / attysComm.getSamplingRateInHz();
-            Log.d(TAG, "SamplingInterval: " + samplingInterval);
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "SamplingInterval: " + samplingInterval);
+            }
             attysComm.setAccel_full_scale_index(AttysComm.ACCEL_16G);
 
             attysComm.setAdc1_gain_index(AttysComm.ADC_GAIN_1);
@@ -558,7 +560,7 @@ public class Attys2ScienceJournal extends Service {
                 setAppearance();
 
                 for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-                    String loggingID = new String().format("Attys,%d,%s",
+                    String loggingID = "".format("Attys,%d,%s",
                             i, AttysComm.CHANNEL_DESCRIPTION[i]);
                     String channelDescr = "ATTYS " + AttysComm.CHANNEL_DESCRIPTION[i];
                     behaviour[i].loggingId = loggingID;

@@ -18,7 +18,7 @@
 package tech.glasgowneuro.attysplot;
 
 /**
- * Created by bp1 on 13/08/16.
+ * Simple 1st order highpass filter to remove the DC from the signals
  */
 public class Highpass {
 
