@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -93,6 +94,15 @@ public class ADC1Settings extends Activity {
             }
         });
         spinnerPowerline.setSelection(getIndexForPowerline(this));
+
+        Button closeButton = (Button) findViewById(R.id.bClose);
+        closeButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
 
 
     }

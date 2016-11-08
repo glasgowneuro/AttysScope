@@ -111,21 +111,21 @@
     </item>
     <item
         is-multidex="true"
+        jar="/home/bp1/sandbox/AttysPlot/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="11de2d9582093a0c3c949f75317ef2269bc7009e">
+        <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_3a6f21391e140280a2fea0347ee609d97c1c5fd1/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
         jar="/home/bp1/sandbox/AttysPlot/app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
         sha1="7d78afccc29b25071876bcaa9e7aac84e9fdb908">
         <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_df1026115f4efaf472ec1a89fd844c020a7f2567/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysPlot/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="99f10808f15f0c8deb900de7e1b663e5be8dc66f">
-        <dex dex="/home/bp1/sandbox/AttysPlot/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_3a6f21391e140280a2fea0347ee609d97c1c5fd1/classes.dex" />
     </item>
     <item
         is-multidex="true"
