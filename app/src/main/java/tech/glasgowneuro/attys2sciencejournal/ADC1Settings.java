@@ -13,7 +13,7 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import tech.glasgowneuro.attysplot.R;
+import tech.glasgowneuro.attysscope.R;
 
 /**
  * Settings for the ADC channel 1
