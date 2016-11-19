@@ -116,23 +116,10 @@ public class AttysScope extends AppCompatActivity {
 
     private DataAnalysis dataAnalysis = DataAnalysis.DC;
 
-    // for 1000 steps
-    private int ignoreECGdetector = 1000;
-
     // debugging the ECG detector, commented out for production
     //double ecgDetOut;
 
-    // for data analysis
-    private double max, min;
-    private float t2 = 0;
     private int timestamp = 0;
-    private int doNotDetect = 0;
-    private float[] analysisBuffer;
-    private int analysisPtr = 0;
-    private float v2 = 0;
-
-    Butterworth ecgDetector = new Butterworth();
-    Butterworth ecgDetNotch = new Butterworth();
 
     String[] labels = {
             "Acc x", "Acc y", "Acc z",
@@ -254,6 +241,51 @@ public class AttysScope extends AppCompatActivity {
 
     private class UpdatePlotTask extends TimerTask {
 
+        private int ignoreECGdetector = 1000;
+        private double max, min;
+        private float t2 = 0;
+        private int doNotDetect = 0;
+        private float[] analysisBuffer;
+        private int analysisPtr = 0;
+        private int[] hrBuffer = new int[3];
+        private int[] sortBuffer = new int[3];
+        private Butterworth ecgDetector = new Butterworth();
+        private Butterworth ecgDetNotch = new Butterworth();
+        private String m_unit = "";
+        private float scaling_factor = 1;
+
+        private void resetAnalysis() {
+            max = 0;
+            min = 0;
+            t2 = 0;
+            doNotDetect = 0;
+            ignoreECGdetector = attysComm.getSamplingRateInHz();
+            analysisPtr = 0;
+            hrBuffer[0] = 0;
+            hrBuffer[1] = 0;
+            hrBuffer[2] = 0;
+
+            m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
+
+            if ((theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
+                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Y) ||
+                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Z)) {
+                scaling_factor = 1E6F;
+                m_unit = "\u00b5" + m_unit;
+            } else {
+                scaling_factor = 1;
+            }
+
+            annotatePlot("-----------");
+        }
+
+        UpdatePlotTask() {
+            analysisBuffer = new float[attysComm.getSamplingRateInHz()];
+            // this fakes an R peak so we have a matched filter!
+            ecgDetector.bandPass(2, attysComm.getSamplingRateInHz(), 20, 15);
+            ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+        }
+
         private void annotatePlot(String largeText) {
             String small = "";
             if (showCh1) {
@@ -281,17 +313,9 @@ public class AttysScope extends AppCompatActivity {
             }
         }
 
-
         private void doAnalysis(float v) {
 
-            String m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
-
-            if ((theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
-                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Y) ||
-                    (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Z)) {
-                v = v * 1E6F;
-                m_unit = "\u00b5" + m_unit;
-            }
+            v = v * scaling_factor;
 
             switch (dataAnalysis) {
                 case ECG:
@@ -313,15 +337,23 @@ public class AttysScope extends AppCompatActivity {
                         if (doNotDetect > 0) {
                             doNotDetect--;
                         } else {
-                            if (h > (0.75 * max)) {
+                            if (h > (0.6 * max)) {
                                 float t = (timestamp - t2) / attysComm.getSamplingRateInHz();
                                 float bpm = 1 / t * 60;
-                                if ((bpm > 40) && (bpm < 300)) {
-                                    annotatePlot(String.format("%03d BPM", (int) bpm));
+                                if ((bpm > 30) && (bpm < 300)) {
+                                    hrBuffer[2] = hrBuffer[1];
+                                    hrBuffer[1] = hrBuffer[0];
+                                    hrBuffer[0] = (int)bpm;
+                                    System.arraycopy(hrBuffer, 0, sortBuffer, 0, hrBuffer.length);
+                                    Arrays.sort(sortBuffer);
+                                    int filtBPM = sortBuffer[1];
+                                    if (filtBPM>0) {
+                                        annotatePlot(String.format("%03d BPM", (int) filtBPM));
+                                    }
                                 }
                                 t2 = timestamp;
-                                // advoid 1/2 sec
-                                doNotDetect = attysComm.getSamplingRateInHz() / 2;
+                                // advoid 1/4 sec
+                                doNotDetect = attysComm.getSamplingRateInHz() / 4;
                             }
                         }
                     }
@@ -592,9 +624,6 @@ public class AttysScope extends AppCompatActivity {
         attysComm = new AttysComm(btAttysDevice);
         attysComm.registerMessageListener(messageListener);
 
-        // 1sec
-        analysisBuffer = new float[attysComm.getSamplingRateInHz()];
-
         getsetAttysPrefs();
 
         if (showCh1) {
@@ -611,10 +640,6 @@ public class AttysScope extends AppCompatActivity {
             highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
         }
 
-        // this fakes an R peak so we have a matched filter!
-        ecgDetector.bandPass(2, 250, 20, 15);
-        ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
-
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
         realtimePlotView.init();
@@ -625,6 +650,7 @@ public class AttysScope extends AppCompatActivity {
                     public void touchedChannel(int chNo) {
                         try {
                             theChannelWeDoAnalysis = actualChannelIdx[chNo];
+                            updatePlotTask.resetAnalysis();
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.ERROR)) {
                                 Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
@@ -641,6 +667,7 @@ public class AttysScope extends AppCompatActivity {
 
         timer = new Timer();
         updatePlotTask = new UpdatePlotTask();
+        updatePlotTask.resetAnalysis();
         timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
     }
 
@@ -1011,18 +1038,22 @@ public class AttysScope extends AppCompatActivity {
 
             case R.id.largeStatusOff:
                 dataAnalysis = DataAnalysis.NONE;
+                updatePlotTask.annotatePlot("");
                 return true;
 
             case R.id.largeStatusAC:
                 dataAnalysis = DataAnalysis.AC;
+                updatePlotTask.resetAnalysis();
                 return true;
 
             case R.id.largeStatusDC:
                 dataAnalysis = DataAnalysis.DC;
+                updatePlotTask.resetAnalysis();
                 return true;
 
             case R.id.largeStatusBPM:
                 dataAnalysis = DataAnalysis.ECG;
+                updatePlotTask.resetAnalysis();
                 return true;
 
             case R.id.filebrowser:
