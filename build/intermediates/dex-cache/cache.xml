@@ -21,6 +21,15 @@
     </item>
     <item
         is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-media-compat/25.0.0/jars/libs/internal_impl-25.0.0.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="665d21a8a069c96b4d9e8b434f5096d865b4e261">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/internal_impl-25.0.0_e28f6586e497ac23f0c400b97debaebf7320e385/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
         jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-media-compat/25.0.0/jars/classes.jar"
         jumboMode="true"
         optimize="true"
@@ -36,6 +45,24 @@
         revision="24.0.1"
         sha1="75b1f366ff0bbc78f8b1f7cf0dc82e7c53afef6a">
         <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-compat-25.0.0_63b8a35c56101801acfc4f45bf70aa65335d5782/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-basement/9.8.0/jars/classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="9f6d236bac26d02b410e4ee186ba517ace5ee661">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.google.android.gms-play-services-basement-9.8.0_a5bac29f0fc7aa874002eb068acfe940d28927c1/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/bp1/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/25.0.0/support-annotations-25.0.0.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="a22d2cc94da87b254451fa8ed28afc30b4653773">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/support-annotations-25.0.0_19ff75ca1a72ffd09f10b72bb0d0fe355bb6ce59/classes.dex" />
     </item>
     <item
         is-multidex="true"
@@ -66,84 +93,21 @@
     </item>
     <item
         is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-fragment/25.0.0/jars/libs/internal_impl-25.0.0.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="ee5faf4dee5b6a4364bf51587871047dde7c703a">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/internal_impl-25.0.0_c0b0c78d9168c43fa37249aaf5117ccd80a72667/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-core-utils/25.0.0/jars/classes.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="4ccbcda5c72027c7f7c14be9ff8640d9cb0d8da0">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-core-utils-25.0.0_f5d25b8d78ab8f671a5bf04272b876bd31f05b90/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-core-ui/25.0.0/jars/classes.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="26674000177e45447a0326a6ad84612761199a13">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-core-ui-25.0.0_689469b70a0f5f11804b696445baa6ec20822db8/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-v4/25.0.0/jars/classes.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="d7c42c80f6509b9ea4db28ca7859ffae08ec5741">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-v4-25.0.0_2696e63d782ab6bf116a48cb428791ea80a08700/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="893e3b3e416b0724d29871ae9eb0d63d36c3cd4f">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_b1be8cc458f040cfe03f28dd70bd99a4dcb70edc/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-media-compat/25.0.0/jars/libs/internal_impl-25.0.0.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="665d21a8a069c96b4d9e8b434f5096d865b4e261">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/internal_impl-25.0.0_e28f6586e497ac23f0c400b97debaebf7320e385/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-basement/9.8.0/jars/classes.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="9f6d236bac26d02b410e4ee186ba517ace5ee661">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.google.android.gms-play-services-basement-9.8.0_a5bac29f0fc7aa874002eb068acfe940d28927c1/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bp1/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/25.0.0/support-annotations-25.0.0.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="24.0.1"
-        sha1="a22d2cc94da87b254451fa8ed28afc30b4653773">
-        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/support-annotations-25.0.0_19ff75ca1a72ffd09f10b72bb0d0fe355bb6ce59/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
         jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/25.0.0/jars/classes.jar"
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
         sha1="8bc45ce1f63d1a391fd38b32a201be5a42f9c95d">
         <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-appcompat-v7-25.0.0_1afd201e635aaceb4f5549c857489695261febe6/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-fragment/25.0.0/jars/libs/internal_impl-25.0.0.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="ee5faf4dee5b6a4364bf51587871047dde7c703a">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/internal_impl-25.0.0_c0b0c78d9168c43fa37249aaf5117ccd80a72667/classes.dex" />
     </item>
     <item
         is-multidex="true"
@@ -174,6 +138,15 @@
     </item>
     <item
         is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-core-utils/25.0.0/jars/classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="4ccbcda5c72027c7f7c14be9ff8640d9cb0d8da0">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-core-utils-25.0.0_f5d25b8d78ab8f671a5bf04272b876bd31f05b90/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
         jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/animated-vector-drawable/25.0.0/jars/classes.jar"
         jumboMode="true"
         optimize="true"
@@ -189,6 +162,24 @@
         revision="24.0.1"
         sha1="3b61a70884adaf0be3fc06c70c801e3e6df13133">
         <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/internal_impl-25.0.0_5d70500c2b24844a5f7734ef847e4c464f0f4409/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-core-ui/25.0.0/jars/classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="26674000177e45447a0326a6ad84612761199a13">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-core-ui-25.0.0_689469b70a0f5f11804b696445baa6ec20822db8/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/exploded-aar/com.android.support/support-v4/25.0.0/jars/classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="d7c42c80f6509b9ea4db28ca7859ffae08ec5741">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/com.android.support-support-v4-25.0.0_2696e63d782ab6bf116a48cb428791ea80a08700/classes.dex" />
     </item>
     <item
         is-multidex="true"
@@ -210,11 +201,20 @@
     </item>
     <item
         is-multidex="true"
+        jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="24.0.1"
+        sha1="7ba0ca470c99b3b52a183faceb638ae286dad8d4">
+        <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_b1be8cc458f040cfe03f28dd70bd99a4dcb70edc/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
         jar="/home/bp1/sandbox/AttysScope/app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"
         jumboMode="true"
         optimize="true"
         revision="24.0.1"
-        sha1="37cdbdbab1105915462d0fbe82ce717cf5df432e">
+        sha1="7d80063cd8d95f37b8d8aa6dee1d8293c3da9676">
         <dex dex="/home/bp1/sandbox/AttysScope/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_1e6b4d6e4304c485223ead427ce7ad568db4c45d/classes.dex" />
     </item>
 

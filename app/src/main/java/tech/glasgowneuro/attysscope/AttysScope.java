@@ -426,7 +426,6 @@ public class AttysScope extends AppCompatActivity {
                             sample = attysComm.getSampleFromBuffer();
                         }
                         if (sample != null) {
-                            doAnalysis(sample[theChannelWeDoAnalysis]);
                             // debug ECG detector
                             // sample[AttysComm.INDEX_Analogue_channel_2] = (float)ecgDetOut;
                             timestamp++;
@@ -438,12 +437,14 @@ public class AttysScope extends AppCompatActivity {
                                         v = (float) iirNotch[j].filter((double) v);
                                     }
                                 }
-                                v = v * gain[j];
                                 if (invert[j]) {
-                                    sample[j] = -v;
-                                } else {
-                                    sample[j] = v;
+                                    v = -v;
                                 }
+                                if (j == theChannelWeDoAnalysis) {
+                                    doAnalysis(v);
+                                }
+                                v = v * gain[j];
+                                sample[j] = v;
                             }
                             int nRealChN = 0;
                             if (showCh1) {
