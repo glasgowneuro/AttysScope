@@ -828,7 +828,9 @@ public class AttysScope extends AppCompatActivity {
         final String[] list = attysdir.list();
         for (String file : list) {
             if (files != null) {
-                files.add(file);
+                if (file != null) {
+                    files.add(file);
+                }
             }
         }
 
@@ -855,7 +857,7 @@ public class AttysScope extends AppCompatActivity {
                         SparseBooleanArray checked = listview.getCheckedItemPositions();
                         Intent sendIntent = new Intent();
                         sendIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
-                        ArrayList<Uri> files = new ArrayList<Uri>();
+                        ArrayList<Uri> files = new ArrayList<>();
                         for (int i = 0; i < listview.getCount(); i++) {
                             if (checked.get(i)) {
                                 String filename = list[i];
@@ -1077,6 +1079,9 @@ public class AttysScope extends AppCompatActivity {
         }
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(this);
+
+        PreferenceManager.setDefaultValues(this,R.xml.preferences,false);
+
         boolean ecg_mode = prefs.getBoolean("ECG_mode", false);
         if (ecg_mode) {
             mux = AttysComm.ADC_MUX_ECG_EINTHOVEN;
