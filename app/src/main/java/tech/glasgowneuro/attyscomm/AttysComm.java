@@ -21,6 +21,8 @@ package tech.glasgowneuro.attyscomm;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Base64;
 import android.util.Log;
 
@@ -366,9 +368,11 @@ public class AttysComm extends Thread {
     public java.io.FileNotFoundException startRec(File file) {
         try {
             textdataFileStream = new PrintWriter(file);
+            textdataFile = file;
             messageListener.haveMessage(MESSAGE_STARTED_RECORDING);
         } catch (java.io.FileNotFoundException e) {
             textdataFileStream = null;
+            textdataFile = null;
             return e;
         }
         return null;
@@ -380,12 +384,17 @@ public class AttysComm extends Thread {
             textdataFileStream.close();
             messageListener.haveMessage(MESSAGE_STOPPED_RECORDING);
             textdataFileStream = null;
+            textdataFile = null;
         }
     }
 
     // are we recording?
     public boolean isRecording() {
         return (textdataFileStream != null);
+    }
+
+    public File getFile() {
+        return textdataFile;
     }
 
 
@@ -433,6 +442,7 @@ public class AttysComm extends Thread {
     private byte expectedTimestamp = 0;
     private boolean correctTimestampDifference = false;
     private PrintWriter textdataFileStream = null;
+    private File textdataFile = null;
     private double timestamp = 0.0; // in secs
     private boolean connectionEstablished;
     private BluetoothDevice bluetoothDevice;

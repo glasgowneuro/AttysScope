@@ -902,7 +902,14 @@ public class AttysScope extends AppCompatActivity {
 
             case R.id.toggleRec:
                 if (attysComm.isRecording()) {
+                    File file = attysComm.getFile();
                     attysComm.stopRec();
+                    if (file != null) {
+                        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        Uri contentUri = Uri.fromFile(file);
+                        mediaScanIntent.setData(contentUri);
+                        sendBroadcast(mediaScanIntent);
+                    }
                 } else {
                     if (dataFilename != null) {
                         File file = new File(attysdir, dataFilename.trim());
