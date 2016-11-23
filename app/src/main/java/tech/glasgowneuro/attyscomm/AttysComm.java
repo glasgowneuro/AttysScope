@@ -125,7 +125,13 @@ public class AttysComm extends Thread {
     public final static float ADC_REF = 2.42F;
 
     public float getADCFullScaleRange(int channel) {
-        return ADC_REF / ADC_GAIN_FACTOR[adcGainRegister[channel]];
+        switch (channel) {
+            case 0:
+                return ADC_REF / ADC_GAIN_FACTOR[adc0_gain_index];
+            case 1:
+                return ADC_REF / ADC_GAIN_FACTOR[adc0_gain_index];
+        }
+        return 0;
     }
 
     public void setAdc1_gain_index(byte idx) {
@@ -487,14 +493,10 @@ public class AttysComm extends Thread {
             Log.v(TAG, "Got rfComm socket!");
         }
 
-        try {
-            sleep(100);
-        } catch (Exception esleep) {
-        }
-
         if (mmSocket != null) {
             try {
                 if (mmSocket != null) {
+                    yield();
                     mmSocket.connect();
                 }
             } catch (IOException connectException) {
@@ -511,11 +513,9 @@ public class AttysComm extends Thread {
                 } catch (IOException e1) {
                 }
 
-                // let's just wait a bit
                 try {
                     sleep(100);
-                } catch (InterruptedException e1) {
-                }
+                } catch (Exception ee) {};
 
                 try {
                     mmSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuid);
@@ -536,58 +536,70 @@ public class AttysComm extends Thread {
                 // let's try to connect
                 try {
                     if (mmSocket != null) {
+                        yield();
                         mmSocket.connect();
                     }
                 } catch (IOException e2) {
 
                     try {
                         sleep(100);
-                    } catch (InterruptedException e3) {
-                    }
+                    } catch (Exception ee) {};
 
-                    try {
-                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                            Log.d(TAG, "Last resort: we try the hidden API");
-                        }
-                        mmSocket.close();
-                        mmSocket = null;
-                        Method createMethod = bluetoothDevice.getClass().
-                                getMethod("createInsecureRfcommSocket", int.class);
-                        mmSocket = (BluetoothSocket) createMethod.invoke(bluetoothDevice, 1);
-                    } catch (Exception e) {
-                        if (Log.isLoggable(TAG, Log.ERROR)) {
-                            Log.e(TAG, "Could not get non-UUID based bluetooth socket!", e);
-                        }
-                        mmSocket = null;
-                        throw new IOException(e);
-                    }
-
-                    try {
-                        sleep(100);
-                    } catch (InterruptedException e3) {
-                    }
-
-                    try {
-                        if (mmSocket != null) {
-                            mmSocket.connect();
-                        }
-                    } catch (IOException e4) {
-
+                    int numFinalAttempts = 2;
+                    for(int i=0;i<numFinalAttempts;i++) {
                         try {
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, String.format("The hidden API attempt #%d",i));
+                            }
                             if (mmSocket != null) {
                                 mmSocket.close();
                             }
                             mmSocket = null;
-                        } catch (IOException e) {
+                            Method createMethod = bluetoothDevice.getClass().
+                                    getMethod("createInsecureRfcommSocket", int.class);
+                            mmSocket = (BluetoothSocket) createMethod.invoke(bluetoothDevice, 1);
+                        } catch (Exception e) {
+                            if (Log.isLoggable(TAG, Log.ERROR)) {
+                                Log.e(TAG, "Could not get non-UUID based bluetooth socket!", e);
+                            }
+                            mmSocket = null;
+                            throw new IOException(e);
                         }
 
-                        connectionEstablished = false;
-                        fatalError = true;
-                        if (Log.isLoggable(TAG, Log.DEBUG)) {
-                            Log.d(TAG, "Could not establish connection to Attys: " +
-                                    e4.getMessage());
+                        yield();
+                        try {
+                            sleep(100);
+                        } catch (Exception ee) {};
+
+
+                        try {
+                            if (mmSocket != null) {
+                                mmSocket.connect();
+                            } else {
+                                if (i == (numFinalAttempts-1)) {
+                                    throw new IOException(new IOException("mmSocket == NULL"));
+                                }
+                            }
+                        } catch (IOException e4) {
+
+                            try {
+                                if (mmSocket != null) {
+                                    mmSocket.close();
+                                }
+                                mmSocket = null;
+                            } catch (IOException e) {
+                            }
+
+                            connectionEstablished = false;
+                            fatalError = true;
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Could not establish connection to Attys: " +
+                                        e4.getMessage());
+                            }
+                            if (i == (numFinalAttempts-1)) {
+                                throw new IOException("Final connection attempt failed to connect to Attys");
+                            }
                         }
-                        throw new IOException(e4);
                     }
                 }
             }
@@ -797,7 +809,7 @@ public class AttysComm extends Thread {
         tmp = tmp + String.format("%f", data[data.length - 1]);
 
         if (textdataFileStream != null) {
-            textdataFileStream.format("%s\n",tmp);
+            textdataFileStream.format("%s\n", tmp);
         }
     }
 

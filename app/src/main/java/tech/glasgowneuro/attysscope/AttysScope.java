@@ -159,8 +159,6 @@ public class AttysScope extends AppCompatActivity {
                     finish();
                     break;
                 case AttysComm.MESSAGE_CONNECTED:
-                    Toast.makeText(getApplicationContext(),
-                            "Bluetooth connected", Toast.LENGTH_SHORT).show();
                     progress.dismiss();
                     break;
                 case AttysComm.MESSAGE_CONFIGURE:
@@ -276,7 +274,7 @@ public class AttysScope extends AppCompatActivity {
                 scaling_factor = 1;
             }
 
-            annotatePlot("-----------");
+            annotatePlot("---------------");
         }
 
         UpdatePlotTask() {
@@ -289,26 +287,26 @@ public class AttysScope extends AppCompatActivity {
         private void annotatePlot(String largeText) {
             String small = "";
             if (showCh1) {
-                small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div,(int)gain[AttysComm.INDEX_Analogue_channel_1]);
+                small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div, (int) gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + "".format("ADC2 = %1.04fV/div (X%d), ", ch2Div,(int)gain[AttysComm.INDEX_Analogue_channel_2]);
+                small = small + "".format("ADC2 = %1.04fV/div (X%d), ", ch2Div, (int) gain[AttysComm.INDEX_Analogue_channel_2]);
             }
             if (showAcc) {
-                small = small + "".format("ACC = %dG/div, ",Math.round(accTick/AttysComm.oneG));
+                small = small + "".format("ACC = %dG/div, ", Math.round(accTick / AttysComm.oneG));
             }
             if (showMag) {
-                small = small + "".format("MAG = %d\u00b5T/div, ",Math.round(magTick/1E-6));
+                small = small + "".format("MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
             if (attysComm.isRecording()) {
-                small = small + " !!RECORDING to:"+dataFilename;
+                small = small + " !!RECORDING to:" + dataFilename;
             }
             if (largeText != null) {
                 largeText = "".format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
             if (infoView != null) {
                 if (attysComm != null) {
-                        infoView.drawText(largeText, small);
+                    infoView.drawText(largeText, small);
                 }
             }
         }
@@ -343,11 +341,11 @@ public class AttysScope extends AppCompatActivity {
                                 if ((bpm > 30) && (bpm < 300)) {
                                     hrBuffer[2] = hrBuffer[1];
                                     hrBuffer[1] = hrBuffer[0];
-                                    hrBuffer[0] = (int)bpm;
+                                    hrBuffer[0] = (int) bpm;
                                     System.arraycopy(hrBuffer, 0, sortBuffer, 0, hrBuffer.length);
                                     Arrays.sort(sortBuffer);
                                     int filtBPM = sortBuffer[1];
-                                    if (filtBPM>0) {
+                                    if (filtBPM > 0) {
                                         annotatePlot(String.format("%03d BPM", (int) filtBPM));
                                     }
                                 }
@@ -493,10 +491,10 @@ public class AttysScope extends AppCompatActivity {
                             if (showMag) {
                                 if (attysComm != null) {
                                     for (int k = 0; k < 3; k++) {
-                                        if (attysComm!=null) {
+                                        if (attysComm != null) {
                                             tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
                                         }
-                                        if (attysComm!=null) {
+                                        if (attysComm != null) {
                                             tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
                                         }
                                         tmpLabels[nRealChN] = labels[k + 3];
@@ -507,7 +505,12 @@ public class AttysScope extends AppCompatActivity {
                                 }
                             }
                             if (infoView != null) {
-                                ygapForInfo = infoView.getInfoHeight();
+                                if (ygapForInfo == 0) {
+                                    ygapForInfo = infoView.getInfoHeight();
+                                    if ((Log.isLoggable(TAG, Log.DEBUG))&&(ygapForInfo>0)) {
+                                        Log.d(TAG, "ygap=" + ygapForInfo);
+                                    }
+                                }
                             }
                             if (realtimePlotView != null) {
                                 realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
@@ -534,7 +537,9 @@ public class AttysScope extends AppCompatActivity {
             Log.d(TAG, "Back button pressed");
         }
         killAttysComm();
-        finish();
+        Intent startMain = new Intent(Intent.ACTION_MAIN);
+        startMain.addCategory(Intent.CATEGORY_HOME);
+        startActivity(startMain);
     }
 
     /**
@@ -597,7 +602,7 @@ public class AttysScope extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        //startDAQ();
+        updatePlotTask.resetAnalysis();
 
     }
 
@@ -679,7 +684,7 @@ public class AttysScope extends AppCompatActivity {
             timer.purge();
             timer = null;
             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG,"Killed timer");
+                Log.d(TAG, "Killed timer");
             }
         }
 
@@ -687,7 +692,7 @@ public class AttysScope extends AppCompatActivity {
             updatePlotTask.cancel();
             updatePlotTask = null;
             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG,"Killed update Plot Task");
+                Log.d(TAG, "Killed update Plot Task");
             }
         }
 
@@ -700,7 +705,7 @@ public class AttysScope extends AppCompatActivity {
             }
             attysComm = null;
             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG,"Killed AttysComm");
+                Log.d(TAG, "Killed AttysComm");
             }
         }
     }
@@ -1049,6 +1054,7 @@ public class AttysScope extends AppCompatActivity {
             case R.id.largeStatusOff:
                 dataAnalysis = DataAnalysis.NONE;
                 updatePlotTask.annotatePlot("");
+                ygapForInfo = 0;
                 return true;
 
             case R.id.largeStatusAC:
@@ -1088,7 +1094,7 @@ public class AttysScope extends AppCompatActivity {
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(this);
 
-        PreferenceManager.setDefaultValues(this,R.xml.preferences,false);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         boolean ecg_mode = prefs.getBoolean("ECG_mode", false);
         if (ecg_mode) {
