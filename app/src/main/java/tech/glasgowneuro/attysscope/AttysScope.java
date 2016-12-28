@@ -79,7 +79,7 @@ public class AttysScope extends AppCompatActivity {
 
     UpdatePlotTask updatePlotTask = null;
 
-    private static final String TAG = "AttysPlot";
+    private static final String TAG = "AttysScope";
 
     private Highpass[] highpass = null;
     private float[] gain;
