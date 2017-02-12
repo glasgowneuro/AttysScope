@@ -8,4 +8,5 @@
 ~/Android/Sdk/platform-tools/adb shell setprop log.tag.ConSensorRegistry VERBOSE
 ~/Android/Sdk/platform-tools/adb shell setprop log.tag.AttysADCSettings VERBOSE
 ~/Android/Sdk/platform-tools/adb shell setprop log.tag.Attys2ScienceJournal VERBOSE
-
+~/Android/Sdk/platform-tools/adb shell setprop log.tag.FourierFragment VERBOSE
+~/Android/Sdk/platform-tools/adb shell setprop log.tag.AmplitudeFragment VERBOSE

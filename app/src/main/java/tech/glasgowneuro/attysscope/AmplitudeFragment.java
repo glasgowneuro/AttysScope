@@ -1,0 +1,465 @@
+package tech.glasgowneuro.attysscope;
+
+import android.Manifest;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.net.Uri;
+import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.ToggleButton;
+
+import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.StepMode;
+import com.androidplot.xy.XYGraphWidget;
+import com.androidplot.xy.XYPlot;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import tech.glasgowneuro.attyscomm.AttysComm;
+
+/**
+ * RMS Fragment
+ */
+
+public class AmplitudeFragment extends Fragment {
+
+    String TAG = "AmplitudeFragment";
+
+    int channel = AttysComm.INDEX_Analogue_channel_1;
+
+    final int nSampleBufferSize = 100;
+
+    final static float smoothFreq = 0.1F;
+
+    private final int REFRESH_IN_MS = 1000;
+
+    private SimpleXYSeries amplitudeHistorySeries = null;
+    private SimpleXYSeries amplitudeFullSeries = null;
+
+    private XYPlot amplitudePlot = null;
+
+    private TextView amplitudeReadingText = null;
+
+    private ToggleButton toggleButtonDoRecord;
+
+    private Button resetButton;
+
+    private Button saveButton;
+
+    private Spinner spinnerChannel;
+
+    View view = null;
+
+    int samplingRate = 250;
+
+    int step = 0;
+
+    float rms = 0;
+
+    double delta_t = (double) REFRESH_IN_MS / 1000.0;
+
+    boolean ready = false;
+
+    boolean acceptData = false;
+
+    static final int BUFFERSIZE = 1000;
+
+    float[] values = new float[BUFFERSIZE];
+
+    int nValues = 0;
+
+    Timer timer = null;
+
+    private String dataFilename = null;
+
+    private byte dataSeparator = AttysScope.DataRecorder.DATA_SEPARATOR_TAB;
+
+    public void setSamplingrate(int _samplingrate) {
+        samplingRate = _samplingrate;
+    }
+
+    private void reset() {
+        ready = false;
+
+        step = 0;
+
+        int n = amplitudeHistorySeries.size();
+        for (int i = 0; i < n; i++) {
+            amplitudeHistorySeries.removeLast();
+        }
+        amplitudeFullSeries = new SimpleXYSeries(" ");
+
+        amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel]+" RMS");
+        amplitudePlot.setTitle(" "); //AttysComm.CHANNEL_DESCRIPTION[channel]+" RMS");
+
+        amplitudePlot.redraw();
+
+        ready = true;
+    }
+
+
+    /**
+     * Called when the activity is first created.
+     */
+    @Override
+    public View onCreateView(LayoutInflater inflater,
+                             ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "creating Fragment");
+        }
+
+        if (container == null) {
+            return null;
+        }
+
+        view = inflater.inflate(R.layout.amplitudefragment, container, false);
+
+        // setup the APR Levels plot:
+        amplitudePlot = (XYPlot) view.findViewById(R.id.amplitude_PlotView);
+        amplitudeReadingText = (TextView) view.findViewById(R.id.amplitude_valueTextView);
+        amplitudeReadingText.setText(String.format("%04d", 0));
+        toggleButtonDoRecord = (ToggleButton) view.findViewById(R.id.amplitude_doRecord);
+        toggleButtonDoRecord.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    acceptData = true;
+                    timer = new Timer();
+                    UpdatePlotTask updatePlotTask = new UpdatePlotTask();
+                    timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
+                } else {
+                    acceptData = false;
+                    timer.cancel();
+                }
+            }
+        });
+        toggleButtonDoRecord.setChecked(true);
+        resetButton = (Button) view.findViewById(R.id.amplitude_Reset);
+        resetButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                reset();
+            }
+        });
+        saveButton = (Button) view.findViewById(R.id.amplitude_Save);
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                saveAmplitude();
+            }
+        });
+        spinnerChannel = (Spinner) view.findViewById(R.id.amplitude_channel);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                AttysComm.CHANNEL_DESCRIPTION);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerChannel.setAdapter(adapter);
+        spinnerChannel.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (channel != position) {
+                    Toast.makeText(getActivity(),
+                            "Press RESET to confirm to record " + AttysComm.CHANNEL_DESCRIPTION[channel],
+                            Toast.LENGTH_SHORT).show();
+                }
+                channel = position;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        spinnerChannel.setBackgroundResource(android.R.drawable.btn_default);
+        spinnerChannel.setSelection(AttysComm.INDEX_Analogue_channel_1);
+
+        amplitudeHistorySeries = new SimpleXYSeries(" "); //AttysComm.CHANNEL_UNITS[channel]+" RMS");
+        if (amplitudeHistorySeries == null) {
+            if (Log.isLoggable(TAG, Log.ERROR)) {
+                Log.e(TAG, "amplitudeHistorySeries == null");
+            }
+        }
+
+        amplitudePlot.addSeries(amplitudeHistorySeries,
+                new LineAndPointFormatter(
+                        Color.rgb(100, 255, 255), null, null, null));
+
+        Paint paint = new Paint();
+        paint.setColor(Color.argb(128, 0, 255, 0));
+        amplitudePlot.getGraph().setDomainGridLinePaint(paint);
+        amplitudePlot.getGraph().setRangeGridLinePaint(paint);
+
+        amplitudePlot.setDomainLabel("t/sec");
+        amplitudePlot.setRangeLabel(" ");
+
+        amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
+        amplitudePlot.setRangeUpperBoundary(1,BoundaryMode.AUTO);
+        amplitudePlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
+
+        XYGraphWidget.LineLabelRenderer lineLabelRendererY = new XYGraphWidget.LineLabelRenderer() {
+            @Override
+            public void drawLabel(Canvas canvas,
+                                  XYGraphWidget.LineLabelStyle style,
+                                  Number val, float x, float y, boolean isOrigin) {
+                    Rect bounds = new Rect();
+                    style.getPaint().getTextBounds("a", 0, 1, bounds);
+                    drawLabel(canvas, String.format("%04.5f ",val.floatValue()),
+                            style.getPaint(), x+bounds.width()/2, y+bounds.height(), isOrigin);
+            }
+        };
+
+        amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT,lineLabelRendererY);
+        XYGraphWidget.LineLabelStyle lineLabelStyle = amplitudePlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
+        Rect bounds = new Rect();
+        String dummyTxt = String.format("%04.5f ",0.000597558899);
+        lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
+        amplitudePlot.getGraph().setMarginLeft(bounds.width());
+
+        XYGraphWidget.LineLabelRenderer lineLabelRendererX = new XYGraphWidget.LineLabelRenderer() {
+            @Override
+            public void drawLabel(Canvas canvas,
+                                  XYGraphWidget.LineLabelStyle style,
+                                  Number val, float x, float y, boolean isOrigin) {
+                if (!isOrigin) {
+                    Rect bounds = new Rect();
+                    style.getPaint().getTextBounds("a", 0, 1, bounds);
+                    drawLabel(canvas, String.format("%d", val.intValue()),
+                            style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
+                }
+            }
+        };
+
+        amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM,lineLabelRendererX);
+
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int width = metrics.widthPixels;
+        int height = metrics.heightPixels;
+
+        if ((height > 1000) && (width > 1000)) {
+            amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
+        } else {
+            amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 30);
+        }
+
+        amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
+
+        reset();
+
+        return view;
+
+    }
+
+
+    private void writeAmplitudefile() throws IOException {
+
+        PrintWriter aepdataFileStream;
+
+        if (dataFilename == null) return;
+
+        File file;
+
+        try {
+            file = new File(AttysScope.ATTYSDIR, dataFilename.trim());
+            file.createNewFile();
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "Saving amplitude data to " + file.getAbsolutePath());
+            }
+            aepdataFileStream = new PrintWriter(file);
+        } catch (java.io.FileNotFoundException e) {
+            throw e;
+        }
+
+        char s = ' ';
+        switch (dataSeparator) {
+            case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
+                s = ' ';
+                break;
+            case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
+                s = ',';
+                break;
+            case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
+                s = 9;
+                break;
+        }
+
+        for (int i = 0; i < amplitudeFullSeries.size(); i++) {
+            aepdataFileStream.format("%e%c%e%c\n",
+                    amplitudeFullSeries.getX(i).floatValue(), s,
+                    amplitudeFullSeries.getY(i).floatValue(), s);
+            if (aepdataFileStream.checkError()) {
+                throw new IOException("file write error");
+            }
+        }
+
+        aepdataFileStream.close();
+
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        Uri contentUri = Uri.fromFile(file);
+        mediaScanIntent.setData(contentUri);
+        getActivity().sendBroadcast(mediaScanIntent);
+    }
+
+
+    private void saveAmplitude() {
+
+        final EditText filenameEditText = new EditText(getContext());
+        filenameEditText.setSingleLine(true);
+
+        final int REQUEST_EXTERNAL_STORAGE = 1;
+        String[] PERMISSIONS_STORAGE = {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+        };
+
+        int permission = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    getActivity(),
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
+
+        filenameEditText.setHint("");
+        filenameEditText.setText(dataFilename);
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Saving fast/slow data")
+                .setMessage("Enter the filename of the data textfile")
+                .setView(filenameEditText)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        dataFilename = filenameEditText.getText().toString();
+                        dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+                        if (!dataFilename.contains(".")) {
+                            switch (dataSeparator) {
+                                case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
+                                    dataFilename = dataFilename + ".csv";
+                                    break;
+                                case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
+                                    dataFilename = dataFilename + ".dat";
+                                    break;
+                                case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
+                                    dataFilename = dataFilename + ".tsv";
+                            }
+                        }
+                        try {
+                            writeAmplitudefile();
+                            Toast.makeText(getActivity(),
+                                    "Successfully written '" + dataFilename + "' to the external memory",
+                                    Toast.LENGTH_SHORT).show();
+                        } catch (IOException e) {
+                            Toast.makeText(getActivity(),
+                                    "Write Error while saving '" + dataFilename + "' to the external memory",
+                                    Toast.LENGTH_SHORT).show();
+                            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                                Log.d(TAG, "Error saving file: ", e);
+                            }
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                    }
+                })
+                .show();
+    }
+
+
+    public synchronized void addValue(final float[] sample) {
+        if (!ready) return;
+        if (nValues < (BUFFERSIZE-1)) {
+            values[nValues] = sample[channel];
+            nValues++;
+        }
+    }
+
+
+    private class UpdatePlotTask extends TimerTask {
+
+        public synchronized void run() {
+
+            if (!ready) return;
+
+            if (!acceptData) return;
+
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (amplitudeReadingText != null) {
+                            amplitudeReadingText.setText(String.format("%04f %s RMS", rms, AttysComm.CHANNEL_UNITS[channel]));
+                        }
+                    }
+                });
+            }
+
+            if (amplitudeHistorySeries == null) {
+                if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                    Log.v(TAG, "amplitudeHistorySeries == null");
+                }
+                return;
+            }
+
+            // get rid the oldest sample in history:
+            if (amplitudeHistorySeries.size() > nSampleBufferSize) {
+                amplitudeHistorySeries.removeFirst();
+            }
+
+            float r = 0;
+            if (values != null) {
+                if (nValues > 0) {
+                    for (int i = 0; i< nValues; i++) {
+                        float f = values[i];
+                        r = r + f * f;
+                    }
+                    r = r / nValues;
+                    rms = (float)Math.sqrt(r);
+                }
+            }
+            nValues = 0;
+
+            int n = nSampleBufferSize - amplitudeHistorySeries.size();
+            for (int i = 0; i < n; i++) {
+                // add the latest history sample:
+                amplitudeHistorySeries.addLast(step * delta_t, rms);
+                step++;
+            }
+
+            // add the latest history sample:
+            amplitudeHistorySeries.addLast(step * delta_t, rms);
+            amplitudeFullSeries.addLast(step * delta_t, rms);
+            step++;
+            amplitudePlot.redraw();
+        }
+    }
+}

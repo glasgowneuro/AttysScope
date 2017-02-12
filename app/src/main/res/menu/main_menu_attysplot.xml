@@ -16,7 +16,7 @@
 
             <item
                 android:checked="true"
-                android:title="Info displays">
+                android:title="Info texts">
 
                 <menu>
                     <item
@@ -31,6 +31,23 @@
                     <item
                         android:id="@+id/largeStatusBPM"
                         android:title="ECG/bpm" />
+                </menu>
+            </item>
+
+            <item
+                android:checked="true"
+                android:title="Info plots">
+
+                <menu>
+                    <item
+                        android:id="@+id/infoWindowOff"
+                        android:title="off" />
+                    <item
+                        android:id="@+id/infoWindowAmplitude"
+                        android:title="Root mean square" />
+                    <item
+                        android:id="@+id/infoWindowSpectrum"
+                        android:title="Frequency Spectrum" />
                 </menu>
             </item>
 

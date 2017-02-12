@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -45,6 +46,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -72,6 +75,11 @@ public class AttysScope extends AppCompatActivity {
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
+
+
+    // Fragments
+    AmplitudeFragment amplitudeFragment = null;
+    FourierFragment fourierFragment = null;
 
     private BluetoothAdapter BA;
     private AttysComm attysComm = null;
@@ -137,13 +145,15 @@ public class AttysScope extends AppCompatActivity {
     private GoogleApiClient client;
     private Action viewAction;
 
-    private final String ATTYS_SUBDIR = "attys";
-    private File attysdir = null;
+    private static final String ATTYS_SUBDIR = "attys";
+
+    static final File ATTYSDIR =
+            new File(Environment.getExternalStorageDirectory().getPath(), ATTYS_SUBDIR);
 
     ProgressDialog progress = null;
 
 
-    private class DataRecorder {
+    public class DataRecorder {
         /////////////////////////////////////////////////////////////
         // saving data into a file
 
@@ -206,6 +216,9 @@ public class AttysScope extends AppCompatActivity {
         }
 
         private void saveData(float[] data_unfilt, float[] data_filt) {
+            if (textdataFile == null) return;
+            if (textdataFileStream == null) return;
+
             char s = ' ';
             switch (data_separator) {
                 case DATA_SEPARATOR_SPACE:
@@ -218,7 +231,7 @@ public class AttysScope extends AppCompatActivity {
                     s = 9;
                     break;
             }
-            String tmp = String.format("%f%c", timestamp, s);
+            String tmp = String.format("%f%c", (float)timestamp / (float)attysComm.getSamplingRateInHz(), s);
             for (int i = 0; i < data_unfilt.length; i++) {
                 tmp = tmp + String.format("%f%c", data_unfilt[i], s);
             }
@@ -539,6 +552,14 @@ public class AttysScope extends AppCompatActivity {
                                 sample[j] = v;
                             }
                             dataRecorder.saveData(sample_unfilt,sample);
+
+                            if (amplitudeFragment != null) {
+                                amplitudeFragment.addValue(sample);
+                            }
+                            if (fourierFragment != null) {
+                                fourierFragment.addValue(sample);
+                            }
+
                             int nRealChN = 0;
                             if (showCh1) {
                                 if (attysComm != null) {
@@ -646,10 +667,8 @@ public class AttysScope extends AppCompatActivity {
 
         progress = new ProgressDialog(this);
 
-        attysdir = new File(Environment.getExternalStorageDirectory().getPath(),
-                ATTYS_SUBDIR);
-        if (!attysdir.exists()) {
-            attysdir.mkdirs();
+        if (!ATTYSDIR.exists()) {
+            ATTYSDIR.mkdirs();
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
@@ -926,7 +945,7 @@ public class AttysScope extends AppCompatActivity {
         }
 
         final List files = new ArrayList();
-        final String[] list = attysdir.list();
+        final String[] list = ATTYSDIR.list();
         for (String file : list) {
             if (files != null) {
                 if (file != null) {
@@ -962,7 +981,7 @@ public class AttysScope extends AppCompatActivity {
                         for (int i = 0; i < listview.getCount(); i++) {
                             if (checked.get(i)) {
                                 String filename = list[i];
-                                File fp = new File(attysdir, filename);
+                                File fp = new File(ATTYSDIR, filename);
                                 files.add(Uri.fromFile(fp));
                                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                                     Log.d(TAG, "filename=" + filename);
@@ -1013,7 +1032,7 @@ public class AttysScope extends AppCompatActivity {
                     }
                 } else {
                     if (dataFilename != null) {
-                        File file = new File(attysdir, dataFilename.trim());
+                        File file = new File(ATTYSDIR, dataFilename.trim());
                         dataRecorder.setDataSeparator(dataSeparator);
                         if (file.exists()) {
                             Toast.makeText(getApplicationContext(),
@@ -1172,6 +1191,55 @@ public class AttysScope extends AppCompatActivity {
                 shareData();
                 return true;
 
+            case R.id.infoWindowAmplitude:
+                deleteFragmentWindow();
+                // Create a new Fragment to be placed in the activity layout
+                amplitudeFragment = new AmplitudeFragment();
+                if (attysComm != null) {
+                    amplitudeFragment.setSamplingrate(attysComm.getSamplingRateInHz());
+                } else {
+                    amplitudeFragment = null;
+                    return true;
+                }
+                // Add the fragment to the 'fragment_container' FrameLayout
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Adding Amplitude fragment");
+                }
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.fragment_plot_container,
+                                amplitudeFragment,
+                                "amplitudeFragment")
+                        .commit();
+                showPlotFragment();
+                return true;
+
+            case R.id.infoWindowSpectrum:
+                deleteFragmentWindow();
+                // Create a new Fragment to be placed in the activity layout
+                fourierFragment = new FourierFragment();
+                if (attysComm != null) {
+                    fourierFragment.setSamplingrate(attysComm.getSamplingRateInHz());
+                } else {
+                    fourierFragment = null;
+                    return true;
+                }
+                // Add the fragment to the 'fragment_container' FrameLayout
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Adding Fourier fragment");
+                }
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.fragment_plot_container,
+                                fourierFragment,
+                                "fourierFragment")
+                        .commit();
+                showPlotFragment();
+                return true;
+
+            case R.id.infoWindowOff:
+                deleteFragmentWindow();
+                hidePlotFragment();
+                return true;
+
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
@@ -1228,5 +1296,48 @@ public class AttysScope extends AppCompatActivity {
 
         attysComm.setAdc_samplingrate_index(samplingRate);
     }
+
+
+    private void showPlotFragment() {
+        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.mainplotlayout);
+        frameLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
+
+        frameLayout = (FrameLayout) findViewById(R.id.fragment_plot_container);
+        frameLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
+
+    }
+
+    private void hidePlotFragment() {
+        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.mainplotlayout);
+        frameLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT, 0.0f));
+    }
+
+
+    private synchronized void deleteFragmentWindow() {
+        List<Fragment> fragments = getSupportFragmentManager().getFragments();
+        if (fragments != null) {
+            if (!(fragments.isEmpty())) {
+                for (Fragment fragment : fragments) {
+                    if (Log.isLoggable(TAG, Log.DEBUG)) {
+                        if (fragment != null) {
+                            Log.d(TAG, "Removing fragment: " + fragment.getTag());
+                        }
+                    }
+                    if (fragment != null) {
+                        getSupportFragmentManager().beginTransaction().remove(fragment).commit();
+                    }
+                }
+            }
+        }
+        amplitudeFragment = null;
+        fourierFragment = null;
+    }
+
 
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ap="http://schemas.android.com/apk/res-auto"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:layout_gravity="center"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Spinner
+            android:id="@+id/spectrum_channel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:clickable="true"
+            android:layout_weight="2"
+            android:spinnerMode="dropdown" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text=" "
+            android:layout_weight="0.5"/>
+
+        <ToggleButton
+            android:id="@+id/spectrum_doRecord"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/spectrum_Save"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="save" />
+
+    </LinearLayout>
+
+    <android.support.percent.PercentFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+
+        <com.androidplot.xy.XYPlot
+            android:id="@+id/spectrum_PlotView"
+            style="@style/APDefacto.Dark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            ap:domainTitle="domain"
+            ap:lineLabelRotationBottom="-45"
+            ap:lineLabels="left|bottom"
+            ap:rangeTitle="range"
+            ap:title="  "
+            app:layout_marginLeftPercent="5%"
+            app:layout_widthPercent="90%" />
+
+    </android.support.percent.PercentFrameLayout>
+
+
+</LinearLayout>

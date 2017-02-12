@@ -16,23 +16,23 @@
         android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
-
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:orientation="vertical">
-
+        android:baselineAligned="false"
+        android:orientation="horizontal">
 
         <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/mainplotlayout"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_width="0dp"
             android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:id="@+id/mainplotlayout"
             android:orientation="vertical">
 
             <tech.glasgowneuro.attysscope.InfoView
                 android:id="@+id/infoview"
                 title="Plot Window"
+                android:layout_gravity="bottom|right"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
                 android:layout_marginBottom="10dp"
@@ -43,6 +43,7 @@
             <tech.glasgowneuro.attysscope.RealtimePlotView
                 android:id="@+id/realtimeplotview"
                 title="Plot Window"
+                android:layout_gravity="bottom|right"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
                 android:layout_marginBottom="10dp"
@@ -53,12 +54,13 @@
         </FrameLayout>
 
         <FrameLayout
-            android:id="@+id/fragment_plot_container"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:background="@android:color/black"
+            android:layout_width="0dp"
             android:layout_weight="0"
-            android:background="@android:color/black" />
+            android:id="@+id/fragment_plot_container"
+            android:layout_height="match_parent" />
 
-    </LinearLayout><!--    </LinearLayout> -->
+    </LinearLayout>
 
-</LinearLayout>
+
+</LinearLayout><!--    </LinearLayout> -->
