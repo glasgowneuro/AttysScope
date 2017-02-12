@@ -53,6 +53,7 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -140,6 +141,99 @@ public class AttysScope extends AppCompatActivity {
     private File attysdir = null;
 
     ProgressDialog progress = null;
+
+
+    private class DataRecorder {
+        /////////////////////////////////////////////////////////////
+        // saving data into a file
+
+        public final static byte DATA_SEPARATOR_TAB = 0;
+        public final static byte DATA_SEPARATOR_COMMA = 1;
+        public final static byte DATA_SEPARATOR_SPACE = 2;
+
+        private PrintWriter textdataFileStream = null;
+        private File textdataFile = null;
+        private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
+        float samplingInterval = 0;
+        File file = null;
+
+        // starts the recording
+        public void startRec(File _file) throws java.io.FileNotFoundException {
+            file = _file;
+            samplingInterval = 1.0F / attysComm.getSamplingRateInHz();
+            try {
+                textdataFileStream = new PrintWriter(file);
+                textdataFile = file;
+                messageListener.haveMessage(AttysComm.MESSAGE_STARTED_RECORDING);
+            } catch (java.io.FileNotFoundException e) {
+                textdataFileStream = null;
+                textdataFile = null;
+                throw e;
+            }
+        }
+
+        // stops it
+        public void stopRec() {
+            if (textdataFileStream != null) {
+                textdataFileStream.close();
+                messageListener.haveMessage(AttysComm.MESSAGE_STOPPED_RECORDING);
+                textdataFileStream = null;
+                textdataFile = null;
+                if (file != null) {
+                    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                    Uri contentUri = Uri.fromFile(file);
+                    mediaScanIntent.setData(contentUri);
+                    sendBroadcast(mediaScanIntent);
+                }
+            }
+        }
+
+        // are we recording?
+        public boolean isRecording() {
+            return (textdataFileStream != null);
+        }
+
+        public File getFile() {
+            return textdataFile;
+        }
+
+        public void setDataSeparator(byte s) {
+            data_separator = s;
+        }
+
+        public byte getDataSeparator() {
+            return data_separator;
+        }
+
+        private void saveData(float[] data_unfilt, float[] data_filt) {
+            char s = ' ';
+            switch (data_separator) {
+                case DATA_SEPARATOR_SPACE:
+                    s = ' ';
+                    break;
+                case DATA_SEPARATOR_COMMA:
+                    s = ',';
+                    break;
+                case DATA_SEPARATOR_TAB:
+                    s = 9;
+                    break;
+            }
+            String tmp = String.format("%f%c", timestamp, s);
+            for (int i = 0; i < data_unfilt.length; i++) {
+                tmp = tmp + String.format("%f%c", data_unfilt[i], s);
+            }
+            tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1]);
+            tmp = tmp + String.format("%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
+
+            if (textdataFileStream != null) {
+                textdataFileStream.format("%s\n", tmp);
+            }
+        }
+    }
+
+
+    DataRecorder dataRecorder = new DataRecorder();
+
 
     Handler handler = new Handler() {
         @Override
@@ -298,7 +392,7 @@ public class AttysScope extends AppCompatActivity {
             if (showMag) {
                 small = small + "".format("MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
-            if (attysComm.isRecording()) {
+            if (dataRecorder.isRecording()) {
                 small = small + " !!RECORDING to:" + dataFilename;
             }
             if (largeText != null) {
@@ -414,21 +508,22 @@ public class AttysScope extends AppCompatActivity {
                 float[] tmpMin = new float[nCh];
                 float[] tmpMax = new float[nCh];
                 float[] tmpTick = new float[nCh];
+                float[] sample = new float[attysComm.NCHANNELS];
                 String[] tmpLabels = new String[nCh];
                 int n = attysComm.getNumSamplesAvilable();
                 if (realtimePlotView != null) {
                     if (!realtimePlotView.startAddSamples(n)) return;
                     for (int i = 0; ((i < n) && (attysComm != null)); i++) {
-                        float[] sample = null;
+                        float[] sample_unfilt = null;
                         if (attysComm != null) {
-                            sample = attysComm.getSampleFromBuffer();
+                            sample_unfilt = attysComm.getSampleFromBuffer();
                         }
-                        if (sample != null) {
+                        if (sample_unfilt != null) {
                             // debug ECG detector
                             // sample[AttysComm.INDEX_Analogue_channel_2] = (float)ecgDetOut;
                             timestamp++;
                             for (int j = 0; j < nCh; j++) {
-                                float v = sample[j];
+                                float v = sample_unfilt[j];
                                 if (j >= AttysComm.INDEX_Analogue_channel_1) {
                                     v = highpass[j].filter(v);
                                     if (iirNotch[j] != null) {
@@ -441,9 +536,9 @@ public class AttysScope extends AppCompatActivity {
                                 if (j == theChannelWeDoAnalysis) {
                                     doAnalysis(v);
                                 }
-                                v = v * gain[j];
                                 sample[j] = v;
                             }
+                            dataRecorder.saveData(sample_unfilt,sample);
                             int nRealChN = 0;
                             if (showCh1) {
                                 if (attysComm != null) {
@@ -456,7 +551,7 @@ public class AttysScope extends AppCompatActivity {
                                     tmpTick[nRealChN] = ch1Div * gain[AttysComm.INDEX_Analogue_channel_1];
                                     tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_1];
                                     actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_1;
-                                    tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_1];
+                                    tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_1] * gain[AttysComm.INDEX_Analogue_channel_1];
                                 }
                             }
                             if (showCh2) {
@@ -470,7 +565,7 @@ public class AttysScope extends AppCompatActivity {
                                     tmpTick[nRealChN] = ch2Div * gain[AttysComm.INDEX_Analogue_channel_2];
                                     tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_2];
                                     actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_2;
-                                    tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_2];
+                                    tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_2] * gain[AttysComm.INDEX_Analogue_channel_2];
                                 }
                             }
                             if (showAcc) {
@@ -484,7 +579,7 @@ public class AttysScope extends AppCompatActivity {
                                         tmpTick[nRealChN] = gain[k] * accTick;
                                         tmpLabels[nRealChN] = labels[k];
                                         actualChannelIdx[nRealChN] = k;
-                                        tmpSample[nRealChN++] = sample[k];
+                                        tmpSample[nRealChN++] = sample[k] * gain[k];
                                     }
                                 }
                             }
@@ -500,14 +595,14 @@ public class AttysScope extends AppCompatActivity {
                                         tmpLabels[nRealChN] = labels[k + 3];
                                         actualChannelIdx[nRealChN] = k + 3;
                                         tmpTick[nRealChN] = magTick;
-                                        tmpSample[nRealChN++] = sample[k + 3];
+                                        tmpSample[nRealChN++] = sample[k + 3] * gain[k + 3];
                                     }
                                 }
                             }
                             if (infoView != null) {
                                 if (ygapForInfo == 0) {
                                     ygapForInfo = infoView.getInfoHeight();
-                                    if ((Log.isLoggable(TAG, Log.DEBUG))&&(ygapForInfo>0)) {
+                                    if ((Log.isLoggable(TAG, Log.DEBUG)) && (ygapForInfo > 0)) {
                                         Log.d(TAG, "ygap=" + ygapForInfo);
                                     }
                                 }
@@ -790,13 +885,13 @@ public class AttysScope extends AppCompatActivity {
                         dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
                         if (!dataFilename.contains(".")) {
                             switch (dataSeparator) {
-                                case AttysComm.DATA_SEPARATOR_COMMA:
+                                case DataRecorder.DATA_SEPARATOR_COMMA:
                                     dataFilename = dataFilename + ".csv";
                                     break;
-                                case AttysComm.DATA_SEPARATOR_SPACE:
+                                case DataRecorder.DATA_SEPARATOR_SPACE:
                                     dataFilename = dataFilename + ".dat";
                                     break;
-                                case AttysComm.DATA_SEPARATOR_TAB:
+                                case DataRecorder.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".tsv";
                             }
                         }
@@ -907,9 +1002,9 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.toggleRec:
-                if (attysComm.isRecording()) {
-                    File file = attysComm.getFile();
-                    attysComm.stopRec();
+                if (dataRecorder.isRecording()) {
+                    File file = dataRecorder.getFile();
+                    dataRecorder.stopRec();
                     if (file != null) {
                         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
                         Uri contentUri = Uri.fromFile(file);
@@ -919,21 +1014,22 @@ public class AttysScope extends AppCompatActivity {
                 } else {
                     if (dataFilename != null) {
                         File file = new File(attysdir, dataFilename.trim());
-                        attysComm.setDataSeparator(dataSeparator);
+                        dataRecorder.setDataSeparator(dataSeparator);
                         if (file.exists()) {
                             Toast.makeText(getApplicationContext(),
                                     "File exists already. Enter a different one.",
                                     Toast.LENGTH_LONG).show();
                             return true;
                         }
-                        java.io.FileNotFoundException e = attysComm.startRec(file);
-                        if (e != null) {
+                        try {
+                            dataRecorder.startRec(file);
+                        } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not open data file: " + e.getMessage());
                             }
                             return true;
                         }
-                        if (attysComm.isRecording()) {
+                        if (dataRecorder.isRecording()) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Saving to " + file.getAbsolutePath());
                             }
@@ -1116,7 +1212,7 @@ public class AttysScope extends AppCompatActivity {
             attysComm.enableCurrents(false, false, true);
         }
         byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
-        attysComm.setDataSeparator(data_separator);
+        dataRecorder.setDataSeparator(data_separator);
 
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
