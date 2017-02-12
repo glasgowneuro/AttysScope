@@ -38,9 +38,6 @@ import com.androidplot.xy.XYPlot;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -58,9 +55,9 @@ public class AmplitudeFragment extends Fragment {
 
     final int nSampleBufferSize = 100;
 
-    final static float smoothFreq = 0.1F;
-
     private final int REFRESH_IN_MS = 1000;
+
+    private boolean mode = false;
 
     private SimpleXYSeries amplitudeHistorySeries = null;
     private SimpleXYSeries amplitudeFullSeries = null;
@@ -71,11 +68,15 @@ public class AmplitudeFragment extends Fragment {
 
     private ToggleButton toggleButtonDoRecord;
 
+    private ToggleButton toggleButtonRMS_pp;
+
     private Button resetButton;
 
     private Button saveButton;
 
     private Spinner spinnerChannel;
+
+    private SignalAnalysis signalAnalysis = null;
 
     View view = null;
 
@@ -83,19 +84,13 @@ public class AmplitudeFragment extends Fragment {
 
     int step = 0;
 
-    float rms = 0;
+    float current_stat_result = 0;
 
     double delta_t = (double) REFRESH_IN_MS / 1000.0;
 
     boolean ready = false;
 
     boolean acceptData = false;
-
-    static final int BUFFERSIZE = 1000;
-
-    float[] values = new float[BUFFERSIZE];
-
-    int nValues = 0;
 
     Timer timer = null;
 
@@ -110,6 +105,8 @@ public class AmplitudeFragment extends Fragment {
     private void reset() {
         ready = false;
 
+        signalAnalysis.reset();
+
         step = 0;
 
         int n = amplitudeHistorySeries.size();
@@ -119,7 +116,8 @@ public class AmplitudeFragment extends Fragment {
         amplitudeFullSeries = new SimpleXYSeries(" ");
 
         amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel]+" RMS");
-        amplitudePlot.setTitle(" "); //AttysComm.CHANNEL_DESCRIPTION[channel]+" RMS");
+        amplitudePlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
+        amplitudePlot.setTitle(" ");
 
         amplitudePlot.redraw();
 
@@ -143,6 +141,8 @@ public class AmplitudeFragment extends Fragment {
             return null;
         }
 
+        signalAnalysis = new SignalAnalysis(samplingRate);
+
         view = inflater.inflate(R.layout.amplitudefragment, container, false);
 
         // setup the APR Levels plot:
@@ -164,6 +164,15 @@ public class AmplitudeFragment extends Fragment {
             }
         });
         toggleButtonDoRecord.setChecked(true);
+
+        toggleButtonRMS_pp = (ToggleButton) view.findViewById(R.id.amplitude_rms_pp);
+        toggleButtonRMS_pp.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mode = isChecked;
+            }
+        });
+        toggleButtonRMS_pp.setChecked(false);
+
         resetButton = (Button) view.findViewById(R.id.amplitude_Reset);
         resetButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -185,12 +194,8 @@ public class AmplitudeFragment extends Fragment {
         spinnerChannel.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (channel != position) {
-                    Toast.makeText(getActivity(),
-                            "Press RESET to confirm to record " + AttysComm.CHANNEL_DESCRIPTION[channel],
-                            Toast.LENGTH_SHORT).show();
-                }
                 channel = position;
+                reset();
             }
 
             @Override
@@ -221,7 +226,6 @@ public class AmplitudeFragment extends Fragment {
 
         amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
         amplitudePlot.setRangeUpperBoundary(1,BoundaryMode.AUTO);
-        amplitudePlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
 
         XYGraphWidget.LineLabelRenderer lineLabelRendererY = new XYGraphWidget.LineLabelRenderer() {
             @Override
@@ -269,8 +273,6 @@ public class AmplitudeFragment extends Fragment {
         } else {
             amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 30);
         }
-
-        amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
         reset();
 
@@ -397,10 +399,8 @@ public class AmplitudeFragment extends Fragment {
 
     public synchronized void addValue(final float[] sample) {
         if (!ready) return;
-        if (nValues < (BUFFERSIZE-1)) {
-            values[nValues] = sample[channel];
-            nValues++;
-        }
+        if (!acceptData) return;
+        signalAnalysis.addData(sample[channel]);
     }
 
 
@@ -417,7 +417,11 @@ public class AmplitudeFragment extends Fragment {
                     @Override
                     public void run() {
                         if (amplitudeReadingText != null) {
-                            amplitudeReadingText.setText(String.format("%04f %s RMS", rms, AttysComm.CHANNEL_UNITS[channel]));
+                            if (mode) {
+                                amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
+                            } else {
+                                amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
+                            }
                         }
                     }
                 });
@@ -435,31 +439,25 @@ public class AmplitudeFragment extends Fragment {
                 amplitudeHistorySeries.removeFirst();
             }
 
-            float r = 0;
-            if (values != null) {
-                if (nValues > 0) {
-                    for (int i = 0; i< nValues; i++) {
-                        float f = values[i];
-                        r = r + f * f;
-                    }
-                    r = r / nValues;
-                    rms = (float)Math.sqrt(r);
-                }
+            if (mode) {
+                current_stat_result = signalAnalysis.getRMS();
+            } else {
+                current_stat_result = signalAnalysis.getPeakToPeak();
             }
-            nValues = 0;
 
             int n = nSampleBufferSize - amplitudeHistorySeries.size();
             for (int i = 0; i < n; i++) {
                 // add the latest history sample:
-                amplitudeHistorySeries.addLast(step * delta_t, rms);
+                amplitudeHistorySeries.addLast(step * delta_t, current_stat_result);
                 step++;
             }
 
             // add the latest history sample:
-            amplitudeHistorySeries.addLast(step * delta_t, rms);
-            amplitudeFullSeries.addLast(step * delta_t, rms);
+            amplitudeHistorySeries.addLast(step * delta_t, current_stat_result);
+            amplitudeFullSeries.addLast(step * delta_t, current_stat_result);
             step++;
             amplitudePlot.redraw();
+            signalAnalysis.reset();
         }
     }
 }

@@ -24,9 +24,9 @@ public class ADC1Settings extends Activity {
     private static final String TAG="AttysADC1Settings";
 
     public static final String[] adc_modes = {
-            "DC/Volt", "AC/Volt",
-            "DC/mV", "AC/mV (BIO)",
-            "DC/µV", "AC/µV" };
+            "RMS/Volt", "PEAKTOPEAK/Volt",
+            "RMS/mV", "PEAKTOPEAK/mV (BIO)",
+            "RMS/µV", "PEAKTOPEAK/µV" };
     public static final int MODE_DC = 0;
     public static final int MODE_AC = 1;
     public static final int MODE_DC_MV = 2;

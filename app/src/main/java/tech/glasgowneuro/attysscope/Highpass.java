@@ -18,7 +18,7 @@
 package tech.glasgowneuro.attysscope;
 
 /**
- * Simple 1st order highpass filter to remove the DC from the signals
+ * Simple 1st order highpass filter to remove the RMS from the signals
  */
 public class Highpass {
 

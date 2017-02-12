@@ -38,6 +38,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.FloatProperty;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Menu;
@@ -73,6 +74,8 @@ public class AttysScope extends AppCompatActivity {
     // screen refresh rate
     private final int REFRESH_IN_MS = 50;
 
+    private final int HIGHPASSORDER = 2;
+
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
 
@@ -90,13 +93,15 @@ public class AttysScope extends AppCompatActivity {
 
     private static final String TAG = "AttysScope";
 
-    private Highpass[] highpass = null;
+    private Butterworth[] highpass = null;
     private float[] gain;
     private Butterworth[] iirNotch;
     private double notchBW = 2.5; // Hz
     private int notchOrder = 2;
     private boolean[] invert;
     private float powerlineHz = 50;
+    private float highpass1Hz = 0.1F;
+    private float highpass2Hz = 0.1F;
 
     private boolean showAcc = false;
     private boolean showMag = false;
@@ -114,16 +119,18 @@ public class AttysScope extends AppCompatActivity {
 
     private int[] actualChannelIdx;
 
-    public enum DataAnalysis {
+    public enum TextAnnotation {
         NONE,
-        AC,
-        DC,
+        PEAKTOPEAK,
+        RMS,
         ECG
     }
 
+    private SignalAnalysis signalAnalysis = null;
+
     int ygapForInfo = 0;
 
-    private DataAnalysis dataAnalysis = DataAnalysis.DC;
+    private TextAnnotation textAnnotation = TextAnnotation.RMS;
 
     // debugging the ECG detector, commented out for production
     //double ecgDetOut;
@@ -231,7 +238,7 @@ public class AttysScope extends AppCompatActivity {
                     s = 9;
                     break;
             }
-            String tmp = String.format("%f%c", (float)timestamp / (float)attysComm.getSamplingRateInHz(), s);
+            String tmp = String.format("%f%c", (float) timestamp / (float) attysComm.getSamplingRateInHz(), s);
             for (int i = 0; i < data_unfilt.length; i++) {
                 tmp = tmp + String.format("%f%c", data_unfilt[i], s);
             }
@@ -347,11 +354,9 @@ public class AttysScope extends AppCompatActivity {
     private class UpdatePlotTask extends TimerTask {
 
         private int ignoreECGdetector = 1000;
-        private double max, min;
+        private double max = -10000;
         private float t2 = 0;
         private int doNotDetect = 0;
-        private float[] analysisBuffer;
-        private int analysisPtr = 0;
         private int[] hrBuffer = new int[3];
         private int[] sortBuffer = new int[3];
         private Butterworth ecgDetector = new Butterworth();
@@ -360,12 +365,11 @@ public class AttysScope extends AppCompatActivity {
         private float scaling_factor = 1;
 
         private void resetAnalysis() {
-            max = 0;
-            min = 0;
+            signalAnalysis.reset();
             t2 = 0;
+            max = -10000;
             doNotDetect = 0;
             ignoreECGdetector = attysComm.getSamplingRateInHz();
-            analysisPtr = 0;
             hrBuffer[0] = 0;
             hrBuffer[1] = 0;
             hrBuffer[2] = 0;
@@ -385,7 +389,6 @@ public class AttysScope extends AppCompatActivity {
         }
 
         UpdatePlotTask() {
-            analysisBuffer = new float[attysComm.getSamplingRateInHz()];
             // this fakes an R peak so we have a matched filter!
             ecgDetector.bandPass(2, attysComm.getSamplingRateInHz(), 20, 15);
             ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
@@ -420,10 +423,9 @@ public class AttysScope extends AppCompatActivity {
 
         private void doAnalysis(float v) {
 
-            v = v * scaling_factor;
-
-            switch (dataAnalysis) {
+            switch (textAnnotation) {
                 case ECG:
+                    v = v * scaling_factor;
                     if (theChannelWeDoAnalysis >= AttysComm.INDEX_Analogue_channel_1) {
                         double h = ecgDetNotch.filter(v * 1000);
                         h = ecgDetector.filter(h);
@@ -469,33 +471,22 @@ public class AttysScope extends AppCompatActivity {
                         annotatePlot(null);
                     }
                     break;
-                case DC:
-                    double a = 1.0 / (double) (attysComm.getSamplingRateInHz());
-                    // 1st order lowpass IIR filter
-                    max = v * a + (1 - a) * max;
-                    interval = attysComm.getSamplingRateInHz();
-                    if ((timestamp % interval) == 0) {
-                        annotatePlot(String.format("%1.05f%s", max, m_unit));
+                case RMS:
+                    signalAnalysis.addData(v);
+                    if (signalAnalysis.bufferFull()) {
+                        annotatePlot(String.format("%1.05f%s RMS",
+                                signalAnalysis.getRMS(),
+                                m_unit));
+                        signalAnalysis.reset();
                     }
                     break;
-                case AC:
-                    analysisBuffer[analysisPtr] = v;
-                    analysisPtr++;
-                    //Log.d(TAG,String.format("ana=%d",analysisPtr));
-                    if (!(analysisPtr < analysisBuffer.length)) {
-                        analysisPtr = 0;
-                        min = 2;
-                        max = -2;
-                        for (int i = 0; i < analysisBuffer.length; i++) {
-                            if (analysisBuffer[i] > max) {
-                                max = analysisBuffer[i];
-                            }
-                            if (analysisBuffer[i] < min) {
-                                min = analysisBuffer[i];
-                            }
-                        }
-                        double diff = max - min;
-                        annotatePlot(String.format("%1.05f%spp", diff, m_unit));
+                case PEAKTOPEAK:
+                    signalAnalysis.addData(v);
+                    if (signalAnalysis.bufferFull()) {
+                        annotatePlot(String.format("%1.05f%s pp",
+                                signalAnalysis.getPeakToPeak(),
+                                m_unit));
+                        signalAnalysis.reset();
                     }
                     break;
             }
@@ -535,30 +526,46 @@ public class AttysScope extends AppCompatActivity {
                             // debug ECG detector
                             // sample[AttysComm.INDEX_Analogue_channel_2] = (float)ecgDetOut;
                             timestamp++;
+
                             for (int j = 0; j < nCh; j++) {
-                                float v = sample_unfilt[j];
+                                sample[j] = sample_unfilt[j];
+                            }
+
+                            if (iirNotch[AttysComm.INDEX_Analogue_channel_1] != null) {
+                                sample[AttysComm.INDEX_Analogue_channel_1] =
+                                        (float) iirNotch[AttysComm.INDEX_Analogue_channel_1].filter((double) sample_unfilt[AttysComm.INDEX_Analogue_channel_1]);
+                            }
+
+                            if (iirNotch[AttysComm.INDEX_Analogue_channel_2] != null) {
+                                sample[AttysComm.INDEX_Analogue_channel_2] =
+                                        (float) iirNotch[AttysComm.INDEX_Analogue_channel_2].filter((double) sample_unfilt[AttysComm.INDEX_Analogue_channel_2]);
+                            }
+
+                            if (amplitudeFragment != null) {
+                                amplitudeFragment.addValue(sample);
+                            }
+
+                            for (int j = 0; j < nCh; j++) {
+                                float v = sample[j];
+                                if (j == theChannelWeDoAnalysis) {
+                                    doAnalysis(v);
+                                }
                                 if (j >= AttysComm.INDEX_Analogue_channel_1) {
-                                    v = highpass[j].filter(v);
-                                    if (iirNotch[j] != null) {
-                                        v = (float) iirNotch[j].filter((double) v);
+                                    if (highpass[j] != null) {
+                                        v = (float)highpass[j].filter((double)v);
                                     }
                                 }
                                 if (invert[j]) {
                                     v = -v;
                                 }
-                                if (j == theChannelWeDoAnalysis) {
-                                    doAnalysis(v);
-                                }
                                 sample[j] = v;
                             }
-                            dataRecorder.saveData(sample_unfilt,sample);
 
-                            if (amplitudeFragment != null) {
-                                amplitudeFragment.addValue(sample);
-                            }
                             if (fourierFragment != null) {
                                 fourierFragment.addValue(sample);
                             }
+
+                            dataRecorder.saveData(sample_unfilt, sample);
 
                             int nRealChN = 0;
                             if (showCh1) {
@@ -681,13 +688,13 @@ public class AttysScope extends AppCompatActivity {
         setSupportActionBar(myToolbar);
 
         int nChannels = AttysComm.NCHANNELS;
-        highpass = new Highpass[nChannels];
+        highpass = new Butterworth[nChannels];
         gain = new float[nChannels];
         iirNotch = new Butterworth[nChannels];
         invert = new boolean[nChannels];
         actualChannelIdx = new int[nChannels];
         for (int i = 0; i < nChannels; i++) {
-            highpass[i] = new Highpass();
+            highpass[i] = null;
             iirNotch[i] = null;
             // set it to 1st ADC channel
             actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
@@ -756,10 +763,6 @@ public class AttysScope extends AppCompatActivity {
             theChannelWeDoAnalysis = AttysComm.INDEX_Magnetic_field_X;
         }
 
-        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-            highpass[i].setAlpha(1.0F / attysComm.getSamplingRateInHz());
-        }
-
         realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
         realtimePlotView.init();
@@ -783,6 +786,13 @@ public class AttysScope extends AppCompatActivity {
         infoView.setZOrderOnTop(true);
         infoView.setZOrderMediaOverlay(true);
 
+        signalAnalysis = new SignalAnalysis(attysComm.getSamplingRateInHz());
+
+        highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
+        highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass1Hz);
+
+        highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
+        highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass2Hz);
         attysComm.start();
 
         timer = new Timer();
@@ -1085,17 +1095,23 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.Ch1toggleDC:
-                boolean a = highpass[AttysComm.INDEX_Analogue_channel_1].getIsActive();
-                a = !a;
-                item.setChecked(a);
-                highpass[AttysComm.INDEX_Analogue_channel_1].setActive(a);
+                if (highpass[AttysComm.INDEX_Analogue_channel_1] == null) {
+                    highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
+                    highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass1Hz);
+                } else {
+                    highpass[AttysComm.INDEX_Analogue_channel_1] = null;
+                }
+                item.setChecked( highpass[AttysComm.INDEX_Analogue_channel_1] != null );
                 return true;
 
             case R.id.Ch2toggleDC:
-                a = highpass[AttysComm.INDEX_Analogue_channel_2].getIsActive();
-                a = !a;
-                item.setChecked(a);
-                highpass[AttysComm.INDEX_Analogue_channel_2].setActive(a);
+                if (highpass[AttysComm.INDEX_Analogue_channel_2] == null) {
+                    highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
+                    highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass1Hz);
+                } else {
+                    highpass[AttysComm.INDEX_Analogue_channel_2] = null;
+                }
+                item.setChecked( highpass[AttysComm.INDEX_Analogue_channel_2] != null );
                 return true;
 
             case R.id.Ch1notch:
@@ -1121,7 +1137,7 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.Ch1invert:
-                a = invert[AttysComm.INDEX_Analogue_channel_1];
+                boolean a = invert[AttysComm.INDEX_Analogue_channel_1];
                 a = !a;
                 invert[AttysComm.INDEX_Analogue_channel_1] = a;
                 item.setChecked(a);
@@ -1167,23 +1183,23 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.largeStatusOff:
-                dataAnalysis = DataAnalysis.NONE;
+                textAnnotation = TextAnnotation.NONE;
                 updatePlotTask.annotatePlot("");
                 ygapForInfo = 0;
                 return true;
 
-            case R.id.largeStatusAC:
-                dataAnalysis = DataAnalysis.AC;
+            case R.id.largeStatusPP:
+                textAnnotation = TextAnnotation.PEAKTOPEAK;
                 updatePlotTask.resetAnalysis();
                 return true;
 
-            case R.id.largeStatusDC:
-                dataAnalysis = DataAnalysis.DC;
+            case R.id.largeStatusRMS:
+                textAnnotation = TextAnnotation.RMS;
                 updatePlotTask.resetAnalysis();
                 return true;
 
             case R.id.largeStatusBPM:
-                dataAnalysis = DataAnalysis.ECG;
+                textAnnotation = TextAnnotation.ECG;
                 updatePlotTask.resetAnalysis();
                 return true;
 
@@ -1295,6 +1311,12 @@ public class AttysScope extends AppCompatActivity {
         if (samplingRate > 1) samplingRate = 1;
 
         attysComm.setAdc_samplingrate_index(samplingRate);
+
+        highpass1Hz = Float.parseFloat(prefs.getString("highpass1", "0.1"));
+        Log.d(TAG,"highpass1="+highpass1Hz);
+        highpass2Hz = Float.parseFloat(prefs.getString("highpass2", "0.1"));
+        Log.d(TAG,"highpass2="+highpass2Hz);
+
     }
 
 

@@ -48,10 +48,24 @@
         android:defaultValue="50"
         android:title="Powerline frequency" />
     <ListPreference
+        android:entries="@array/highpassOptions"
+        android:entryValues="@array/highpassValues"
+        android:summary="The cutoff frequency of the highpass filter for channel 1"
+        android:key="highpass1"
+        android:defaultValue="0.1"
+        android:title="Highpass cutoff Channel 1" />
+    <ListPreference
+        android:entries="@array/highpassOptions"
+        android:entryValues="@array/highpassValues"
+        android:summary="The cutoff frequency of the highpass filter for channel 2"
+        android:key="highpass2"
+        android:defaultValue="0.1"
+        android:title="Highpass cutoff Channel 2" />
+    <ListPreference
         android:entries="@array/samplingRateOptions"
         android:entryValues="@array/samplingRateValues"
         android:summary="Sampling rate the Attys is acquiring the data and transmitting it"
         android:key="samplingrate"
-        android:defaultValue="125"
+        android:defaultValue="250"
         android:title="Sampling rate" />
 </PreferenceScreen>

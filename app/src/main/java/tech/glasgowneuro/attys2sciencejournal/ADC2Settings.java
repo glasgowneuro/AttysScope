@@ -25,9 +25,9 @@ public class ADC2Settings extends Activity {
 
     // different
     public static final String[] adc_modes = {
-            "DC/Volt", "AC/Volt",
-            "DC/mV", "AC/mV (BIO)",
-            "DC/µV", "AC/µV",
+            "RMS/Volt", "PEAKTOPEAK/Volt",
+            "RMS/mV", "PEAKTOPEAK/mV (BIO)",
+            "RMS/µV", "PEAKTOPEAK/µV",
             "R/Ohm"};
     public static final int MODE_DC = 0;
     public static final int MODE_AC = 1;

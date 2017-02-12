@@ -16,15 +16,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:clickable="true"
             android:layout_weight="2"
+            android:clickable="true"
             android:spinnerMode="dropdown" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text=" "
-            android:layout_weight="0.5"/>
+            android:layout_weight="0.5"
+            android:text=" " />
 
         <ToggleButton
             android:id="@+id/spectrum_doRecord"
@@ -40,6 +40,14 @@
             android:text="save" />
 
     </LinearLayout>
+
+        <Spinner
+            android:layout_gravity="start"
+            android:id="@+id/spectrum_maxy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:spinnerMode="dropdown" />
 
     <android.support.percent.PercentFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
