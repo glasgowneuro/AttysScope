@@ -11,8 +11,8 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
-import tech.glasgowneuro.attysscope.Highpass;
-import tech.glasgowneuro.attysscope.R;
+import tech.glasgowneuro.attysscope2.Highpass;
+import tech.glasgowneuro.attysscope2.R;
 import uk.me.berndporr.iirj.Butterworth;
 
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.IDeviceConsumer;

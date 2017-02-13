@@ -15,7 +15,7 @@
  **/
 
 
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 /**
  * Simple 1st order highpass filter to remove the RMS from the signals

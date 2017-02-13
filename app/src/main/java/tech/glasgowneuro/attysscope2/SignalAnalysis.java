@@ -1,7 +1,7 @@
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 /**
- * Created by bp1 on 12/02/17.
+ * Calculates various signal stats. Just now pp and RMS
  */
 
 public class SignalAnalysis {

@@ -1,4 +1,4 @@
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
 import android.content.DialogInterface;
@@ -44,7 +44,7 @@ import java.util.TimerTask;
 import tech.glasgowneuro.attyscomm.AttysComm;
 
 /**
- * RMS Fragment
+ * RMS / pp Fragment
  */
 
 public class AmplitudeFragment extends Fragment {
@@ -57,13 +57,13 @@ public class AmplitudeFragment extends Fragment {
 
     private final int REFRESH_IN_MS = 500;
 
-    private boolean mode = false;
+    private boolean isRMSmode = false;
 
     private Spinner spinnerMaxY;
 
-    private static String[] MAXYTXT = {"auto", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001"};
+    private static String[] MAXYTXT = {"auto range", "5", "2", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001"};
 
-    private SimpleXYSeries amplitudeHistorySeries = null;
+    private SimpleXYSeries amplitudeHistorySeries;
     private SimpleXYSeries amplitudeFullSeries = null;
 
     private XYPlot amplitudePlot = null;
@@ -119,7 +119,11 @@ public class AmplitudeFragment extends Fragment {
         }
         amplitudeFullSeries = new SimpleXYSeries(" ");
 
-        amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel]+" RMS");
+        if (isRMSmode) {
+            amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel] + " RMS");
+        } else {
+            amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel] + " pp");
+        }
         amplitudePlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
         amplitudePlot.setTitle(" ");
 
@@ -151,6 +155,7 @@ public class AmplitudeFragment extends Fragment {
 
         // setup the APR Levels plot:
         amplitudePlot = (XYPlot) view.findViewById(R.id.amplitude_PlotView);
+        amplitudeHistorySeries = new SimpleXYSeries(" ");
         amplitudeReadingText = (TextView) view.findViewById(R.id.amplitude_valueTextView);
         amplitudeReadingText.setText(String.format("%04d", 0));
         toggleButtonDoRecord = (ToggleButton) view.findViewById(R.id.amplitude_doRecord);
@@ -172,7 +177,8 @@ public class AmplitudeFragment extends Fragment {
         toggleButtonRMS_pp = (ToggleButton) view.findViewById(R.id.amplitude_rms_pp);
         toggleButtonRMS_pp.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mode = isChecked;
+                isRMSmode = isChecked;
+                reset();
             }
         });
         toggleButtonRMS_pp.setChecked(false);
@@ -208,13 +214,6 @@ public class AmplitudeFragment extends Fragment {
         });
         spinnerChannel.setBackgroundResource(android.R.drawable.btn_default);
         spinnerChannel.setSelection(AttysComm.INDEX_Analogue_channel_1);
-
-        amplitudeHistorySeries = new SimpleXYSeries(" "); //AttysComm.CHANNEL_UNITS[channel]+" RMS");
-        if (amplitudeHistorySeries == null) {
-            if (Log.isLoggable(TAG, Log.ERROR)) {
-                Log.e(TAG, "amplitudeHistorySeries == null");
-            }
-        }
 
         amplitudePlot.addSeries(amplitudeHistorySeries,
                 new LineAndPointFormatter(
@@ -267,7 +266,7 @@ public class AmplitudeFragment extends Fragment {
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM,lineLabelRendererX);
 
         spinnerMaxY = (Spinner) view.findViewById(R.id.amplitude_maxy);
-        ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(getContext(),android.R.layout.simple_spinner_dropdown_item,MAXYTXT);
+        ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMaxY.setAdapter(adapter1);
         spinnerMaxY.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -442,7 +441,7 @@ public class AmplitudeFragment extends Fragment {
                     @Override
                     public void run() {
                         if (amplitudeReadingText != null) {
-                            if (mode) {
+                            if (isRMSmode) {
                                 amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
                             } else {
                                 amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
@@ -464,7 +463,7 @@ public class AmplitudeFragment extends Fragment {
                 amplitudeHistorySeries.removeFirst();
             }
 
-            if (mode) {
+            if (isRMSmode) {
                 current_stat_result = signalAnalysis.getRMS();
             } else {
                 current_stat_result = signalAnalysis.getPeakToPeak();

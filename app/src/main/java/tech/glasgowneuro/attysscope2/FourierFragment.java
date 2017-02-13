@@ -1,4 +1,4 @@
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
 import android.content.DialogInterface;
@@ -67,7 +67,7 @@ public class FourierFragment extends Fragment {
 
     private Spinner spinnerMaxY;
 
-    private static String[] MAXYTXT = {"auto", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
+    private static String[] MAXYTXT = {"auto range", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
 
     private FourierTransformRunnable fourierTransformRunnable = null;
 
@@ -156,11 +156,6 @@ public class FourierFragment extends Fragment {
         spinnerChannel.setSelection(AttysComm.INDEX_Analogue_channel_1);
 
         spectrumSeries = new SimpleXYSeries(" ");
-        if (spectrumSeries == null) {
-            if (Log.isLoggable(TAG, Log.ERROR)) {
-                Log.e(TAG, "spectrumSeries == null");
-            }
-        }
 
         for (int i = 0; i < (BUFFERSIZE / 2); i++) {
             spectrumSeries.addLast(i * samplingRate / BUFFERSIZE, 0);
@@ -223,7 +218,7 @@ public class FourierFragment extends Fragment {
         spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
         spinnerMaxY = (Spinner) view.findViewById(R.id.spectrum_maxy);
-        ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(getContext(),android.R.layout.simple_spinner_dropdown_item,MAXYTXT);
+        ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMaxY.setAdapter(adapter1);
         spinnerMaxY.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -432,7 +427,9 @@ public class FourierFragment extends Fragment {
                         }
                     }
                     if (channel<AttysComm.INDEX_Analogue_channel_1) {
-                        spectrumSeries.setY(0,0);
+                        if (spectrumSeries != null) {
+                            spectrumSeries.setY(0, 0);
+                        }
                     }
                     if ((spectrumPlot != null) && doRun) {
                         spectrumPlot.redraw();

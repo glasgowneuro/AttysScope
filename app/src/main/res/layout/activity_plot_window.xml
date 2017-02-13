@@ -30,7 +30,7 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <tech.glasgowneuro.attysscope.InfoView
+            <tech.glasgowneuro.attysscope2.InfoView
                 android:id="@+id/infoview"
                 title="Plot Window"
                 android:layout_width="fill_parent"
@@ -40,7 +40,7 @@
                 android:layout_marginRight="10dp"
                 android:layout_marginTop="10dp" />
 
-            <tech.glasgowneuro.attysscope.RealtimePlotView
+            <tech.glasgowneuro.attysscope2.RealtimePlotView
                 android:id="@+id/realtimeplotview"
                 title="Plot Window"
                 android:layout_width="fill_parent"

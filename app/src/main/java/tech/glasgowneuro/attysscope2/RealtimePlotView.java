@@ -14,7 +14,7 @@
  * limitations under the License.
  **/
 
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 import android.content.Context;
 import android.graphics.Canvas;

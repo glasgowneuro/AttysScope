@@ -14,7 +14,7 @@
  * limitations under the License.
  **/
 
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
 import android.app.ProgressDialog;
@@ -38,7 +38,6 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.FloatProperty;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Menu;
@@ -79,10 +78,15 @@ public class AttysScope extends AppCompatActivity {
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
 
-
     // Fragments
     AmplitudeFragment amplitudeFragment = null;
     FourierFragment fourierFragment = null;
+
+    // Menu checkboxes
+    MenuItem menuItemHighpass1 = null;
+    MenuItem menuItemHighpass2 = null;
+    MenuItem menuItemMains1 = null;
+    MenuItem menuItemMains2 = null;
 
     private BluetoothAdapter BA;
     private AttysComm attysComm = null;
@@ -102,6 +106,8 @@ public class AttysScope extends AppCompatActivity {
     private float powerlineHz = 50;
     private float highpass1Hz = 0.1F;
     private float highpass2Hz = 0.1F;
+
+
 
     private boolean showAcc = false;
     private boolean showMag = false;
@@ -242,7 +248,7 @@ public class AttysScope extends AppCompatActivity {
             for (int i = 0; i < data_unfilt.length; i++) {
                 tmp = tmp + String.format("%f%c", data_unfilt[i], s);
             }
-            tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1]);
+            tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1],s);
             tmp = tmp + String.format("%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
 
             if (textdataFileStream != null) {
@@ -266,7 +272,9 @@ public class AttysScope extends AppCompatActivity {
                         attysComm.cancel();
                     }
                     try {
-                        attysComm.join();
+                        if (attysComm != null) {
+                            attysComm.join();
+                        }
                     } catch (Exception ee) {
                     }
                     progress.dismiss();
@@ -527,9 +535,7 @@ public class AttysScope extends AppCompatActivity {
                             // sample[AttysComm.INDEX_Analogue_channel_2] = (float)ecgDetOut;
                             timestamp++;
 
-                            for (int j = 0; j < nCh; j++) {
-                                sample[j] = sample_unfilt[j];
-                            }
+                            System.arraycopy(sample_unfilt, 0, sample, 0, nCh);
 
                             if (iirNotch[AttysComm.INDEX_Analogue_channel_1] != null) {
                                 sample[AttysComm.INDEX_Analogue_channel_1] =
@@ -728,6 +734,27 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
+    private void highpass1on() {
+        highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
+        highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER, attysComm.getSamplingRateInHz(), highpass1Hz);
+    }
+
+
+    private void highpass1off() {
+        highpass[AttysComm.INDEX_Analogue_channel_1] = null;
+    }
+
+
+    private void highpass2on() {
+        highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
+        highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER, attysComm.getSamplingRateInHz(), highpass2Hz);
+    }
+
+
+    private void highpass2off() {
+        highpass[AttysComm.INDEX_Analogue_channel_2] = null;
+    }
+
     public void startDAQ() {
 
         client.connect();
@@ -786,13 +813,30 @@ public class AttysScope extends AppCompatActivity {
         infoView.setZOrderOnTop(true);
         infoView.setZOrderMediaOverlay(true);
 
+        if (menuItemHighpass1 != null) {
+            if (menuItemHighpass1.isChecked()) {
+                highpass1on();
+            } else {
+                highpass2off();
+            }
+        } else {
+            // default
+            highpass1on();
+        }
+
+        if (menuItemHighpass2 != null) {
+            if (menuItemHighpass2.isChecked()) {
+                highpass2on();
+            } else {
+                highpass2off();
+            }
+        } else {
+            // default
+            highpass2on();
+        }
+
         signalAnalysis = new SignalAnalysis(attysComm.getSamplingRateInHz());
 
-        highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
-        highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass1Hz);
-
-        highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
-        highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass2Hz);
         attysComm.start();
 
         timer = new Timer();
@@ -1016,6 +1060,12 @@ public class AttysScope extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main_menu_attysplot, menu);
 
+        menuItemHighpass1 = menu.findItem(R.id.Ch1toggleDC);
+        menuItemHighpass2 = menu.findItem(R.id.Ch2toggleDC);
+
+        menuItemMains1 = menu.findItem(R.id.Ch1notch);
+        menuItemMains2 = menu.findItem(R.id.Ch2notch);
+
         return true;
     }
 
@@ -1095,23 +1145,21 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.Ch1toggleDC:
-                if (highpass[AttysComm.INDEX_Analogue_channel_1] == null) {
-                    highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
-                    highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass1Hz);
+                item.setChecked(!item.isChecked());
+                if (item.isChecked()) {
+                    highpass1on();
                 } else {
-                    highpass[AttysComm.INDEX_Analogue_channel_1] = null;
+                    highpass1off();
                 }
-                item.setChecked( highpass[AttysComm.INDEX_Analogue_channel_1] != null );
                 return true;
 
             case R.id.Ch2toggleDC:
-                if (highpass[AttysComm.INDEX_Analogue_channel_2] == null) {
-                    highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
-                    highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER,attysComm.getSamplingRateInHz(),highpass1Hz);
+                item.setChecked(!item.isChecked());
+                if (item.isChecked()) {
+                    highpass2on();
                 } else {
-                    highpass[AttysComm.INDEX_Analogue_channel_2] = null;
+                    highpass2off();
                 }
-                item.setChecked( highpass[AttysComm.INDEX_Analogue_channel_2] != null );
                 return true;
 
             case R.id.Ch1notch:
@@ -1307,15 +1355,20 @@ public class AttysScope extends AppCompatActivity {
             Log.d(TAG, "powerline=" + powerlineHz);
         }
 
-        samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "0"));
+        samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "1"));
+        if (samplingRate < 0) samplingRate = 0;
         if (samplingRate > 1) samplingRate = 1;
 
         attysComm.setAdc_samplingrate_index(samplingRate);
 
         highpass1Hz = Float.parseFloat(prefs.getString("highpass1", "0.1"));
-        Log.d(TAG,"highpass1="+highpass1Hz);
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "highpass1=" + highpass1Hz);
+        }
         highpass2Hz = Float.parseFloat(prefs.getString("highpass2", "0.1"));
-        Log.d(TAG,"highpass2="+highpass2Hz);
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+            Log.d(TAG, "highpass2=" + highpass2Hz);
+        }
 
     }
 

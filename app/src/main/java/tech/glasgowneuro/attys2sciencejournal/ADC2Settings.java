@@ -13,7 +13,7 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import tech.glasgowneuro.attysscope.R;
+import tech.glasgowneuro.attysscope2.R;
 
 /**
  * Settings for the ADC channel 2
@@ -25,9 +25,9 @@ public class ADC2Settings extends Activity {
 
     // different
     public static final String[] adc_modes = {
-            "RMS/Volt", "PEAKTOPEAK/Volt",
-            "RMS/mV", "PEAKTOPEAK/mV (BIO)",
-            "RMS/µV", "PEAKTOPEAK/µV",
+            "DC/Volt", "AC/Volt",
+            "DC/mV", "AC/mV (BIO)",
+            "DC/µV", "AC/µV",
             "R/Ohm"};
     public static final int MODE_DC = 0;
     public static final int MODE_AC = 1;

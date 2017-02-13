@@ -1,4 +1,4 @@
-package tech.glasgowneuro.attysscope;
+package tech.glasgowneuro.attysscope2;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
