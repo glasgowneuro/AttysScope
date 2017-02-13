@@ -55,9 +55,13 @@ public class AmplitudeFragment extends Fragment {
 
     final int nSampleBufferSize = 100;
 
-    private final int REFRESH_IN_MS = 1000;
+    private final int REFRESH_IN_MS = 500;
 
     private boolean mode = false;
+
+    private Spinner spinnerMaxY;
+
+    private static String[] MAXYTXT = {"auto", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001"};
 
     private SimpleXYSeries amplitudeHistorySeries = null;
     private SimpleXYSeries amplitudeFullSeries = null;
@@ -262,17 +266,38 @@ public class AmplitudeFragment extends Fragment {
 
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM,lineLabelRendererX);
 
-
-        DisplayMetrics metrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        int width = metrics.widthPixels;
-        int height = metrics.heightPixels;
-
-        if ((height > 1000) && (width > 1000)) {
-            amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
-        } else {
-            amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 30);
-        }
+        spinnerMaxY = (Spinner) view.findViewById(R.id.amplitude_maxy);
+        ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(getContext(),android.R.layout.simple_spinner_dropdown_item,MAXYTXT);
+        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerMaxY.setAdapter(adapter1);
+        spinnerMaxY.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position == 0) {
+                    amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
+                    amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
+                } else {
+                    DisplayMetrics metrics = new DisplayMetrics();
+                    getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                    int width = metrics.widthPixels;
+                    int height = metrics.heightPixels;
+                    float maxy = Float.valueOf(MAXYTXT[position]);
+                    if ((height > 1000) && (width > 1000)) {
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/10);
+                        amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
+                    } else {
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/2);
+                        amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
+                    }
+                    amplitudePlot.setRangeUpperBoundary(maxy, BoundaryMode.FIXED);
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        spinnerMaxY.setBackgroundResource(android.R.drawable.btn_default);
+        spinnerMaxY.setSelection(0);
 
         reset();
 

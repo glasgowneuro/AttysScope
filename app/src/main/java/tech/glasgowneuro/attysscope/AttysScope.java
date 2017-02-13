@@ -541,10 +541,6 @@ public class AttysScope extends AppCompatActivity {
                                         (float) iirNotch[AttysComm.INDEX_Analogue_channel_2].filter((double) sample_unfilt[AttysComm.INDEX_Analogue_channel_2]);
                             }
 
-                            if (amplitudeFragment != null) {
-                                amplitudeFragment.addValue(sample);
-                            }
-
                             for (int j = 0; j < nCh; j++) {
                                 float v = sample[j];
                                 if (j == theChannelWeDoAnalysis) {
@@ -559,6 +555,10 @@ public class AttysScope extends AppCompatActivity {
                                     v = -v;
                                 }
                                 sample[j] = v;
+                            }
+
+                            if (amplitudeFragment != null) {
+                                amplitudeFragment.addValue(sample);
                             }
 
                             if (fourierFragment != null) {

@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -66,7 +67,7 @@ public class FourierFragment extends Fragment {
 
     private Spinner spinnerMaxY;
 
-    private static String[] MAXYTXT = {"auto", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001"};
+    private static String[] MAXYTXT = {"auto", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
 
     private FourierTransformRunnable fourierTransformRunnable = null;
 
@@ -191,7 +192,7 @@ public class FourierFragment extends Fragment {
                                   Number val, float x, float y, boolean isOrigin) {
                 Rect bounds = new Rect();
                 style.getPaint().getTextBounds("a", 0, 1, bounds);
-                drawLabel(canvas, String.format("%04.5f ", val.floatValue()),
+                drawLabel(canvas, String.format("%04.6f ", val.floatValue()),
                         style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
             }
         };
@@ -219,8 +220,6 @@ public class FourierFragment extends Fragment {
 
         spectrumPlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM, lineLabelRendererX);
 
-        spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
-
         spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
         spinnerMaxY = (Spinner) view.findViewById(R.id.spectrum_maxy);
@@ -232,8 +231,21 @@ public class FourierFragment extends Fragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 0) {
                     spectrumPlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
+                    spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
-                    spectrumPlot.setRangeUpperBoundary(Float.valueOf(MAXYTXT[position]), BoundaryMode.FIXED);
+                    DisplayMetrics metrics = new DisplayMetrics();
+                    getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                    int width = metrics.widthPixels;
+                    int height = metrics.heightPixels;
+                    float maxy = Float.valueOf(MAXYTXT[position]);
+                    if ((height > 1000) && (width > 1000)) {
+                        spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/10);
+                        spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
+                    } else {
+                        spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/2);
+                        spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
+                    }
+                    spectrumPlot.setRangeUpperBoundary(maxy, BoundaryMode.FIXED);
                 }
             }
             @Override

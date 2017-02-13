@@ -48,25 +48,48 @@
         android:orientation="horizontal">
 
         <Spinner
-            android:id="@+id/amplitude_channel"
+            android:id="@+id/amplitude_maxy"
             android:layout_width="0dp"
-            android:layout_weight="1.5"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:layout_gravity="start"
             android:clickable="true"
             android:spinnerMode="dropdown" />
 
+        <Spinner
+            android:id="@+id/amplitude_channel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_weight="1.5"
+            android:clickable="true"
+            android:spinnerMode="dropdown" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text=" "/>
+
         <TextView
             android:id="@+id/amplitude_valueTextView"
             android:layout_width="0dp"
-            android:layout_weight="2"
             android:layout_height="wrap_content"
+            android:layout_weight="2"
             android:gravity="end"
             android:text=""
             android:textColor="#00FFFF"
             android:textSize="36sp" />
 
     </LinearLayout>
+
 
     <android.support.percent.PercentFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -83,8 +106,8 @@
             ap:lineLabels="left|bottom"
             ap:rangeTitle="range"
             ap:title="  "
-            app:layout_widthPercent="90%"
-            app:layout_marginLeftPercent="5%" />
+            app:layout_marginLeftPercent="5%"
+            app:layout_widthPercent="90%" />
 
     </android.support.percent.PercentFrameLayout>
 
