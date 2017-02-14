@@ -137,7 +137,7 @@ public class FourierFragment extends Fragment {
         spinnerChannel = (Spinner) view.findViewById(R.id.spectrum_channel);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_dropdown_item,
-                AttysComm.CHANNEL_DESCRIPTION);
+                AttysComm.CHANNEL_DESCRIPTION_SHORT);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerChannel.setAdapter(adapter);
         spinnerChannel.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
