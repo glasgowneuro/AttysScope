@@ -157,7 +157,7 @@ public class FourierFragment extends Fragment {
 
         spectrumSeries = new SimpleXYSeries(" ");
 
-        for (int i = 0; i < (BUFFERSIZE / 2); i++) {
+        for (int i = 0; i <= (BUFFERSIZE / 2); i++) {
             spectrumSeries.addLast(i * samplingRate / BUFFERSIZE, 0);
         }
 
@@ -217,6 +217,16 @@ public class FourierFragment extends Fragment {
 
         spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
+        DisplayMetrics metrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        final int width = metrics.widthPixels;
+        final int height = metrics.heightPixels;
+        if ((height > 1000) && (width > 1000)) {
+            spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
+        } else {
+            spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
+        }
+
         spinnerMaxY = (Spinner) view.findViewById(R.id.spectrum_maxy);
         ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -228,17 +238,11 @@ public class FourierFragment extends Fragment {
                     spectrumPlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
                     spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
-                    DisplayMetrics metrics = new DisplayMetrics();
-                    getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                    int width = metrics.widthPixels;
-                    int height = metrics.heightPixels;
                     float maxy = Float.valueOf(MAXYTXT[position]);
                     if ((height > 1000) && (width > 1000)) {
                         spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/10);
-                        spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
                     } else {
                         spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/2);
-                        spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
                     }
                     spectrumPlot.setRangeUpperBoundary(maxy, BoundaryMode.FIXED);
                 }
@@ -421,8 +425,9 @@ public class FourierFragment extends Fragment {
 
                     if (!doRun) return;
 
-                    for (int i = 0; (i < BUFFERSIZE / 2) && doRun; i++) {
+                    for (int i = 0; (i <= BUFFERSIZE / 2) && doRun; i++) {
                         if (spectrumSeries != null) {
+                            spectrumSeries.setX(i*samplingRate/BUFFERSIZE, i);
                             spectrumSeries.setY(spectrum[i].divide(spectrum.length).abs(), i);
                         }
                     }

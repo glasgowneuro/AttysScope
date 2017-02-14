@@ -178,8 +178,9 @@ public class AttysScope extends AppCompatActivity {
         private PrintWriter textdataFileStream = null;
         private File textdataFile = null;
         private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
-        float samplingInterval = 0;
-        File file = null;
+        private float samplingInterval = 0;
+        private File file = null;
+        private long sampleNo = 0;
 
         // starts the recording
         public void startRec(File _file) throws java.io.FileNotFoundException {
@@ -194,6 +195,7 @@ public class AttysScope extends AppCompatActivity {
                 textdataFile = null;
                 throw e;
             }
+            sampleNo = 0;
         }
 
         // stops it
@@ -245,7 +247,7 @@ public class AttysScope extends AppCompatActivity {
                     s = 9;
                     break;
             }
-            String tmp = String.format("%f%c", (float) timestamp / (float) attysComm.getSamplingRateInHz(), s);
+            String tmp = String.format("%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
             for (int i = 0; i < data_unfilt.length; i++) {
                 tmp = tmp + String.format("%f%c", data_unfilt[i], s);
             }
@@ -255,6 +257,7 @@ public class AttysScope extends AppCompatActivity {
             if (textdataFileStream != null) {
                 textdataFileStream.format("%s\n", tmp);
             }
+            sampleNo++;
         }
     }
 
