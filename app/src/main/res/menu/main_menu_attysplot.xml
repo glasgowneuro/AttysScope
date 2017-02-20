@@ -48,6 +48,9 @@
                     <item
                         android:id="@+id/infoWindowSpectrum"
                         android:title="Frequency spectrum" />
+                    <item
+                        android:id="@+id/infoWindowHeartrate"
+                        android:title="Heart rate" />
                 </menu>
             </item>
 
