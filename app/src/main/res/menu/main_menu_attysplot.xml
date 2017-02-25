@@ -157,6 +157,12 @@
                     <item
                         android:id="@+id/Ch2gain500"
                         android:title="500" />
+                    <item
+                        android:id="@+id/Ch2gain1000"
+                        android:title="1000" />
+                    <item
+                        android:id="@+id/Ch2gain2000"
+                        android:title="2000" />
                 </menu>
             </item>
             <group android:checkableBehavior="all">

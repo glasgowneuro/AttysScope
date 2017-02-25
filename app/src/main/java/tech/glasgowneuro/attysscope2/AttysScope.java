@@ -1229,6 +1229,8 @@ public class AttysScope extends AppCompatActivity {
             case R.id.Ch2gain100:
             case R.id.Ch2gain200:
             case R.id.Ch2gain500:
+            case R.id.Ch2gain1000:
+            case R.id.Ch2gain2000:
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
