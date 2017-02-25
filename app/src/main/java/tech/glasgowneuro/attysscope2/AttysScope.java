@@ -137,7 +137,7 @@ public class AttysScope extends AppCompatActivity {
 
     int ygapForInfo = 0;
 
-    private TextAnnotation textAnnotation = TextAnnotation.RMS;
+    private TextAnnotation textAnnotation = TextAnnotation.PEAKTOPEAK;
 
     // debugging the ECG detector, commented out for production
     //double ecgDetOut;
