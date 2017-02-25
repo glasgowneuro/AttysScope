@@ -82,6 +82,7 @@ public class AttysScope extends AppCompatActivity {
     // Fragments
     AmplitudeFragment amplitudeFragment = null;
     FourierFragment fourierFragment = null;
+    HeartRateFragment heartRateFragment = null;
 
     // Menu checkboxes
     MenuItem menuItemHighpass1 = null;
@@ -107,7 +108,6 @@ public class AttysScope extends AppCompatActivity {
     private float powerlineHz = 50;
     private float highpass1Hz = 0.1F;
     private float highpass2Hz = 0.1F;
-
 
 
     private boolean showAcc = false;
@@ -251,7 +251,7 @@ public class AttysScope extends AppCompatActivity {
             for (int i = 0; i < data_unfilt.length; i++) {
                 tmp = tmp + String.format("%f%c", data_unfilt[i], s);
             }
-            tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1],s);
+            tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
             tmp = tmp + String.format("%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
 
             if (textdataFileStream != null) {
@@ -375,6 +375,7 @@ public class AttysScope extends AppCompatActivity {
         private Butterworth ecgDetNotch = new Butterworth();
         private String m_unit = "";
         private float scaling_factor = 1;
+        float filtBPM = 0;
 
         private void resetAnalysis() {
             signalAnalysis.reset();
@@ -435,46 +436,51 @@ public class AttysScope extends AppCompatActivity {
 
         private void doAnalysis(float v) {
 
-            switch (textAnnotation) {
-                case ECG:
-                    v = v * scaling_factor;
-                    if (theChannelWeDoAnalysis >= AttysComm.INDEX_Analogue_channel_1) {
-                        double h = ecgDetNotch.filter(v * 1000);
-                        h = ecgDetector.filter(h);
-                        if (ignoreECGdetector > 0) {
-                            ignoreECGdetector--;
-                            h = 0;
-                        }
-                        h = h * h;
-                        // debugging
-                        //ecgDetOut = h;
-                        if (h > max) {
-                            max = h;
-                        }
-                        max = max - 0.1 * max / attysComm.getSamplingRateInHz();
-                        //Log.d(TAG,"h="+h+",max="+max);
-                        if (doNotDetect > 0) {
-                            doNotDetect--;
-                        } else {
-                            if (h > (0.6 * max)) {
-                                float t = (timestamp - t2) / attysComm.getSamplingRateInHz();
-                                float bpm = 1 / t * 60;
-                                if ((bpm > 30) && (bpm < 300)) {
-                                    hrBuffer[2] = hrBuffer[1];
-                                    hrBuffer[1] = hrBuffer[0];
-                                    hrBuffer[0] = (int) bpm;
-                                    System.arraycopy(hrBuffer, 0, sortBuffer, 0, hrBuffer.length);
-                                    Arrays.sort(sortBuffer);
-                                    int filtBPM = sortBuffer[1];
-                                    if (filtBPM > 0) {
-                                        annotatePlot(String.format("%03d BPM", (int) filtBPM));
-                                    }
-                                }
-                                t2 = timestamp;
-                                // advoid 1/4 sec
-                                doNotDetect = attysComm.getSamplingRateInHz() / 4;
+            // ECG analysis which we do anyway
+            v = v * scaling_factor;
+            if (theChannelWeDoAnalysis >= AttysComm.INDEX_Analogue_channel_1) {
+                double h = ecgDetNotch.filter(v * 1000);
+                h = ecgDetector.filter(h);
+                if (ignoreECGdetector > 0) {
+                    ignoreECGdetector--;
+                    h = 0;
+                }
+                h = h * h;
+                // debugging
+                //ecgDetOut = h;
+                if (h > max) {
+                    max = h;
+                }
+                max = max - 0.1 * max / attysComm.getSamplingRateInHz();
+                //Log.d(TAG,"h="+h+",max="+max);
+                if (doNotDetect > 0) {
+                    doNotDetect--;
+                } else {
+                    if (h > (0.6 * max)) {
+                        float t = (timestamp - t2) / attysComm.getSamplingRateInHz();
+                        float bpm = 1 / t * 60;
+                        if ((bpm > 20) && (bpm < 300)) {
+                            hrBuffer[2] = hrBuffer[1];
+                            hrBuffer[1] = hrBuffer[0];
+                            hrBuffer[0] = (int) bpm;
+                            System.arraycopy(hrBuffer, 0, sortBuffer, 0, hrBuffer.length);
+                            Arrays.sort(sortBuffer);
+                            filtBPM = sortBuffer[1];
+                            if (heartRateFragment != null) {
+                                heartRateFragment.addValue(filtBPM);
                             }
                         }
+                        t2 = timestamp;
+                        // advoid 1/4 sec
+                        doNotDetect = attysComm.getSamplingRateInHz() / 4;
+                    }
+                }
+            }
+
+            switch (textAnnotation) {
+                case ECG:
+                    if (filtBPM > 0) {
+                        annotatePlot(String.format("%03d BPM", (int) filtBPM));
                     }
                     break;
                 case NONE:
@@ -558,7 +564,7 @@ public class AttysScope extends AppCompatActivity {
                                 }
                                 if (j >= AttysComm.INDEX_Analogue_channel_1) {
                                     if (highpass[j] != null) {
-                                        v = (float)highpass[j].filter((double)v);
+                                        v = (float) highpass[j].filter((double) v);
                                     }
                                 }
                                 if (invert[j]) {
@@ -1307,6 +1313,22 @@ public class AttysScope extends AppCompatActivity {
                 showPlotFragment();
                 return true;
 
+            case R.id.infoWindowHeartrate:
+                deleteFragmentWindow();
+                // Create a new Fragment to be placed in the activity layout
+                heartRateFragment = new HeartRateFragment();
+                // Add the fragment to the 'fragment_container' FrameLayout
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Adding Heartrate fragment");
+                }
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.fragment_plot_container,
+                                heartRateFragment,
+                                "heartRateFragment")
+                        .commit();
+                showPlotFragment();
+                return true;
+
             case R.id.infoWindowOff:
                 deleteFragmentWindow();
                 hidePlotFragment();
@@ -1420,6 +1442,7 @@ public class AttysScope extends AppCompatActivity {
         }
         amplitudeFragment = null;
         fourierFragment = null;
+        heartRateFragment = null;
     }
 
 
