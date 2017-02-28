@@ -105,6 +105,12 @@
                     <item
                         android:id="@+id/Ch1gain500"
                         android:title="500" />
+                    <item
+                        android:id="@+id/Ch1gain1000"
+                        android:title="1000" />
+                    <item
+                        android:id="@+id/Ch1gain2000"
+                        android:title="2000" />
                 </menu>
 
             </item>

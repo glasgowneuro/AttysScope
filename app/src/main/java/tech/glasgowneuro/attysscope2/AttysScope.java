@@ -248,8 +248,8 @@ public class AttysScope extends AppCompatActivity {
                     break;
             }
             String tmp = String.format("%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
-            for (int i = 0; i < data_unfilt.length; i++) {
-                tmp = tmp + String.format("%f%c", data_unfilt[i], s);
+            for (float aData_unfilt : data_unfilt) {
+                tmp = tmp + String.format("%f%c", aData_unfilt, s);
             }
             tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
             tmp = tmp + String.format("%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
@@ -1012,10 +1012,14 @@ public class AttysScope extends AppCompatActivity {
 
         final List files = new ArrayList();
         final String[] list = ATTYSDIR.list();
-        for (String file : list) {
-            if (files != null) {
-                if (file != null) {
-                    files.add(file);
+        if (list != null) {
+            for (String file : list) {
+                if (files != null) {
+                    if (file != null) {
+                        if (files != null) {
+                            files.add(file);
+                        }
+                    }
                 }
             }
         }
@@ -1219,6 +1223,8 @@ public class AttysScope extends AppCompatActivity {
             case R.id.Ch1gain100:
             case R.id.Ch1gain200:
             case R.id.Ch1gain500:
+            case R.id.Ch1gain1000:
+            case R.id.Ch1gain2000:
                 String t = item.getTitle().toString();
                 int g = Integer.parseInt(t);
                 gain[AttysComm.INDEX_Analogue_channel_1] = (float) g;

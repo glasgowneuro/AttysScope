@@ -56,11 +56,6 @@ public class HeartRateFragment extends Fragment {
             bpmText = (TextView) view.findViewById(R.id.bpmTextView);
 
             bpmHistorySeries = new SimpleXYSeries("Heart rate / beats per minute");
-            if (bpmHistorySeries == null) {
-                if (Log.isLoggable(TAG, Log.ERROR)) {
-                    Log.e(TAG, "bpmHistorySeries == null");
-                }
-            }
             bpmHistorySeries.useImplicitXVals();
 
             bpmPlot.setRangeBoundaries(0, 200, BoundaryMode.FIXED);
