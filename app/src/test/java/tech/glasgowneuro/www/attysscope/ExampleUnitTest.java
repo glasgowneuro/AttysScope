@@ -1,4 +1,4 @@
-package tech.glasgowneuro.www.attysplot;
+package tech.glasgowneuro.www.attysscope;
 
 import org.junit.Test;
 
