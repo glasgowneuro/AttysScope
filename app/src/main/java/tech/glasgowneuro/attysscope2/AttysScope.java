@@ -137,7 +137,7 @@ public class AttysScope extends AppCompatActivity {
 
     int ygapForInfo = 0;
 
-    private TextAnnotation textAnnotation = TextAnnotation.RMS;
+    private TextAnnotation textAnnotation = TextAnnotation.PEAKTOPEAK;
 
     // debugging the ECG detector, commented out for production
     //double ecgDetOut;
@@ -248,8 +248,8 @@ public class AttysScope extends AppCompatActivity {
                     break;
             }
             String tmp = String.format("%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
-            for (int i = 0; i < data_unfilt.length; i++) {
-                tmp = tmp + String.format("%f%c", data_unfilt[i], s);
+            for (float aData_unfilt : data_unfilt) {
+                tmp = tmp + String.format("%f%c", aData_unfilt, s);
             }
             tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
             tmp = tmp + String.format("%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
@@ -273,13 +273,7 @@ public class AttysScope extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(),
                             "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
                     if (attysComm != null) {
-                        attysComm.cancel();
-                    }
-                    try {
-                        if (attysComm != null) {
-                            attysComm.join();
-                        }
-                    } catch (Exception ee) {
+                        attysComm.stop();
                     }
                     progress.dismiss();
                     finish();
@@ -877,12 +871,7 @@ public class AttysScope extends AppCompatActivity {
         }
 
         if (attysComm != null) {
-            attysComm.cancel();
-            try {
-                attysComm.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            attysComm.stop();
             attysComm = null;
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "Killed AttysComm");
@@ -1012,10 +1001,14 @@ public class AttysScope extends AppCompatActivity {
 
         final List files = new ArrayList();
         final String[] list = ATTYSDIR.list();
-        for (String file : list) {
-            if (files != null) {
-                if (file != null) {
-                    files.add(file);
+        if (list != null) {
+            for (String file : list) {
+                if (files != null) {
+                    if (file != null) {
+                        if (files != null) {
+                            files.add(file);
+                        }
+                    }
                 }
             }
         }
@@ -1219,6 +1212,8 @@ public class AttysScope extends AppCompatActivity {
             case R.id.Ch1gain100:
             case R.id.Ch1gain200:
             case R.id.Ch1gain500:
+            case R.id.Ch1gain1000:
+            case R.id.Ch1gain2000:
                 String t = item.getTitle().toString();
                 int g = Integer.parseInt(t);
                 gain[AttysComm.INDEX_Analogue_channel_1] = (float) g;
@@ -1235,6 +1230,8 @@ public class AttysScope extends AppCompatActivity {
             case R.id.Ch2gain100:
             case R.id.Ch2gain200:
             case R.id.Ch2gain500:
+            case R.id.Ch2gain1000:
+            case R.id.Ch2gain2000:
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),

@@ -512,11 +512,7 @@ public class Attys2ScienceJournal extends Service {
 
     private void killAttys() {
         if (attysComm != null) {
-            attysComm.cancel();
-            try {
-                attysComm.join();
-            } catch (InterruptedException e) {
-            }
+            attysComm.stop();
             attysComm = null;
         }
         timestamp = 0;
