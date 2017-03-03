@@ -445,7 +445,9 @@ public class AttysScope extends AppCompatActivity {
                 if (h > max) {
                     max = h;
                 }
-                max = max - 0.1 * max / attysComm.getSamplingRateInHz();
+                if (attysComm != null) {
+                    max = max - 0.1 * max / attysComm.getSamplingRateInHz();
+                }
                 //Log.d(TAG,"h="+h+",max="+max);
                 if (doNotDetect > 0) {
                     doNotDetect--;

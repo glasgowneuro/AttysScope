@@ -310,6 +310,10 @@ public class Attys2ScienceJournal extends Service {
                 public void gotData(long samplenumber, float[] data) {
                     // Log.d(TAG, String.format("Got data: timestamp=%d",
                     //                                       timestamp));
+                    double samplingrate = 250;
+                    if (attysComm != null) {
+                        samplingrate = attysComm.getSamplingRateInHz();
+                    }
                     if (timestamp == 0) {
                         timestamp = (double) System.currentTimeMillis();
                     }
@@ -365,7 +369,7 @@ public class Attys2ScienceJournal extends Service {
                     // time but let the ADC clock dominate the
                     // timing because we know that they arrive at
                     // the sampling rate (+/- a small drift)
-                    double offset = 0.1 * timeDiff / ((double) attysComm.getSamplingRateInHz());
+                    double offset = 0.1 * timeDiff / samplingrate;
 
                     // Log.d(TAG, String.format("offset=%f,timeDiff=%f", offset, timeDiff));
 
