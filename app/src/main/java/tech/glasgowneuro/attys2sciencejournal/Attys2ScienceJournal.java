@@ -199,7 +199,7 @@ public class Attys2ScienceJournal extends Service {
                 ADC2Settings.getIndexForPowerline(Attys2ScienceJournal.this)
         };
 
-        BluetoothDevice bluetoothDevice = findPairedAttys();
+        BluetoothDevice bluetoothDevice = AttysComm.findAttysBtDevice();
         if (bluetoothDevice == null) {
             theListener.onSensorError("No paired Attys available");
             return;
@@ -428,8 +428,9 @@ public class Attys2ScienceJournal extends Service {
 
             attysComm.registerMessageListener(messageListener);
 
-            // this is async in the background and might take a second or two
+            // this is async in the background
             attysComm.start();
+            timestamp = 0;
         } else {
             // all good already
             theListener.onSensorConnected();
@@ -476,43 +477,6 @@ public class Attys2ScienceJournal extends Service {
         return mDiscoverer;
     }
 
-    private BluetoothDevice findPairedAttys() {
-
-        BluetoothAdapter BA = BluetoothAdapter.getDefaultAdapter();
-
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "findPairedAttys");
-        }
-
-        if (BA == null) {
-            if (Log.isLoggable(TAG, Log.WARN)) {
-                Log.w(TAG, "No bluetooth adapter!");
-            }
-            return null;
-        }
-
-        Set<BluetoothDevice> pairedDevices;
-        pairedDevices = BA.getBondedDevices();
-
-        if (pairedDevices == null) {
-            if (Log.isLoggable(TAG, Log.WARN)) {
-                Log.w(TAG, "No paired Attys available.");
-            }
-            return null;
-        }
-
-        for (BluetoothDevice bt : pairedDevices) {
-            String b = bt.getName();
-            if (b.startsWith("GN-ATTYS")) {
-                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "Found an Attys as a paired device");
-                }
-                return bt;
-            }
-        }
-        return null;
-    }
-
     private void killAttys() {
         if (attysComm != null) {
             attysComm.stop();
@@ -543,7 +507,7 @@ public class Attys2ScienceJournal extends Service {
                     return;
                 }
 
-                BluetoothDevice bluetoothDevice = findPairedAttys();
+                BluetoothDevice bluetoothDevice = AttysComm.findAttysBtDevice();
 
                 if (bluetoothDevice == null) {
                     return;
