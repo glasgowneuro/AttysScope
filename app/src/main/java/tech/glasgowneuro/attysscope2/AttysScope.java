@@ -165,6 +165,7 @@ public class AttysScope extends AppCompatActivity {
 
     ProgressDialog progress = null;
 
+    AlertDialog alertDialog = null;
 
     public class DataRecorder {
         /////////////////////////////////////////////////////////////
@@ -734,9 +735,9 @@ public class AttysScope extends AppCompatActivity {
 
         btAttysDevice = AttysComm.findAttysBtDevice();
         if (btAttysDevice == null) {
-            new AlertDialog.Builder(this)
-                    .setTitle("No Attys Found")
-                    .setMessage("Do you want to visit www.attys.tech ?")
+            alertDialog = new AlertDialog.Builder(this)
+                    .setTitle("No Attys found")
+                    .setMessage("Visit www.attys.tech for help and you can buy it directly from there!")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             String url = "http://www.attys.tech";
@@ -859,6 +860,12 @@ public class AttysScope extends AppCompatActivity {
             Log.d(TAG, "Destroy!");
         }
         killAttysComm();
+        if (alertDialog != null) {
+            if (alertDialog.isShowing()) {
+                alertDialog.dismiss();
+            }
+        }
+        alertDialog = null;
     }
 
     @Override
