@@ -9,7 +9,7 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:title="Channels"
+        android:title="Scope"
         app:showAsAction="ifRoom|withText">
 
         <menu>
@@ -51,6 +51,24 @@
                     <item
                         android:id="@+id/infoWindowHeartrate"
                         android:title="Heart rate" />
+                </menu>
+            </item>
+
+            <item
+                android:title="SEC/DIV">
+                <menu>
+                    <item
+                        android:id="@+id/tb1"
+                        android:title="1" />
+                    <item
+                        android:id="@+id/tb2"
+                        android:title="2" />
+                    <item
+                        android:id="@+id/tb5"
+                        android:title="5" />
+                    <item
+                        android:id="@+id/tb10"
+                        android:title="10" />
                 </menu>
             </item>
 
@@ -182,6 +200,9 @@
                     android:id="@+id/showmagnetometer"
                     android:title="Magnetometer" />
             </group>
+
+
+
         </menu>
     </item>
 

@@ -121,6 +121,10 @@ public class AttysScope extends AppCompatActivity {
 
     private float accTick = AttysComm.oneG; // 1G
 
+    private int timebase = 1;
+
+    private int tbCtr = 1;
+
     private int theChannelWeDoAnalysis = 0;
 
     private int[] actualChannelIdx;
@@ -362,7 +366,7 @@ public class AttysScope extends AppCompatActivity {
         }
 
         private void annotatePlot(String largeText) {
-            String small = "";
+            String small = String.format("%d sec/div, ", timebase);
             if (showCh1) {
                 small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div, (int) gain[AttysComm.INDEX_Analogue_channel_1]);
             }
@@ -608,12 +612,16 @@ public class AttysScope extends AppCompatActivity {
                                 }
                             }
                             if (realtimePlotView != null) {
-                                realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
-                                        Arrays.copyOfRange(tmpMin, 0, nRealChN),
-                                        Arrays.copyOfRange(tmpMax, 0, nRealChN),
-                                        Arrays.copyOfRange(tmpTick, 0, nRealChN),
-                                        Arrays.copyOfRange(tmpLabels, 0, nRealChN),
-                                        ygapForInfo);
+                                tbCtr--;
+                                if (tbCtr < 1) {
+                                    realtimePlotView.addSamples(Arrays.copyOfRange(tmpSample, 0, nRealChN),
+                                            Arrays.copyOfRange(tmpMin, 0, nRealChN),
+                                            Arrays.copyOfRange(tmpMax, 0, nRealChN),
+                                            Arrays.copyOfRange(tmpTick, 0, nRealChN),
+                                            Arrays.copyOfRange(tmpLabels, 0, nRealChN),
+                                            ygapForInfo);
+                                    tbCtr = timebase;
+                                }
                             }
                         }
                     }
@@ -1216,6 +1224,17 @@ public class AttysScope extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),
                         String.format("Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 gain[AttysComm.INDEX_Analogue_channel_2] = (float) g;
+                return true;
+
+            case R.id.tb1:
+            case R.id.tb2:
+            case R.id.tb5:
+            case R.id.tb10:
+                t = item.getTitle().toString();
+                g = Integer.parseInt(t);
+                Toast.makeText(getApplicationContext(),
+                        String.format("Timebase set to %d secs/div", g), Toast.LENGTH_LONG).show();
+                timebase = g;
                 return true;
 
             case R.id.largeStatusOff:
