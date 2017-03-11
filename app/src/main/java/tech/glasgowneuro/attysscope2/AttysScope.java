@@ -18,7 +18,6 @@ package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
 import android.app.ProgressDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -28,7 +27,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
@@ -61,7 +59,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -82,7 +79,7 @@ public class AttysScope extends AppCompatActivity {
     // Fragments
     AmplitudeFragment amplitudeFragment = null;
     FourierFragment fourierFragment = null;
-    HeartRateFragment heartRateFragment = null;
+    HeartratePlotFragment heartRateFragment = null;
 
     // Menu checkboxes
     MenuItem menuItemHighpass1 = null;
@@ -94,7 +91,7 @@ public class AttysScope extends AppCompatActivity {
     private BluetoothDevice btAttysDevice = null;
     private byte samplingRate = AttysComm.ADC_RATE_250HZ;
 
-    UpdatePlotTask updatePlotTask = null;
+    private UpdatePlotTask updatePlotTask = null;
 
     private static final String TAG = "AttysScope";
 
@@ -170,6 +167,8 @@ public class AttysScope extends AppCompatActivity {
     ProgressDialog progress = null;
 
     AlertDialog alertDialog = null;
+
+    private ECG_rr_det ecg_rr_det = null;
 
     public class DataRecorder {
         /////////////////////////////////////////////////////////////
@@ -323,27 +322,12 @@ public class AttysScope extends AppCompatActivity {
 
     private class UpdatePlotTask extends TimerTask {
 
-        private int ignoreECGdetector = 1000;
-        private double max = -10000;
-        private float t2 = 0;
-        private int doNotDetect = 0;
-        private int[] hrBuffer = new int[3];
-        private int[] sortBuffer = new int[3];
-        private Butterworth ecgDetector = new Butterworth();
-        private Butterworth ecgDetNotch = new Butterworth();
         private String m_unit = "";
         private float scaling_factor = 1;
-        float filtBPM = 0;
 
         private void resetAnalysis() {
             signalAnalysis.reset();
-            t2 = 0;
-            max = -10000;
-            doNotDetect = 0;
-            ignoreECGdetector = attysComm.getSamplingRateInHz();
-            hrBuffer[0] = 0;
-            hrBuffer[1] = 0;
-            hrBuffer[2] = 0;
+            ecg_rr_det.reset();
 
             m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
 
@@ -359,13 +343,7 @@ public class AttysScope extends AppCompatActivity {
             annotatePlot("---------------");
         }
 
-        UpdatePlotTask() {
-            // this fakes an R peak so we have a matched filter!
-            ecgDetector.bandPass(2, attysComm.getSamplingRateInHz(), 20, 15);
-            ecgDetNotch.bandStop(notchOrder, attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
-        }
-
-        private void annotatePlot(String largeText) {
+        public void annotatePlot(String largeText) {
             String small = String.format("%d sec/div, ", timebase);
             if (showCh1) {
                 small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div, (int) gain[AttysComm.INDEX_Analogue_channel_1]);
@@ -394,55 +372,9 @@ public class AttysScope extends AppCompatActivity {
 
         private void doAnalysis(float v) {
 
-            // ECG analysis which we do anyway
-            v = v * scaling_factor;
-            if (theChannelWeDoAnalysis >= AttysComm.INDEX_Analogue_channel_1) {
-                double h = ecgDetNotch.filter(v * 1000);
-                h = ecgDetector.filter(h);
-                if (ignoreECGdetector > 0) {
-                    ignoreECGdetector--;
-                    h = 0;
-                }
-                h = h * h;
-                // debugging
-                //ecgDetOut = h;
-                if (h > max) {
-                    max = h;
-                }
-                if (attysComm != null) {
-                    max = max - 0.1 * max / attysComm.getSamplingRateInHz();
-                }
-                //Log.d(TAG,"h="+h+",max="+max);
-                if (doNotDetect > 0) {
-                    doNotDetect--;
-                } else {
-                    if (h > (0.6 * max)) {
-                        float t = (timestamp - t2) / attysComm.getSamplingRateInHz();
-                        float bpm = 1 / t * 60;
-                        if ((bpm > 20) && (bpm < 300)) {
-                            hrBuffer[2] = hrBuffer[1];
-                            hrBuffer[1] = hrBuffer[0];
-                            hrBuffer[0] = (int) bpm;
-                            System.arraycopy(hrBuffer, 0, sortBuffer, 0, hrBuffer.length);
-                            Arrays.sort(sortBuffer);
-                            filtBPM = sortBuffer[1];
-                            if (heartRateFragment != null) {
-                                heartRateFragment.addValue(filtBPM);
-                            }
-                        }
-                        t2 = timestamp;
-                        // advoid 1/4 sec
-                        doNotDetect = attysComm.getSamplingRateInHz() / 4;
-                    }
-                }
-            }
+            ecg_rr_det.detect(v);
 
             switch (textAnnotation) {
-                case ECG:
-                    if (filtBPM > 0) {
-                        annotatePlot(String.format("%03d BPM", (int) filtBPM));
-                    }
-                    break;
                 case NONE:
                     int interval = attysComm.getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
@@ -825,6 +757,27 @@ public class AttysScope extends AppCompatActivity {
         signalAnalysis = new SignalAnalysis(attysComm.getSamplingRateInHz());
 
         attysComm.start();
+
+        ecg_rr_det = new ECG_rr_det(attysComm.getSamplingRateInHz(), powerlineHz);
+
+        ecg_rr_det.setRrListener(new ECG_rr_det.RRlistener() {
+            @Override
+            public void haveRpeak(long samplenumber,
+                                  float bpm,
+                                  float unfiltbmp,
+                                  double amplitude,
+                                  double confidence) {
+                if (updatePlotTask != null) {
+                    if (textAnnotation == TextAnnotation.ECG) {
+                        updatePlotTask.annotatePlot(String.format("%03d BPM", (int) bpm));
+                    }
+                }
+                if (heartRateFragment != null) {
+                    heartRateFragment.addValue(bpm);
+                }
+            }
+        });
+
 
         timer = new Timer();
         updatePlotTask = new UpdatePlotTask();
@@ -1309,7 +1262,7 @@ public class AttysScope extends AppCompatActivity {
             case R.id.infoWindowHeartrate:
                 deleteFragmentWindow();
                 // Create a new Fragment to be placed in the activity layout
-                heartRateFragment = new HeartRateFragment();
+                heartRateFragment = new HeartratePlotFragment();
                 // Add the fragment to the 'fragment_container' FrameLayout
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Adding Heartrate fragment");
