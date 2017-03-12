@@ -28,9 +28,9 @@ android:layout_height="fill_parent">
 
         <TextView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text=" " />
+            android:layout_height="wrap_content"
+            android:text=" "/>
 
         <Button
             android:id="@+id/bpmreset"

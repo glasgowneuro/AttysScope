@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.StreamHandler;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
 
@@ -61,7 +62,13 @@ public class AmplitudeFragment extends Fragment {
 
     private Spinner spinnerMaxY;
 
-    private static String[] MAXYTXT = {"auto range", "5", "2", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001"};
+    private static String[] MAXYTXT = {"auto range", "5 V", "2 V", "1 V", "0.5 V", "0.1 V", "0.05 V", "0.01 V", "0.005 V", "0.001 V", "0.0005 V", "0.0001 V"};
+
+    private static String[] WINDOW_LENGTH = {"0.1 sec", "0.2 sec", "0.5 sec", "1 sec", "2 sec", "5 sec", "10 sec"};
+
+    private int DEFAULT_WINDOW_LENGTH = 3;
+
+    private int windowLength = 100;
 
     private SimpleXYSeries amplitudeHistorySeries;
     private SimpleXYSeries amplitudeFullSeries = null;
@@ -80,6 +87,8 @@ public class AmplitudeFragment extends Fragment {
 
     private Spinner spinnerChannel;
 
+    private Spinner spinnerWindow;
+
     private SignalAnalysis signalAnalysis = null;
 
     View view = null;
@@ -90,13 +99,9 @@ public class AmplitudeFragment extends Fragment {
 
     float current_stat_result = 0;
 
-    double delta_t = (double) REFRESH_IN_MS / 1000.0;
-
     boolean ready = false;
 
     boolean acceptData = false;
-
-    Timer timer = null;
 
     private String dataFilename = null;
 
@@ -109,7 +114,7 @@ public class AmplitudeFragment extends Fragment {
     private void reset() {
         ready = false;
 
-        signalAnalysis.reset();
+        signalAnalysis = new SignalAnalysis(windowLength);
 
         step = 0;
 
@@ -163,12 +168,8 @@ public class AmplitudeFragment extends Fragment {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     acceptData = true;
-                    timer = new Timer();
-                    UpdatePlotTask updatePlotTask = new UpdatePlotTask();
-                    timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
                 } else {
                     acceptData = false;
-                    timer.cancel();
                 }
             }
         });
@@ -195,12 +196,13 @@ public class AmplitudeFragment extends Fragment {
                 saveAmplitude();
             }
         });
+
         spinnerChannel = (Spinner) view.findViewById(R.id.amplitude_channel);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+        ArrayAdapter<String> adapterChannel = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerChannel.setAdapter(adapter);
+        adapterChannel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerChannel.setAdapter(adapterChannel);
         spinnerChannel.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -215,6 +217,33 @@ public class AmplitudeFragment extends Fragment {
         spinnerChannel.setBackgroundResource(android.R.drawable.btn_default);
         spinnerChannel.setSelection(AttysComm.INDEX_Analogue_channel_1);
 
+
+        spinnerWindow = (Spinner) view.findViewById(R.id.amplitude_window);
+        ArrayAdapter<String> adapterWindow = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                WINDOW_LENGTH);
+        adapterWindow.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerWindow.setAdapter(adapterWindow);
+        spinnerWindow.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                float winLen = Float.parseFloat(WINDOW_LENGTH[position].split(" ")[0]);
+                windowLength = (int) (winLen * samplingRate);
+                //Log.d(TAG, "winlen=" + windowLength);
+                reset();
+                if (amplitudePlot != null) {
+                    amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 20 * winLen);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        spinnerWindow.setBackgroundResource(android.R.drawable.btn_default);
+        spinnerWindow.setSelection(DEFAULT_WINDOW_LENGTH);
+
+
         amplitudePlot.addSeries(amplitudeHistorySeries,
                 new LineAndPointFormatter(
                         Color.rgb(100, 255, 255), null, null, null));
@@ -228,24 +257,24 @@ public class AmplitudeFragment extends Fragment {
         amplitudePlot.setRangeLabel(" ");
 
         amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
-        amplitudePlot.setRangeUpperBoundary(1,BoundaryMode.AUTO);
+        amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
 
         XYGraphWidget.LineLabelRenderer lineLabelRendererY = new XYGraphWidget.LineLabelRenderer() {
             @Override
             public void drawLabel(Canvas canvas,
                                   XYGraphWidget.LineLabelStyle style,
                                   Number val, float x, float y, boolean isOrigin) {
-                    Rect bounds = new Rect();
-                    style.getPaint().getTextBounds("a", 0, 1, bounds);
-                    drawLabel(canvas, String.format("%04.5f ",val.floatValue()),
-                            style.getPaint(), x+bounds.width()/2, y+bounds.height(), isOrigin);
+                Rect bounds = new Rect();
+                style.getPaint().getTextBounds("a", 0, 1, bounds);
+                drawLabel(canvas, String.format("%04.5f ", val.floatValue()),
+                        style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
             }
         };
 
-        amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT,lineLabelRendererY);
+        amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT, lineLabelRendererY);
         XYGraphWidget.LineLabelStyle lineLabelStyle = amplitudePlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
         Rect bounds = new Rect();
-        String dummyTxt = String.format("%04.5f ",0.000597558899);
+        String dummyTxt = String.format("%04.5f ", 0.000597558899);
         lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
         amplitudePlot.getGraph().setMarginLeft(bounds.width());
 
@@ -263,7 +292,7 @@ public class AmplitudeFragment extends Fragment {
             }
         };
 
-        amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM,lineLabelRendererX);
+        amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM, lineLabelRendererX);
 
         spinnerMaxY = (Spinner) view.findViewById(R.id.amplitude_maxy);
         ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
@@ -280,17 +309,18 @@ public class AmplitudeFragment extends Fragment {
                     getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
                     int width = metrics.widthPixels;
                     int height = metrics.heightPixels;
-                    float maxy = Float.valueOf(MAXYTXT[position]);
+                    float maxy = Float.valueOf(MAXYTXT[position].split(" ")[0]);
                     if ((height > 1000) && (width > 1000)) {
-                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/10);
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy / 10);
                         amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
                     } else {
-                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/2);
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy / 2);
                         amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
                     }
                     amplitudePlot.setRangeUpperBoundary(maxy, BoundaryMode.FIXED);
                 }
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
             }
@@ -424,64 +454,68 @@ public class AmplitudeFragment extends Fragment {
     public synchronized void addValue(final float[] sample) {
         if (!ready) return;
         if (!acceptData) return;
-        signalAnalysis.addData(sample[channel]);
+        if (signalAnalysis != null) {
+            signalAnalysis.addData(sample[channel]);
+            if (signalAnalysis.bufferFull()) {
+                updateStats();
+                signalAnalysis.reset();
+            }
+        }
     }
 
 
-    private class UpdatePlotTask extends TimerTask {
+    private void updateStats() {
 
-        public synchronized void run() {
+        double delta_t = (double) windowLength * (1.0 / samplingRate);
 
-            if (!ready) return;
-
-            if (!acceptData) return;
-
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (amplitudeReadingText != null) {
-                            if (isRMSmode) {
-                                amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
-                            } else {
-                                amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
-                            }
-                        }
-                    }
-                });
-            }
-
-            if (amplitudeHistorySeries == null) {
-                if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                    Log.v(TAG, "amplitudeHistorySeries == null");
-                }
-                return;
-            }
-
-            // get rid the oldest sample in history:
-            if (amplitudeHistorySeries.size() > nSampleBufferSize) {
-                amplitudeHistorySeries.removeFirst();
-            }
-
-            if (isRMSmode) {
+        if (isRMSmode) {
+            if (signalAnalysis != null) {
                 current_stat_result = signalAnalysis.getRMS();
-            } else {
+            }
+        } else {
+            if (signalAnalysis != null) {
                 current_stat_result = signalAnalysis.getPeakToPeak();
             }
+        }
 
-            int n = nSampleBufferSize - amplitudeHistorySeries.size();
-            for (int i = 0; i < n; i++) {
-                // add the latest history sample:
-                amplitudeHistorySeries.addLast(step * delta_t, current_stat_result);
-                step++;
+        if (amplitudeHistorySeries == null) {
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                Log.v(TAG, "amplitudeHistorySeries == null");
             }
+            return;
+        }
 
+        // get rid the oldest sample in history:
+        if (amplitudeHistorySeries.size() > nSampleBufferSize) {
+            amplitudeHistorySeries.removeFirst();
+        }
+
+        int n = nSampleBufferSize - amplitudeHistorySeries.size();
+        for (int i = 0; i < n; i++) {
             // add the latest history sample:
             amplitudeHistorySeries.addLast(step * delta_t, current_stat_result);
-            amplitudeFullSeries.addLast(step * delta_t, current_stat_result);
             step++;
-            amplitudePlot.redraw();
-            signalAnalysis.reset();
+        }
+
+        // add the latest history sample:
+        amplitudeHistorySeries.addLast(step * delta_t, current_stat_result);
+        amplitudeFullSeries.addLast(step * delta_t, current_stat_result);
+        step++;
+        amplitudePlot.redraw();
+
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (amplitudeReadingText != null) {
+                        if (isRMSmode) {
+                            amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
+                        } else {
+                            amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
+                        }
+                    }
+                }
+            });
         }
     }
 }

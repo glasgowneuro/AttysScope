@@ -20,6 +20,8 @@ import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.StepMode;
 import com.androidplot.xy.XYPlot;
 
+import tech.glasgowneuro.attyscomm.AttysComm;
+
 /**
  * Heartrate plot fragment.
  */
@@ -40,6 +42,8 @@ public class HeartratePlotFragment extends Fragment {
     private Button bpmResetButton = null;
 
     private ToggleButton bpmAutoscaleButton = null;
+
+    private ToggleButton bpmChannelButton = null;
 
     private TextView bpmStatsView = null;
 

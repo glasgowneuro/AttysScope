@@ -135,6 +135,8 @@ public class AttysScope extends AppCompatActivity {
 
     private SignalAnalysis signalAnalysis = null;
 
+    private ECG_rr_det ecg_rr_det = null;
+
     int ygapForInfo = 0;
 
     private TextAnnotation textAnnotation = TextAnnotation.PEAKTOPEAK;
@@ -167,8 +169,6 @@ public class AttysScope extends AppCompatActivity {
     ProgressDialog progress = null;
 
     AlertDialog alertDialog = null;
-
-    private ECG_rr_det ecg_rr_det = null;
 
     public class DataRecorder {
         /////////////////////////////////////////////////////////////
@@ -451,9 +451,6 @@ public class AttysScope extends AppCompatActivity {
 
                             for (int j = 0; j < nCh; j++) {
                                 float v = sample[j];
-                                if (j == theChannelWeDoAnalysis) {
-                                    doAnalysis(v);
-                                }
                                 if (j >= AttysComm.INDEX_Analogue_channel_1) {
                                     if (highpass[j] != null) {
                                         v = (float) highpass[j].filter((double) v);
@@ -461,6 +458,9 @@ public class AttysScope extends AppCompatActivity {
                                 }
                                 if (invert[j]) {
                                     v = -v;
+                                }
+                                if (j == theChannelWeDoAnalysis) {
+                                    doAnalysis(v);
                                 }
                                 sample[j] = v;
                             }

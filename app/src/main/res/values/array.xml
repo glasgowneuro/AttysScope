@@ -53,12 +53,14 @@
     </string-array>
 
     <string-array name="highpassOptions">
+        <item>0.05Hz</item>
         <item>0.1Hz</item>
         <item>1Hz</item>
         <item>5Hz</item>
         <item>10Hz</item>
     </string-array>
     <string-array name="highpassValues">
+        <item>0.05</item>
         <item>0.1</item>
         <item>1</item>
         <item>5</item>

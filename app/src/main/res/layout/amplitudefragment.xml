@@ -52,7 +52,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_gravity="start"
+            android:clickable="true"
+            android:spinnerMode="dropdown" />
+
+        <Spinner
+            android:id="@+id/amplitude_window"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:clickable="true"
             android:spinnerMode="dropdown" />
 
@@ -60,8 +67,7 @@
             android:id="@+id/amplitude_channel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_weight="1.5"
+            android:layout_weight="1"
             android:clickable="true"
             android:spinnerMode="dropdown" />
 
