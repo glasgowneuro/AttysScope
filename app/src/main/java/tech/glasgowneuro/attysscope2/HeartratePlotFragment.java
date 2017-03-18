@@ -82,14 +82,11 @@ public class HeartratePlotFragment extends Fragment {
         bpmPlot.setDomainLabel("Heartbeat #");
         bpmPlot.setRangeLabel("");
 
-        DisplayMetrics metrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        int width = metrics.widthPixels;
-        int height = metrics.heightPixels;
-        if ((height > 1000) && (width > 1000)) {
-            bpmPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
+        Screensize screensize = new Screensize(getActivity().getWindowManager());
+        if (screensize.isTablet()) {
+            bpmPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
         } else {
-            bpmPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
+            bpmPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
         }
 
         Paint paint = new Paint();
@@ -103,19 +100,16 @@ public class HeartratePlotFragment extends Fragment {
 
         bpmAutoscaleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                DisplayMetrics metrics = new DisplayMetrics();
-                getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                int width = metrics.widthPixels;
-                int height = metrics.heightPixels;
+                Screensize screensize = new Screensize(getActivity().getWindowManager());
                 if (isChecked) {
-                    if ((height > 1000) && (width > 1000)) {
+                    if (screensize.isTablet()) {
                         bpmPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, 5);
                     } else {
                         bpmPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, 20);
                     }
                     bpmPlot.setRangeBoundaries(0, 200, BoundaryMode.AUTO);
                 } else {
-                    if ((height > 1000) && (width > 1000)) {
+                    if (screensize.isTablet()) {
                         bpmPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, 25);
                     } else {
                         bpmPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, 50);

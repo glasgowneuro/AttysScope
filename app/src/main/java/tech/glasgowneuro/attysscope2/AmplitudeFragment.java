@@ -305,19 +305,15 @@ public class AmplitudeFragment extends Fragment {
                     amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
                     amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
-                    DisplayMetrics metrics = new DisplayMetrics();
-                    getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                    int width = metrics.widthPixels;
-                    int height = metrics.heightPixels;
-                    float maxy = Float.valueOf(MAXYTXT[position].split(" ")[0]);
-                    if ((height > 1000) && (width > 1000)) {
-                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy / 10);
+                    Screensize screensize = new Screensize(getActivity().getWindowManager());
+                    if (screensize.isTablet()) {
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, screensize.getHeightInPixels() / 10);
                         amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
                     } else {
-                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy / 2);
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, screensize.getHeightInPixels() / 2);
                         amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
                     }
-                    amplitudePlot.setRangeUpperBoundary(maxy, BoundaryMode.FIXED);
+                    amplitudePlot.setRangeUpperBoundary(screensize.getHeightInPixels(), BoundaryMode.FIXED);
                 }
             }
 

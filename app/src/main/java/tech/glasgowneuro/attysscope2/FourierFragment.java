@@ -217,11 +217,8 @@ public class FourierFragment extends Fragment {
 
         spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
-        DisplayMetrics metrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        final int width = metrics.widthPixels;
-        final int height = metrics.heightPixels;
-        if ((height > 1000) && (width > 1000)) {
+        final Screensize screensize = new Screensize(getActivity().getWindowManager());
+        if (screensize.isTablet()) {
             spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
         } else {
             spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
@@ -239,7 +236,7 @@ public class FourierFragment extends Fragment {
                     spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
                     float maxy = Float.valueOf(MAXYTXT[position]);
-                    if ((height > 1000) && (width > 1000)) {
+                    if (screensize.isTablet()) {
                         spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/10);
                     } else {
                         spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/2);

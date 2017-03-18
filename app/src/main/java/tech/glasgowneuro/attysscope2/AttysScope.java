@@ -41,6 +41,7 @@ import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -941,17 +942,17 @@ public class AttysScope extends AppCompatActivity {
 
         final List files = new ArrayList();
         final String[] list = ATTYSDIR.list();
-        if (list != null) {
-            for (String file : list) {
-                if (files != null) {
-                    if (file != null) {
-                        if (files != null) {
-                            files.add(file);
-                        }
+        if (list == null) return;
+        for (String file : list) {
+            if (files != null) {
+                if (file != null) {
+                    if (files != null) {
+                        files.add(file);
                     }
                 }
             }
         }
+
 
         final ListView listview = new ListView(this);
         ArrayAdapter adapter = new ArrayAdapter(this,
@@ -997,13 +998,21 @@ public class AttysScope extends AppCompatActivity {
                     }
                 })
                 .show();
+
+        if (listview != null) {
+            ViewGroup.LayoutParams layoutParams = listview.getLayoutParams();
+            Screensize screensize = new Screensize(getWindowManager());
+            layoutParams.height = screensize.getHeightInPixels() / 2;
+            listview.setLayoutParams(layoutParams);
+        }
+
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main_menu_attysplot, menu);
+        getMenuInflater().inflate(R.menu.main_menu_attysscope, menu);
 
         menuItemHighpass1 = menu.findItem(R.id.Ch1toggleDC);
         menuItemHighpass2 = menu.findItem(R.id.Ch2toggleDC);
@@ -1211,10 +1220,6 @@ public class AttysScope extends AppCompatActivity {
                 updatePlotTask.resetAnalysis();
                 return true;
 
-            case R.id.filebrowser:
-                shareData();
-                return true;
-
             case R.id.infoWindowAmplitude:
                 deleteFragmentWindow();
                 // Create a new Fragment to be placed in the activity layout
@@ -1278,6 +1283,17 @@ public class AttysScope extends AppCompatActivity {
             case R.id.infoWindowOff:
                 deleteFragmentWindow();
                 hidePlotFragment();
+                return true;
+
+            case R.id.filebrowser:
+                shareData();
+                return true;
+
+            case R.id.sourcecode:
+                String url = "https://github.com/glasgowneuro/AttysScope";
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(url));
+                startActivity(i);
                 return true;
 
             default:
