@@ -1,4 +1,4 @@
-= Python scripts
+# Python scripts
 
 This folder contains an example python script which plots all channels in a pretty form.
 
