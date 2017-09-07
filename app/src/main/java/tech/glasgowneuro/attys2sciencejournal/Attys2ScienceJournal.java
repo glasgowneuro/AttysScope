@@ -2,7 +2,6 @@ package tech.glasgowneuro.attys2sciencejournal;
 
 import android.app.PendingIntent;
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.DeadObjectException;
@@ -23,8 +22,6 @@ import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorObs
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.ISensorStatusListener;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorAppearanceResources;
 import com.google.android.apps.forscience.whistlepunk.api.scalarinput.SensorBehavior;
-
-import java.util.Set;
 
 public class Attys2ScienceJournal extends Service {
     public static final String DEVICE_ID = "AttysDevice";

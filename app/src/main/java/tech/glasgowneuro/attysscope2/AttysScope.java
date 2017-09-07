@@ -678,7 +678,7 @@ public class AttysScope extends AppCompatActivity {
         if (btAttysDevice == null) {
             alertDialog = new AlertDialog.Builder(this)
                     .setTitle("No Attys found")
-                    .setMessage("Visit www.attys.tech for help and you can buy it directly from there!")
+                    .setMessage("Visit www.attys.tech for help?")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             String url = "http://www.attys.tech";

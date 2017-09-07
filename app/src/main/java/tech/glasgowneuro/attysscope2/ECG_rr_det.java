@@ -5,10 +5,6 @@ import java.util.Arrays;
 import uk.me.berndporr.iirj.Butterworth;
 
 /**
- * Created by bp1 on 11/03/17.
- */
-
-/**
  * ECG R-peak detector and heart rate detector
  * <p>
  * The detector uses the matched filter approach by creating
