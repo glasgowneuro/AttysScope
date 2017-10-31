@@ -17,7 +17,6 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -49,6 +48,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
@@ -167,7 +167,7 @@ public class AttysScope extends AppCompatActivity {
     static final File ATTYSDIR =
             new File(Environment.getExternalStorageDirectory().getPath(), ATTYS_SUBDIR);
 
-    ProgressDialog progress = null;
+    ProgressBar progress = null;
 
     AlertDialog alertDialog = null;
 
@@ -231,10 +231,6 @@ public class AttysScope extends AppCompatActivity {
             data_separator = s;
         }
 
-        public byte getDataSeparator() {
-            return data_separator;
-        }
-
         private void saveData(float[] data_unfilt, float[] data_filt) {
             if (textdataFile == null) return;
             if (textdataFileStream == null) return;
@@ -279,16 +275,16 @@ public class AttysScope extends AppCompatActivity {
                     if (attysComm != null) {
                         attysComm.stop();
                     }
-                    progress.dismiss();
+                    progress.setVisibility(View.GONE);
                     finish();
                     break;
                 case AttysComm.MESSAGE_CONNECTED:
-                    progress.dismiss();
+                    progress.setVisibility(View.GONE);
                     break;
                 case AttysComm.MESSAGE_CONFIGURE:
                     Toast.makeText(getApplicationContext(),
                             "Configuring Attys", Toast.LENGTH_SHORT).show();
-                    progress.dismiss();
+                    progress.setVisibility(View.GONE);
                     break;
                 case AttysComm.MESSAGE_RETRY:
                     Toast.makeText(getApplicationContext(),
@@ -306,8 +302,7 @@ public class AttysScope extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                     break;
                 case AttysComm.MESSAGE_CONNECTING:
-                    progress.setMessage("Connecting");
-                    progress.show();
+                    progress.setVisibility(View.VISIBLE);
             }
         }
     };
@@ -587,8 +582,6 @@ public class AttysScope extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        progress = new ProgressDialog(this);
-
         if (!ATTYSDIR.exists()) {
             ATTYSDIR.mkdirs();
         }
@@ -601,6 +594,8 @@ public class AttysScope extends AppCompatActivity {
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
+
+        progress = (ProgressBar) findViewById(R.id.indeterminateBar);
 
         int nChannels = AttysComm.NCHANNELS;
         highpass = new Butterworth[nChannels];
