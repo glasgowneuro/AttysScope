@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Bernd Porr, mail@berndporr.me.uk
+ * Copyright 2016-2017 Bernd Porr, mail@berndporr.me.uk
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
@@ -58,6 +57,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -174,9 +174,10 @@ public class AttysScope extends AppCompatActivity {
     public class Ch2Converter {
         final float Rbaseline = 55000;
         private int rule = -1;
+        float coldJunctionT = 20;
 
         private String[] units = {"V","V","V","\u2126","\u2126","\u00b0C","\u00b0C"};
-        private int[] currentIndex = {0,1,2,1,2,2,2};
+        private int[] currentIndex = {0,1,2,1,2,2,0};
 
         void setRule(int _rule) {
             rule = _rule;
@@ -207,12 +208,8 @@ public class AttysScope extends AppCompatActivity {
                             474.8 * (rt/r25) - 319.85;
                     return (float)t;
                 case 6:
-                    // temperature, PT100
-                    rt = v/6E-6 - Rbaseline;
-                    double r0 = 1000.0;
-                    double a=3.9083E-3;
-                    t = (rt-r0)/(r0*a);
-                    return (float)t;
+                    // temperature, K type thermocouple
+                    return v/39E-6F + coldJunctionT;
             }
             return v;
         }
@@ -235,7 +232,7 @@ public class AttysScope extends AppCompatActivity {
                     return 300000 - Rbaseline;
                 case 5:
                 case 6:
-                    return 100;
+                    return 1000;
             }
             return attysComm.getADCFullScaleRange(1);
         }
@@ -252,7 +249,7 @@ public class AttysScope extends AppCompatActivity {
                 case 5:
                     return -20;
                 case 6:
-                    return 0;
+                    return -100;
             }
             return -attysComm.getADCFullScaleRange(1);
         }
@@ -276,7 +273,7 @@ public class AttysScope extends AppCompatActivity {
                     return 100000;
                 case 5:
                 case 6:
-                    return 10;
+                    return 100;
             }
             return 1;
         }
@@ -293,14 +290,12 @@ public class AttysScope extends AppCompatActivity {
         private PrintWriter textdataFileStream = null;
         private File textdataFile = null;
         private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
-        private float samplingInterval = 0;
         private File file = null;
         private long sampleNo = 0;
 
         // starts the recording
         public void startRec(File _file) throws java.io.FileNotFoundException {
             file = _file;
-            samplingInterval = 1.0F / attysComm.getSamplingRateInHz();
             try {
                 textdataFileStream = new PrintWriter(file);
                 textdataFile = file;
@@ -358,15 +353,15 @@ public class AttysScope extends AppCompatActivity {
                     s = 9;
                     break;
             }
-            String tmp = String.format("%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
+            String tmp = String.format(Locale.US,"%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
             for (float aData_unfilt : data_unfilt) {
-                tmp = tmp + String.format("%f%c", aData_unfilt, s);
+                tmp = tmp + String.format(Locale.US,"%f%c", aData_unfilt, s);
             }
-            tmp = tmp + String.format("%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
-            tmp = tmp + String.format("%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
+            tmp = tmp + String.format(Locale.US,"%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
+            tmp = tmp + String.format(Locale.US,"%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
 
             if (textdataFileStream != null) {
-                textdataFileStream.format("%s\n", tmp);
+                textdataFileStream.format(Locale.US,"%s\n",tmp);
             }
             sampleNo++;
         }
@@ -447,26 +442,26 @@ public class AttysScope extends AppCompatActivity {
         }
 
         public void annotatePlot(String largeText) {
-            String small = String.format("%d sec/div, ", timebase);
+            String small = String.format(Locale.getDefault(),"%d sec/div, ", timebase);
             if (showCh1) {
-                small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div,
+                small = small + String.format(Locale.getDefault(),"ADC1 = %1.04fV/div (X%d), ", ch1Div,
                         (int) gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + "".format("ADC2 = %1.04f%s/div (X%d), ", ch2Div,
+                small = small + String.format(Locale.getDefault(),"ADC2 = %1.04f%s/div (X%d), ", ch2Div,
                         ch2Converter.getUnit(), (int) gain[AttysComm.INDEX_Analogue_channel_2]);
             }
             if (showAcc) {
-                small = small + "".format("ACC = %dG/div, ", Math.round(accTick / AttysComm.oneG));
+                small = small + String.format(Locale.getDefault(),"ACC = %dG/div, ", Math.round(accTick / AttysComm.oneG));
             }
             if (showMag) {
-                small = small + "".format("MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
+                small = small + String.format(Locale.getDefault(),"MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
             if (dataRecorder.isRecording()) {
                 small = small + " !!RECORDING to:" + dataFilename;
             }
             if (largeText != null) {
-                largeText = "".format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
+                largeText = String.format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
             if (infoView != null) {
                 if (attysComm != null) {
@@ -489,7 +484,7 @@ public class AttysScope extends AppCompatActivity {
                 case RMS:
                     signalAnalysis.addData(v);
                     if (signalAnalysis.bufferFull()) {
-                        annotatePlot(String.format("%1.05f%s RMS",
+                        annotatePlot(String.format(Locale.getDefault(),"%1.05f%s RMS",
                                 signalAnalysis.getRMS(),
                                 m_unit));
                         signalAnalysis.reset();
@@ -498,7 +493,7 @@ public class AttysScope extends AppCompatActivity {
                 case PEAKTOPEAK:
                     signalAnalysis.addData(v);
                     if (signalAnalysis.bufferFull()) {
-                        annotatePlot(String.format("%1.05f%s pp",
+                        annotatePlot(String.format(Locale.getDefault(),"%1.05f%s pp",
                                 signalAnalysis.getPeakToPeak(),
                                 m_unit));
                         signalAnalysis.reset();
@@ -600,7 +595,7 @@ public class AttysScope extends AppCompatActivity {
                                 if (attysComm != null) {
                                     tmpMin[nRealChN] = ch2Converter.getMinRange();
                                     tmpMax[nRealChN] = ch2Converter.getMaxRange();
-                                    ch2Div = ch2Converter.getTick() / gain[AttysComm.INDEX_Analogue_channel_1];
+                                    ch2Div = ch2Converter.getTick() / gain[AttysComm.INDEX_Analogue_channel_2];
                                     tmpTick[nRealChN] =  ch2Converter.getTick();
                                     tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_2];
                                     actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_2;
@@ -766,6 +761,37 @@ public class AttysScope extends AppCompatActivity {
         highpass[AttysComm.INDEX_Analogue_channel_2] = null;
     }
 
+
+    private void checkMenuItems() {
+        if (menuItemHighpass1 != null) {
+            if (menuItemHighpass1.isChecked()) {
+                highpass1on();
+            } else {
+                highpass1off();
+            }
+        } else {
+            // default
+            highpass1on();
+        }
+
+        if (menuItemHighpass2 != null) {
+            if (ch2Converter.getRule() >= 0) {
+                menuItemHighpass2.setChecked(false);
+                textAnnotation = TextAnnotation.RMS;
+            }
+            if (menuItemHighpass2.isChecked()) {
+                highpass2on();
+            } else {
+                highpass2off();
+            }
+        } else {
+            // default
+            highpass2on();
+        }
+    }
+
+
+
     public void startDAQ() {
 
         client.connect();
@@ -796,6 +822,8 @@ public class AttysScope extends AppCompatActivity {
 
         getsetAttysPrefs();
 
+        checkMenuItems();
+
         if (showCh1) {
             theChannelWeDoAnalysis = AttysComm.INDEX_Analogue_channel_1;
         } else if (showCh2) {
@@ -806,7 +834,7 @@ public class AttysScope extends AppCompatActivity {
             theChannelWeDoAnalysis = AttysComm.INDEX_Magnetic_field_X;
         }
 
-        realtimePlotView = (RealtimePlotView) findViewById(R.id.realtimeplotview);
+        realtimePlotView = findViewById(R.id.realtimeplotview);
         realtimePlotView.setMaxChannels(15);
         realtimePlotView.init();
 
@@ -828,28 +856,6 @@ public class AttysScope extends AppCompatActivity {
         infoView = (InfoView) findViewById(R.id.infoview);
         infoView.setZOrderOnTop(true);
         infoView.setZOrderMediaOverlay(true);
-
-        if (menuItemHighpass1 != null) {
-            if (menuItemHighpass1.isChecked()) {
-                highpass1on();
-            } else {
-                highpass2off();
-            }
-        } else {
-            // default
-            highpass1on();
-        }
-
-        if (menuItemHighpass2 != null) {
-            if (menuItemHighpass2.isChecked()) {
-                highpass2on();
-            } else {
-                highpass2off();
-            }
-        } else {
-            // default
-            highpass2on();
-        }
 
         signalAnalysis = new SignalAnalysis(attysComm.getSamplingRateInHz());
 
@@ -1114,6 +1120,8 @@ public class AttysScope extends AppCompatActivity {
 
         menuItemMains1 = menu.findItem(R.id.Ch1notch);
         menuItemMains2 = menu.findItem(R.id.Ch2notch);
+
+        checkMenuItems();
 
         return true;
     }

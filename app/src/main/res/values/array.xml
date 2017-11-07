@@ -27,7 +27,7 @@
         <item>0-81 MOhm</item>
         <item>0-300 KOhm</item>
         <item>Temperature (5K therm, TFPTL15L5001FL2B)</item>
-        <item>Temperature (PT1000)</item>
+        <item>Temperature (K type thermocouple)</item>
     </string-array>
     <string-array name="ch2Values">
         <item>-1</item>
