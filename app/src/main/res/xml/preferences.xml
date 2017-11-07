@@ -15,12 +15,12 @@
         android:defaultValue="1"
         android:title="ADC 2 range" />
     <ListPreference
-        android:entries="@array/currentOptions"
-        android:entryValues="@array/currentValues"
-        android:key="ch2_current"
-        android:summary="ADC channel 2 current towards ground for resistance measurements"
+        android:entries="@array/ch2Options"
+        android:entryValues="@array/ch2Values"
+        android:key="ch2_options"
+        android:summary="ADC channel 2 options such as DC current, resistance and external sensors"
         android:defaultValue="-1"
-        android:title="ADC 2 current" />
+        android:title="ADC 2 options" />
     <CheckBoxPreference
         android:key="ECG_mode"
         android:defaultValue="false"

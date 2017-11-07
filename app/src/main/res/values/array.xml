@@ -19,17 +19,25 @@
         <item>6</item>
     </string-array>
 
-    <string-array name="currentOptions">
+    <string-array name="ch2Options">
         <item>off</item>
         <item>0.006 \u00b5A</item>
         <item>0.022 \u00b5A</item>
         <item>6.000 \u00b5A</item>
+        <item>0-81 MOhm</item>
+        <item>0-300 KOhm</item>
+        <item>Temperature (5K therm, TFPTL15L5001FL2B)</item>
+        <item>Temperature (PT1000)</item>
     </string-array>
-    <string-array name="currentValues">
+    <string-array name="ch2Values">
         <item>-1</item>
         <item>0</item>
         <item>1</item>
         <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
     </string-array>
 
     <string-array name="textDataFileSeparatorOptions">

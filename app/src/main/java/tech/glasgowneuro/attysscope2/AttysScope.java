@@ -27,8 +27,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -96,6 +94,8 @@ public class AttysScope extends AppCompatActivity {
 
     private static final String TAG = "AttysScope";
 
+    public Ch2Converter ch2Converter = new Ch2Converter();
+
     private Butterworth[] highpass = null;
     private float[] gain;
     private Butterworth[] iirNotch;
@@ -160,7 +160,6 @@ public class AttysScope extends AppCompatActivity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
-    private Action viewAction;
 
     private static final String ATTYS_SUBDIR = "attys";
 
@@ -170,6 +169,118 @@ public class AttysScope extends AppCompatActivity {
     ProgressBar progress = null;
 
     AlertDialog alertDialog = null;
+
+    // converts Ch2 data from its voltage units to resistance, temperature etc
+    public class Ch2Converter {
+        final float Rbaseline = 55000;
+        private int rule = -1;
+
+        private String[] units = {"V","V","V","\u2126","\u2126","\u00b0C","\u00b0C"};
+        private int[] currentIndex = {0,1,2,1,2,2,2};
+
+        void setRule(int _rule) {
+            rule = _rule;
+        }
+
+        int getRule() {return rule;}
+
+        public float convert(float v) {
+            switch (rule) {
+                case 0:
+                    // 0.006uA
+                case 1:
+                    // 0.022uA
+                case 2:
+                    // 6uA
+                    return v;
+                case 3:
+                    // resistance, 0 - 81MOhm
+                    return v/0.022E-6F - Rbaseline;
+                case 4:
+                    // resistance 0 - 300KOhm
+                    return v/6E-6F - Rbaseline;
+                case 5:
+                    // temperature, TFPTL15L5001FL2B -  PTC Thermistor, 5 kohm
+                    double rt = v/6E-6 - Rbaseline;
+                    double r25 = 5000.0;
+                    double t = 28.54 * Math.pow(rt/r25,3) - 158.5 * Math.pow(rt/r25,2) +
+                            474.8 * (rt/r25) - 319.85;
+                    return (float)t;
+                case 6:
+                    // temperature, PT100
+                    rt = v/6E-6 - Rbaseline;
+                    double r0 = 1000.0;
+                    double a=3.9083E-3;
+                    t = (rt-r0)/(r0*a);
+                    return (float)t;
+            }
+            return v;
+        }
+
+
+        public String getUnit() {
+            if (rule<0) return "V";
+            return units[rule];
+        }
+
+        public float getMaxRange() {
+            switch (rule) {
+                case 0:
+                case 1:
+                case 2:
+                    return attysComm.getADCFullScaleRange(1);
+                case 3:
+                    return 81E6F - Rbaseline;
+                case 4:
+                    return 300000 - Rbaseline;
+                case 5:
+                case 6:
+                    return 100;
+            }
+            return attysComm.getADCFullScaleRange(1);
+        }
+
+        public float getMinRange() {
+            switch (rule) {
+                case 0:
+                case 1:
+                case 2:
+                    return -attysComm.getADCFullScaleRange(1);
+                case 3:
+                case 4:
+                    return 0;
+                case 5:
+                    return -20;
+                case 6:
+                    return 0;
+            }
+            return -attysComm.getADCFullScaleRange(1);
+        }
+
+        public int getCurrentIndex() {
+            if (rule<0) {
+                return -1;
+            }
+            return currentIndex[rule];
+        }
+
+        public float getTick() {
+            switch (rule) {
+                case 0:
+                case 1:
+                case 2:
+                    return 1;
+                case 3:
+                    return 10000000;
+                case 4:
+                    return 100000;
+                case 5:
+                case 6:
+                    return 10;
+            }
+            return 1;
+        }
+    }
 
     public class DataRecorder {
         /////////////////////////////////////////////////////////////
@@ -265,53 +376,45 @@ public class AttysScope extends AppCompatActivity {
     DataRecorder dataRecorder = new DataRecorder();
 
 
-    Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case AttysComm.MESSAGE_ERROR:
-                    Toast.makeText(getApplicationContext(),
-                            "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
-                    if (attysComm != null) {
-                        attysComm.stop();
-                    }
-                    progress.setVisibility(View.GONE);
-                    finish();
-                    break;
-                case AttysComm.MESSAGE_CONNECTED:
-                    progress.setVisibility(View.GONE);
-                    break;
-                case AttysComm.MESSAGE_CONFIGURE:
-                    Toast.makeText(getApplicationContext(),
-                            "Configuring Attys", Toast.LENGTH_SHORT).show();
-                    progress.setVisibility(View.GONE);
-                    break;
-                case AttysComm.MESSAGE_RETRY:
-                    Toast.makeText(getApplicationContext(),
-                            "Bluetooth - trying to connect. Please be patient.",
-                            Toast.LENGTH_SHORT).show();
-                    break;
-                case AttysComm.MESSAGE_STARTED_RECORDING:
-                    Toast.makeText(getApplicationContext(),
-                            "Started recording data to external storage.",
-                            Toast.LENGTH_SHORT).show();
-                    break;
-                case AttysComm.MESSAGE_STOPPED_RECORDING:
-                    Toast.makeText(getApplicationContext(),
-                            "Finished recording data to external storage.",
-                            Toast.LENGTH_SHORT).show();
-                    break;
-                case AttysComm.MESSAGE_CONNECTING:
-                    progress.setVisibility(View.VISIBLE);
-            }
-        }
-    };
-
-
     AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
         @Override
-        public void haveMessage(int msg) {
-            handler.sendEmptyMessage(msg);
+        public void haveMessage(final int msg) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    switch (msg) {
+                        case AttysComm.MESSAGE_ERROR:
+                            Toast.makeText(getApplicationContext(),
+                                    "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
+                            if (attysComm != null) {
+                                attysComm.stop();
+                            }
+                            progress.setVisibility(View.GONE);
+                            finish();
+                            break;
+                        case AttysComm.MESSAGE_CONNECTED:
+                            progress.setVisibility(View.GONE);
+                            break;
+                        case AttysComm.MESSAGE_RETRY:
+                            Toast.makeText(getApplicationContext(),
+                                    "Bluetooth - trying to connect. Please be patient.",
+                                    Toast.LENGTH_SHORT).show();
+                            break;
+                        case AttysComm.MESSAGE_STARTED_RECORDING:
+                            Toast.makeText(getApplicationContext(),
+                                    "Started recording data to external storage.",
+                                    Toast.LENGTH_SHORT).show();
+                            break;
+                        case AttysComm.MESSAGE_STOPPED_RECORDING:
+                            Toast.makeText(getApplicationContext(),
+                                    "Finished recording data to external storage.",
+                                    Toast.LENGTH_SHORT).show();
+                            break;
+                        case AttysComm.MESSAGE_CONNECTING:
+                            progress.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
         }
     };
 
@@ -325,7 +428,11 @@ public class AttysScope extends AppCompatActivity {
             signalAnalysis.reset();
             ecg_rr_det.reset();
 
-            m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
+            if (theChannelWeDoAnalysis == AttysComm.INDEX_Analogue_channel_2) {
+                m_unit = ch2Converter.getUnit();
+            } else {
+                m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
+            }
 
             if ((theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
                     (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Y) ||
@@ -342,10 +449,12 @@ public class AttysScope extends AppCompatActivity {
         public void annotatePlot(String largeText) {
             String small = String.format("%d sec/div, ", timebase);
             if (showCh1) {
-                small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div, (int) gain[AttysComm.INDEX_Analogue_channel_1]);
+                small = small + "".format("ADC1 = %1.04fV/div (X%d), ", ch1Div,
+                        (int) gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + "".format("ADC2 = %1.04fV/div (X%d), ", ch2Div, (int) gain[AttysComm.INDEX_Analogue_channel_2]);
+                small = small + "".format("ADC2 = %1.04f%s/div (X%d), ", ch2Div,
+                        ch2Converter.getUnit(), (int) gain[AttysComm.INDEX_Analogue_channel_2]);
             }
             if (showAcc) {
                 small = small + "".format("ACC = %dG/div, ", Math.round(accTick / AttysComm.oneG));
@@ -403,7 +512,6 @@ public class AttysScope extends AppCompatActivity {
             if (attysComm != null) {
                 if (attysComm.hasFatalError()) {
                     // Log.d(TAG,String.format("No bluetooth connection"));
-                    handler.sendEmptyMessage(AttysComm.MESSAGE_ERROR);
                     return;
                 }
             }
@@ -434,6 +542,8 @@ public class AttysScope extends AppCompatActivity {
                             timestamp++;
 
                             System.arraycopy(sample_unfilt, 0, sample, 0, nCh);
+
+                            sample[AttysComm.INDEX_Analogue_channel_2] = ch2Converter.convert(sample[AttysComm.INDEX_Analogue_channel_2]);
 
                             if (iirNotch[AttysComm.INDEX_Analogue_channel_1] != null) {
                                 sample[AttysComm.INDEX_Analogue_channel_1] =
@@ -488,13 +598,10 @@ public class AttysScope extends AppCompatActivity {
                             }
                             if (showCh2) {
                                 if (attysComm != null) {
-                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(1);
-                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(1);
-                                    ch2Div = 1.0F / gain[AttysComm.INDEX_Analogue_channel_2];
-                                    if (attysComm.getADCFullScaleRange(1) < 1) {
-                                        ch2Div = ch2Div / 10;
-                                    }
-                                    tmpTick[nRealChN] = ch2Div * gain[AttysComm.INDEX_Analogue_channel_2];
+                                    tmpMin[nRealChN] = ch2Converter.getMinRange();
+                                    tmpMax[nRealChN] = ch2Converter.getMaxRange();
+                                    ch2Div = ch2Converter.getTick() / gain[AttysComm.INDEX_Analogue_channel_1];
+                                    tmpTick[nRealChN] =  ch2Converter.getTick();
                                     tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_2];
                                     actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_2;
                                     tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_2] * gain[AttysComm.INDEX_Analogue_channel_2];
@@ -662,12 +769,6 @@ public class AttysScope extends AppCompatActivity {
     public void startDAQ() {
 
         client.connect();
-        viewAction = Action.newAction(
-                Action.TYPE_VIEW,
-                "Attys Homepage",
-                Uri.parse("http://www.attys.tech")
-        );
-        AppIndex.AppIndexApi.start(client, viewAction);
 
         btAttysDevice = AttysComm.findAttysBtDevice();
         if (btAttysDevice == null) {
@@ -857,7 +958,6 @@ public class AttysScope extends AppCompatActivity {
 
         killAttysComm();
 
-        AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
     }
 
@@ -1323,13 +1423,17 @@ public class AttysScope extends AppCompatActivity {
         byte gain1 = (byte) (Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
         attysComm.setAdc2_gain_index(gain1);
         attysComm.setAdc1_mux_index(mux);
-        int current = Integer.parseInt(prefs.getString("ch2_current", "-1"));
-        if (current < 0) {
+
+        int ch2_option = Integer.parseInt(prefs.getString("ch2_options", "-1"));
+        ch2Converter.setRule(ch2_option);
+        int currentIndex = ch2Converter.getCurrentIndex();
+        if (currentIndex < 0) {
             attysComm.enableCurrents(false, false, false);
         } else {
-            attysComm.setBiasCurrent((byte) current);
+            attysComm.setBiasCurrent((byte) currentIndex);
             attysComm.enableCurrents(false, false, true);
         }
+
         byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
         dataRecorder.setDataSeparator(data_separator);
 
