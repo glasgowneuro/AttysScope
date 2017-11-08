@@ -152,6 +152,8 @@ public class AttysScope extends AppCompatActivity {
             "Mag x", "Mag y", "Mag z",
             "ADC 1", "ADC 2"};
 
+    String[] units = new String[AttysComm.NCHANNELS];
+
     private String dataFilename = null;
     private byte dataSeparator = 0;
 
@@ -174,16 +176,18 @@ public class AttysScope extends AppCompatActivity {
         float coldJunctionT = 20;
 
         // units as strings fo the different settings
-        private String[] units = {"V","V","V","\u2126","\u2126","\u00b0C","\u00b0C"};
+        private String[] units = {"V", "V", "V", "\u2126", "\u2126", "\u00b0C", "\u00b0C"};
 
         // current settings
-        private int[] currentIndex = {0,1,2,1,2,2,-1};
+        private int[] currentIndex = {0, 1, 2, 1, 2, 2, -1};
 
         void setRule(int _rule) {
             rule = _rule;
         }
 
-        int getRule() {return rule;}
+        int getRule() {
+            return rule;
+        }
 
         // converts the voltage into another unit
         public float convert(float v) {
@@ -197,20 +201,20 @@ public class AttysScope extends AppCompatActivity {
                     return v;
                 case 3:
                     // resistance, 0 - 81MOhm
-                    return v/0.022E-6F - Rbaseline;
+                    return v / 0.022E-6F - Rbaseline;
                 case 4:
                     // resistance 0 - 300KOhm
-                    return v/6E-6F - Rbaseline;
+                    return v / 6E-6F - Rbaseline;
                 case 5:
                     // temperature, TFPTL15L5001FL2B -  PTC Thermistor, 5 kohm
-                    double rt = v/6E-6 - Rbaseline;
+                    double rt = v / 6E-6 - Rbaseline;
                     double r25 = 5000.0;
-                    double t = 28.54 * Math.pow(rt/r25,3) - 158.5 * Math.pow(rt/r25,2) +
-                            474.8 * (rt/r25) - 319.85;
-                    return (float)t;
+                    double t = 28.54 * Math.pow(rt / r25, 3) - 158.5 * Math.pow(rt / r25, 2) +
+                            474.8 * (rt / r25) - 319.85;
+                    return (float) t;
                 case 6:
                     // temperature, K type thermocouple
-                    return v/39E-6F + coldJunctionT;
+                    return v / 39E-6F + coldJunctionT;
             }
             return v;
         }
@@ -218,7 +222,7 @@ public class AttysScope extends AppCompatActivity {
 
         // the unit as a String
         public String getUnit() {
-            if (rule<0) return "V";
+            if (rule < 0) return "V";
             return units[rule];
         }
 
@@ -281,7 +285,7 @@ public class AttysScope extends AppCompatActivity {
         // switches on/off the excitation current
         // -1 means it's off
         public int getCurrentIndex() {
-            if (rule<0) {
+            if (rule < 0) {
                 return -1;
             }
             return currentIndex[rule];
@@ -362,15 +366,15 @@ public class AttysScope extends AppCompatActivity {
                     s = 9;
                     break;
             }
-            String tmp = String.format(Locale.US,"%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
+            String tmp = String.format(Locale.US, "%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
             for (float aData_unfilt : data_unfilt) {
-                tmp = tmp + String.format(Locale.US,"%f%c", aData_unfilt, s);
+                tmp = tmp + String.format(Locale.US, "%f%c", aData_unfilt, s);
             }
-            tmp = tmp + String.format(Locale.US,"%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
-            tmp = tmp + String.format(Locale.US,"%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
+            tmp = tmp + String.format(Locale.US, "%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
+            tmp = tmp + String.format(Locale.US, "%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
 
             if (textdataFileStream != null) {
-                textdataFileStream.format(Locale.US,"%s\n",tmp);
+                textdataFileStream.format(Locale.US, "%s\n", tmp);
             }
             sampleNo++;
         }
@@ -426,45 +430,37 @@ public class AttysScope extends AppCompatActivity {
     private class UpdatePlotTask extends TimerTask {
 
         private String m_unit = "";
-        private float scaling_factor = 1;
 
         private void resetAnalysis() {
             signalAnalysis.reset();
             ecg_rr_det.reset();
 
-            if (theChannelWeDoAnalysis == AttysComm.INDEX_Analogue_channel_2) {
-                m_unit = ch2Converter.getUnit();
-            } else {
-                m_unit = AttysComm.CHANNEL_UNITS[theChannelWeDoAnalysis];
-            }
+            m_unit = units[theChannelWeDoAnalysis];
 
             if ((theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_X) ||
                     (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Y) ||
                     (theChannelWeDoAnalysis == AttysComm.INDEX_Magnetic_field_Z)) {
-                scaling_factor = 1E6F;
                 m_unit = "\u00b5" + m_unit;
-            } else {
-                scaling_factor = 1;
             }
 
             annotatePlot("---------------");
         }
 
         public void annotatePlot(String largeText) {
-            String small = String.format(Locale.getDefault(),"%d sec/div, ", timebase);
+            String small = String.format(Locale.getDefault(), "%d sec/div, ", timebase);
             if (showCh1) {
-                small = small + String.format(Locale.getDefault(),"ADC1 = %1.04fV/div (X%d), ", ch1Div,
+                small = small + String.format(Locale.getDefault(), "ADC1 = %1.04fV/div (X%d), ", ch1Div,
                         (int) gain[AttysComm.INDEX_Analogue_channel_1]);
             }
             if (showCh2) {
-                small = small + String.format(Locale.getDefault(),"ADC2 = %1.04f%s/div (X%d), ", ch2Div,
+                small = small + String.format(Locale.getDefault(), "ADC2 = %1.04f%s/div (X%d), ", ch2Div,
                         ch2Converter.getUnit(), (int) gain[AttysComm.INDEX_Analogue_channel_2]);
             }
             if (showAcc) {
-                small = small + String.format(Locale.getDefault(),"ACC = %dG/div, ", Math.round(accTick / AttysComm.oneG));
+                small = small + String.format(Locale.getDefault(), "ACC = %dG/div, ", Math.round(accTick / AttysComm.oneG));
             }
             if (showMag) {
-                small = small + String.format(Locale.getDefault(),"MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
+                small = small + String.format(Locale.getDefault(), "MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
             if (dataRecorder.isRecording()) {
                 small = small + " !!RECORDING to:" + dataFilename;
@@ -491,7 +487,7 @@ public class AttysScope extends AppCompatActivity {
                 case RMS:
                     signalAnalysis.addData(v);
                     if (signalAnalysis.bufferFull()) {
-                        annotatePlot(String.format(Locale.getDefault(),"%1.05f%s RMS",
+                        annotatePlot(String.format(Locale.getDefault(), "%1.05f%s RMS",
                                 signalAnalysis.getRMS(),
                                 m_unit));
                         signalAnalysis.reset();
@@ -500,7 +496,7 @@ public class AttysScope extends AppCompatActivity {
                 case PEAKTOPEAK:
                     signalAnalysis.addData(v);
                     if (signalAnalysis.bufferFull()) {
-                        annotatePlot(String.format(Locale.getDefault(),"%1.05f%s pp",
+                        annotatePlot(String.format(Locale.getDefault(), "%1.05f%s pp",
                                 signalAnalysis.getPeakToPeak(),
                                 m_unit));
                         signalAnalysis.reset();
@@ -605,7 +601,7 @@ public class AttysScope extends AppCompatActivity {
                                     tmpMin[nRealChN] = ch2Converter.getMinRange();
                                     tmpMax[nRealChN] = ch2Converter.getMaxRange();
                                     ch2Div = ch2Converter.getTick() / gain[AttysComm.INDEX_Analogue_channel_2];
-                                    tmpTick[nRealChN] =  ch2Converter.getTick();
+                                    tmpTick[nRealChN] = ch2Converter.getTick();
                                     tmpLabels[nRealChN] = labels[AttysComm.INDEX_Analogue_channel_2];
                                     actualChannelIdx[nRealChN] = AttysComm.INDEX_Analogue_channel_2;
                                     tmpSample[nRealChN++] = sample[AttysComm.INDEX_Analogue_channel_2] * gain[AttysComm.INDEX_Analogue_channel_2];
@@ -796,7 +792,6 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
-
     public void startDAQ() {
 
         btAttysDevice = AttysComm.findAttysBtDevice();
@@ -826,6 +821,15 @@ public class AttysScope extends AppCompatActivity {
         getsetAttysPrefs();
 
         checkMenuItems();
+
+        if (amplitudeFragment != null) {
+            amplitudeFragment.setUnits(units);
+        }
+
+        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+            units[i] = AttysComm.CHANNEL_UNITS[i];
+        }
+        units[AttysComm.INDEX_Analogue_channel_2] = ch2Converter.getUnit();
 
         if (showCh1) {
             theChannelWeDoAnalysis = AttysComm.INDEX_Analogue_channel_1;
@@ -1271,7 +1275,7 @@ public class AttysScope extends AppCompatActivity {
                 int g = Integer.parseInt(t);
                 gain[AttysComm.INDEX_Analogue_channel_1] = (float) g;
                 Toast.makeText(getApplicationContext(),
-                        String.format(Locale.getDefault(),"Channel 1 gain set to x%d", g), Toast.LENGTH_LONG).show();
+                        String.format(Locale.getDefault(), "Channel 1 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 return true;
 
             case R.id.Ch2gain1:
@@ -1288,7 +1292,7 @@ public class AttysScope extends AppCompatActivity {
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
-                        String.format(Locale.getDefault(),"Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
+                        String.format(Locale.getDefault(), "Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 gain[AttysComm.INDEX_Analogue_channel_2] = (float) g;
                 return true;
 
@@ -1299,7 +1303,7 @@ public class AttysScope extends AppCompatActivity {
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
-                        String.format(Locale.getDefault(),"Timebase set to %d secs/div", g), Toast.LENGTH_LONG).show();
+                        String.format(Locale.getDefault(), "Timebase set to %d secs/div", g), Toast.LENGTH_LONG).show();
                 timebase = g;
                 return true;
 
@@ -1334,6 +1338,7 @@ public class AttysScope extends AppCompatActivity {
                     amplitudeFragment = null;
                     return true;
                 }
+                amplitudeFragment.setUnits(units);
                 // Add the fragment to the 'fragment_container' FrameLayout
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Adding Amplitude fragment");

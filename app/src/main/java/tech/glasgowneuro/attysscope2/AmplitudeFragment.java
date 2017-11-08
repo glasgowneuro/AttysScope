@@ -52,13 +52,13 @@ public class AmplitudeFragment extends Fragment {
 
     final int nSampleBufferSize = 100;
 
-    private final int REFRESH_IN_MS = 500;
-
     private boolean isRMSmode = false;
 
     private Spinner spinnerMaxY;
 
-    private static String[] MAXYTXT = {"auto range", "5 V", "2 V", "1 V", "0.5 V", "0.1 V", "0.05 V", "0.01 V", "0.005 V", "0.001 V", "0.0005 V", "0.0001 V"};
+    private static String[] MAXYTXT = {
+            "auto range", "1E8", "1E7", "1E6", "1E5", "1E4", "500", "50", "5", "2", "1", "0.5", "0.1", "0.05",
+            "0.01", "0.005", "0.001", "0.0005", "0.0001"};
 
     private static String[] WINDOW_LENGTH = {"0.1 sec", "0.2 sec", "0.5 sec", "1 sec", "2 sec", "5 sec", "10 sec"};
 
@@ -86,6 +86,14 @@ public class AmplitudeFragment extends Fragment {
     private Spinner spinnerWindow;
 
     private SignalAnalysis signalAnalysis = null;
+
+    private String[] units = new String[AttysComm.NCHANNELS];
+
+    public void setUnits(String [] _units) {
+        for(int i=0;i<AttysComm.NCHANNELS;i++) {
+            units[i] = _units[i];
+        }
+    }
 
     View view = null;
 
@@ -121,11 +129,11 @@ public class AmplitudeFragment extends Fragment {
         amplitudeFullSeries = new SimpleXYSeries(" ");
 
         if (isRMSmode) {
-            amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel] + " RMS");
+            amplitudeHistorySeries.setTitle(units[channel] + " RMS");
         } else {
-            amplitudeHistorySeries.setTitle(AttysComm.CHANNEL_UNITS[channel] + " pp");
+            amplitudeHistorySeries.setTitle(units[channel] + " pp");
         }
-        amplitudePlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
+        amplitudePlot.setRangeLabel(units[channel]);
         amplitudePlot.setTitle(" ");
 
         amplitudePlot.redraw();
@@ -266,7 +274,7 @@ public class AmplitudeFragment extends Fragment {
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT, lineLabelRendererY);
         XYGraphWidget.LineLabelStyle lineLabelStyle = amplitudePlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
         Rect bounds = new Rect();
-        String dummyTxt = String.format("%04.5f ", 0.000597558899);
+        String dummyTxt = String.format("%04.5f ", 100000.000597558899);
         lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
         amplitudePlot.getGraph().setMarginLeft(bounds.width());
 
@@ -295,17 +303,19 @@ public class AmplitudeFragment extends Fragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 0) {
                     amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
-                    amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
+                    amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.AUTO);
+                    //amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
                     Screensize screensize = new Screensize(getActivity().getWindowManager());
+                    amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
                     if (screensize.isTablet()) {
-                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, screensize.getHeightInPixels() / 10);
-                        amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, Float.parseFloat(MAXYTXT[position]) / 10);
+                        //amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_PIXELS, 50);
                     } else {
-                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, screensize.getHeightInPixels() / 2);
-                        amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
+                        amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, Float.parseFloat(MAXYTXT[position]) / 10);
+                        //amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_PIXELS, 100);
                     }
-                    amplitudePlot.setRangeUpperBoundary(screensize.getHeightInPixels(), BoundaryMode.FIXED);
+                    amplitudePlot.setRangeUpperBoundary(Float.parseFloat(MAXYTXT[position]), BoundaryMode.FIXED);
                 }
             }
 
@@ -497,9 +507,9 @@ public class AmplitudeFragment extends Fragment {
                 public void run() {
                     if (amplitudeReadingText != null) {
                         if (isRMSmode) {
-                            amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
+                            amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, units[channel]));
                         } else {
-                            amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, AttysComm.CHANNEL_UNITS[channel]));
+                            amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, units[channel]));
                         }
                     }
                 }
