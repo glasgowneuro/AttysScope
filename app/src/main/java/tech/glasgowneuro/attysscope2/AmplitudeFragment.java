@@ -155,23 +155,19 @@ public class AmplitudeFragment extends Fragment {
         view = inflater.inflate(R.layout.amplitudefragment, container, false);
 
         // setup the APR Levels plot:
-        amplitudePlot = (XYPlot) view.findViewById(R.id.amplitude_PlotView);
+        amplitudePlot = view.findViewById(R.id.amplitude_PlotView);
         amplitudeHistorySeries = new SimpleXYSeries(" ");
-        amplitudeReadingText = (TextView) view.findViewById(R.id.amplitude_valueTextView);
+        amplitudeReadingText = view.findViewById(R.id.amplitude_valueTextView);
         amplitudeReadingText.setText(String.format("%04d", 0));
-        toggleButtonDoRecord = (ToggleButton) view.findViewById(R.id.amplitude_doRecord);
+        toggleButtonDoRecord = view.findViewById(R.id.amplitude_doRecord);
         toggleButtonDoRecord.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    acceptData = true;
-                } else {
-                    acceptData = false;
-                }
+                acceptData = isChecked;
             }
         });
         toggleButtonDoRecord.setChecked(true);
 
-        toggleButtonRMS_pp = (ToggleButton) view.findViewById(R.id.amplitude_rms_pp);
+        toggleButtonRMS_pp = view.findViewById(R.id.amplitude_rms_pp);
         toggleButtonRMS_pp.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 isRMSmode = isChecked;
@@ -180,20 +176,20 @@ public class AmplitudeFragment extends Fragment {
         });
         toggleButtonRMS_pp.setChecked(false);
 
-        resetButton = (Button) view.findViewById(R.id.amplitude_Reset);
+        resetButton = view.findViewById(R.id.amplitude_Reset);
         resetButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 reset();
             }
         });
-        saveButton = (Button) view.findViewById(R.id.amplitude_Save);
+        saveButton = view.findViewById(R.id.amplitude_Save);
         saveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 saveAmplitude();
             }
         });
 
-        spinnerChannel = (Spinner) view.findViewById(R.id.amplitude_channel);
+        spinnerChannel = view.findViewById(R.id.amplitude_channel);
         ArrayAdapter<String> adapterChannel = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
@@ -214,7 +210,7 @@ public class AmplitudeFragment extends Fragment {
         spinnerChannel.setSelection(AttysComm.INDEX_Analogue_channel_1);
 
 
-        spinnerWindow = (Spinner) view.findViewById(R.id.amplitude_window);
+        spinnerWindow = view.findViewById(R.id.amplitude_window);
         ArrayAdapter<String> adapterWindow = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 WINDOW_LENGTH);
@@ -290,7 +286,7 @@ public class AmplitudeFragment extends Fragment {
 
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM, lineLabelRendererX);
 
-        spinnerMaxY = (Spinner) view.findViewById(R.id.amplitude_maxy);
+        spinnerMaxY = view.findViewById(R.id.amplitude_maxy);
         ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMaxY.setAdapter(adapter1);

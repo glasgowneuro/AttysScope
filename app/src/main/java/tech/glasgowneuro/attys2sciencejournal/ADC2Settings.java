@@ -63,10 +63,10 @@ public class ADC2Settings extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.adc_settings);
 
-        TextView header = (TextView) findViewById(R.id.header);
+        TextView header = findViewById(R.id.header);
         header.setText("Channel 2:");
 
-        Spinner spinnerMode = (Spinner) findViewById(R.id.mode_spinner);
+        Spinner spinnerMode = findViewById(R.id.mode_spinner);
         spinnerMode.setAdapter(new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1,
                 adc_modes));
@@ -85,7 +85,7 @@ public class ADC2Settings extends Activity {
         spinnerMode.setSelection(getIndexForMode(this));
 
 
-        Spinner spinnerPowerline = (Spinner) findViewById(R.id.powerline_spinner);
+        Spinner spinnerPowerline = findViewById(R.id.powerline_spinner);
         spinnerPowerline.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,
                 powerline_filter));
         spinnerPowerline.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -102,7 +102,7 @@ public class ADC2Settings extends Activity {
         });
         spinnerPowerline.setSelection(getIndexForPowerline(this));
 
-        Button closeButton = (Button) findViewById(R.id.bClose);
+        Button closeButton = findViewById(R.id.bClose);
         closeButton.setOnClickListener(new View.OnClickListener() {
 
             @Override

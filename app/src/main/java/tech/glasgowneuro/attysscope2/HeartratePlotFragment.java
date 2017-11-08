@@ -63,8 +63,8 @@ public class HeartratePlotFragment extends Fragment {
         view = inflater.inflate(R.layout.heartrateplotfragment, container, false);
 
         // setup the APR Levels plot:
-        bpmPlot = (XYPlot) view.findViewById(R.id.bpmPlotView);
-        bpmText = (TextView) view.findViewById(R.id.bpmTextView);
+        bpmPlot = view.findViewById(R.id.bpmPlotView);
+        bpmText = view.findViewById(R.id.bpmTextView);
 
         bpmHistorySeries = new SimpleXYSeries("Heart rate / beats per minute");
         bpmHistorySeries.useImplicitXVals();
@@ -91,9 +91,9 @@ public class HeartratePlotFragment extends Fragment {
         bpmPlot.getGraph().setDomainGridLinePaint(paint);
         bpmPlot.getGraph().setRangeGridLinePaint(paint);
 
-        bpmStatsView = (TextView) view.findViewById(R.id.bpmstats);
-        bpmResetButton = (Button) view.findViewById(R.id.bpmreset);
-        bpmAutoscaleButton = (ToggleButton) view.findViewById(R.id.bpmautoscale);
+        bpmStatsView = view.findViewById(R.id.bpmstats);
+        bpmResetButton = view.findViewById(R.id.bpmreset);
+        bpmAutoscaleButton = view.findViewById(R.id.bpmautoscale);
 
         bpmAutoscaleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

@@ -113,9 +113,9 @@ public class FourierFragment extends Fragment {
         view = inflater.inflate(R.layout.spectrumfragment, container, false);
 
         // setup the APR Levels plot:
-        spectrumPlot = (XYPlot) view.findViewById(R.id.spectrum_PlotView);
+        spectrumPlot = view.findViewById(R.id.spectrum_PlotView);
         spectrumPlot.setTitle("Frequency spectrum");
-        toggleButtonDoRecord = (ToggleButton) view.findViewById(R.id.spectrum_doRecord);
+        toggleButtonDoRecord = view.findViewById(R.id.spectrum_doRecord);
         toggleButtonDoRecord.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
@@ -127,13 +127,13 @@ public class FourierFragment extends Fragment {
             }
         });
         toggleButtonDoRecord.setChecked(true);
-        saveButton = (Button) view.findViewById(R.id.spectrum_Save);
+        saveButton = view.findViewById(R.id.spectrum_Save);
         saveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 saveSpectrum();
             }
         });
-        spinnerChannel = (Spinner) view.findViewById(R.id.spectrum_channel);
+        spinnerChannel = view.findViewById(R.id.spectrum_channel);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
@@ -223,7 +223,7 @@ public class FourierFragment extends Fragment {
             spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
         }
 
-        spinnerMaxY = (Spinner) view.findViewById(R.id.spectrum_maxy);
+        spinnerMaxY = view.findViewById(R.id.spectrum_maxy);
         ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMaxY.setAdapter(adapter1);

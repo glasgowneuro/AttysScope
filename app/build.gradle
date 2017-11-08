@@ -8,8 +8,8 @@ android {
         applicationId "tech.glasgowneuro.attysscope2"
         minSdkVersion 16
         targetSdkVersion 26
-        versionCode 14
-        versionName "2.0.13"
+        versionCode 15
+        versionName "2.1.0"
     }
     buildTypes {
         release {

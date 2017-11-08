@@ -155,12 +155,6 @@ public class AttysScope extends AppCompatActivity {
     private String dataFilename = null;
     private byte dataSeparator = 0;
 
-    /**
-     * App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
-
     private static final String ATTYS_SUBDIR = "attys";
 
     static final File ATTYSDIR =
@@ -172,11 +166,17 @@ public class AttysScope extends AppCompatActivity {
 
     // converts Ch2 data from its voltage units to resistance, temperature etc
     public class Ch2Converter {
+        // the series resistance on the input pins
         final float Rbaseline = 55000;
+        // rule -1 means: do nothing
         private int rule = -1;
+        // cold junction tempterature for thermocouple
         float coldJunctionT = 20;
 
+        // units as strings fo the different settings
         private String[] units = {"V","V","V","\u2126","\u2126","\u00b0C","\u00b0C"};
+
+        // current settings
         private int[] currentIndex = {0,1,2,1,2,2,0};
 
         void setRule(int _rule) {
@@ -185,6 +185,7 @@ public class AttysScope extends AppCompatActivity {
 
         int getRule() {return rule;}
 
+        // converts the voltage into another unit
         public float convert(float v) {
             switch (rule) {
                 case 0:
@@ -231,6 +232,7 @@ public class AttysScope extends AppCompatActivity {
                 case 4:
                     return 300000 - Rbaseline;
                 case 5:
+                    return 100;
                 case 6:
                     return 1000;
             }
@@ -254,13 +256,6 @@ public class AttysScope extends AppCompatActivity {
             return -attysComm.getADCFullScaleRange(1);
         }
 
-        public int getCurrentIndex() {
-            if (rule<0) {
-                return -1;
-            }
-            return currentIndex[rule];
-        }
-
         public float getTick() {
             switch (rule) {
                 case 0:
@@ -276,6 +271,14 @@ public class AttysScope extends AppCompatActivity {
                     return 100;
             }
             return 1;
+        }
+
+        // -1 means it's off
+        public int getCurrentIndex() {
+            if (rule<0) {
+                return -1;
+            }
+            return currentIndex[rule];
         }
     }
 
@@ -472,8 +475,6 @@ public class AttysScope extends AppCompatActivity {
 
         private void doAnalysis(float v) {
 
-            ecg_rr_det.detect(v);
-
             switch (textAnnotation) {
                 case NONE:
                     int interval = attysComm.getSamplingRateInHz();
@@ -565,6 +566,8 @@ public class AttysScope extends AppCompatActivity {
                                 }
                                 sample[j] = v;
                             }
+
+                            ecg_rr_det.detect(sample[AttysComm.INDEX_Analogue_channel_1]);
 
                             if (amplitudeFragment != null) {
                                 amplitudeFragment.addValue(sample);
@@ -694,10 +697,10 @@ public class AttysScope extends AppCompatActivity {
 
         setContentView(R.layout.activity_plot_window);
 
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        Toolbar myToolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
-        progress = (ProgressBar) findViewById(R.id.indeterminateBar);
+        progress = findViewById(R.id.indeterminateBar);
 
         int nChannels = AttysComm.NCHANNELS;
         highpass = new Butterworth[nChannels];
@@ -715,10 +718,6 @@ public class AttysScope extends AppCompatActivity {
                 gain[i] = 20;
             }
         }
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     // this is called whenever the app is starting or re-starting
@@ -794,8 +793,6 @@ public class AttysScope extends AppCompatActivity {
 
     public void startDAQ() {
 
-        client.connect();
-
         btAttysDevice = AttysComm.findAttysBtDevice();
         if (btAttysDevice == null) {
             alertDialog = new AlertDialog.Builder(this)
@@ -853,7 +850,7 @@ public class AttysScope extends AppCompatActivity {
                     }
                 });
 
-        infoView = (InfoView) findViewById(R.id.infoview);
+        infoView = findViewById(R.id.infoview);
         infoView.setZOrderOnTop(true);
         infoView.setZOrderMediaOverlay(true);
 
@@ -963,8 +960,6 @@ public class AttysScope extends AppCompatActivity {
         }
 
         killAttysComm();
-
-        client.disconnect();
     }
 
 
@@ -1270,7 +1265,7 @@ public class AttysScope extends AppCompatActivity {
                 int g = Integer.parseInt(t);
                 gain[AttysComm.INDEX_Analogue_channel_1] = (float) g;
                 Toast.makeText(getApplicationContext(),
-                        String.format("Channel 1 gain set to x%d", g), Toast.LENGTH_LONG).show();
+                        String.format(Locale.getDefault(),"Channel 1 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 return true;
 
             case R.id.Ch2gain1:
@@ -1287,7 +1282,7 @@ public class AttysScope extends AppCompatActivity {
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
-                        String.format("Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
+                        String.format(Locale.getDefault(),"Channel 2 gain set to x%d", g), Toast.LENGTH_LONG).show();
                 gain[AttysComm.INDEX_Analogue_channel_2] = (float) g;
                 return true;
 
@@ -1298,7 +1293,7 @@ public class AttysScope extends AppCompatActivity {
                 t = item.getTitle().toString();
                 g = Integer.parseInt(t);
                 Toast.makeText(getApplicationContext(),
-                        String.format("Timebase set to %d secs/div", g), Toast.LENGTH_LONG).show();
+                        String.format(Locale.getDefault(),"Timebase set to %d secs/div", g), Toast.LENGTH_LONG).show();
                 timebase = g;
                 return true;
 
@@ -1473,12 +1468,12 @@ public class AttysScope extends AppCompatActivity {
 
 
     private void showPlotFragment() {
-        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.mainplotlayout);
+        FrameLayout frameLayout = findViewById(R.id.mainplotlayout);
         frameLayout.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
 
-        frameLayout = (FrameLayout) findViewById(R.id.fragment_plot_container);
+        frameLayout = findViewById(R.id.fragment_plot_container);
         frameLayout.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
@@ -1486,7 +1481,7 @@ public class AttysScope extends AppCompatActivity {
     }
 
     private void hidePlotFragment() {
-        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.mainplotlayout);
+        FrameLayout frameLayout = findViewById(R.id.mainplotlayout);
         frameLayout.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT, 0.0f));
