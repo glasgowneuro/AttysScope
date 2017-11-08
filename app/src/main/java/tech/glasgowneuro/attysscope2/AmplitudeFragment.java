@@ -115,7 +115,7 @@ public class AmplitudeFragment extends Fragment {
         samplingRate = _samplingrate;
     }
 
-    private void reset() {
+    public void reset() {
         ready = false;
 
         signalAnalysis = new SignalAnalysis(windowLength);

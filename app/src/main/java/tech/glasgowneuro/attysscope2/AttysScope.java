@@ -822,15 +822,6 @@ public class AttysScope extends AppCompatActivity {
 
         checkMenuItems();
 
-        if (amplitudeFragment != null) {
-            amplitudeFragment.setUnits(units);
-        }
-
-        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-            units[i] = AttysComm.CHANNEL_UNITS[i];
-        }
-        units[AttysComm.INDEX_Analogue_channel_2] = ch2Converter.getUnit();
-
         if (showCh1) {
             theChannelWeDoAnalysis = AttysComm.INDEX_Analogue_channel_1;
         } else if (showCh2) {
@@ -1473,6 +1464,16 @@ public class AttysScope extends AppCompatActivity {
         highpass2Hz = Float.parseFloat(prefs.getString("highpass2", "0.1"));
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "highpass2=" + highpass2Hz);
+        }
+
+        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
+            units[i] = AttysComm.CHANNEL_UNITS[i];
+        }
+        units[AttysComm.INDEX_Analogue_channel_2] = ch2Converter.getUnit();
+
+        if (amplitudeFragment != null) {
+            amplitudeFragment.setUnits(units);
+            amplitudeFragment.reset();
         }
 
     }
