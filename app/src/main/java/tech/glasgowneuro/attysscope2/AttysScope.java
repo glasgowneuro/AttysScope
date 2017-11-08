@@ -177,7 +177,7 @@ public class AttysScope extends AppCompatActivity {
         private String[] units = {"V","V","V","\u2126","\u2126","\u00b0C","\u00b0C"};
 
         // current settings
-        private int[] currentIndex = {0,1,2,1,2,2,0};
+        private int[] currentIndex = {0,1,2,1,2,2,-1};
 
         void setRule(int _rule) {
             rule = _rule;
@@ -216,11 +216,13 @@ public class AttysScope extends AppCompatActivity {
         }
 
 
+        // the unit as a String
         public String getUnit() {
             if (rule<0) return "V";
             return units[rule];
         }
 
+        // max range for plotting
         public float getMaxRange() {
             switch (rule) {
                 case 0:
@@ -239,6 +241,7 @@ public class AttysScope extends AppCompatActivity {
             return attysComm.getADCFullScaleRange(1);
         }
 
+        // min range for plotting
         public float getMinRange() {
             switch (rule) {
                 case 0:
@@ -256,6 +259,7 @@ public class AttysScope extends AppCompatActivity {
             return -attysComm.getADCFullScaleRange(1);
         }
 
+        // ticks of the coordiante system
         public float getTick() {
             switch (rule) {
                 case 0:
@@ -267,12 +271,14 @@ public class AttysScope extends AppCompatActivity {
                 case 4:
                     return 100000;
                 case 5:
+                    return 10;
                 case 6:
                     return 100;
             }
             return 1;
         }
 
+        // switches on/off the excitation current
         // -1 means it's off
         public int getCurrentIndex() {
             if (rule<0) {
