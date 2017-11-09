@@ -1323,13 +1323,13 @@ public class AttysScope extends AppCompatActivity {
                 deleteFragmentWindow();
                 // Create a new Fragment to be placed in the activity layout
                 amplitudeFragment = new AmplitudeFragment();
+                amplitudeFragment.setUnits(units);
                 if (attysComm != null) {
                     amplitudeFragment.setSamplingrate(attysComm.getSamplingRateInHz());
                 } else {
                     amplitudeFragment = null;
                     return true;
                 }
-                amplitudeFragment.setUnits(units);
                 // Add the fragment to the 'fragment_container' FrameLayout
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
                     Log.d(TAG, "Adding Amplitude fragment");
@@ -1346,6 +1346,7 @@ public class AttysScope extends AppCompatActivity {
                 deleteFragmentWindow();
                 // Create a new Fragment to be placed in the activity layout
                 fourierFragment = new FourierFragment();
+                fourierFragment.setUnits(units);
                 if (attysComm != null) {
                     fourierFragment.setSamplingrate(attysComm.getSamplingRateInHz());
                 } else {

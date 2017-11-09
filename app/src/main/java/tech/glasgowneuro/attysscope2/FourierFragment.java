@@ -68,6 +68,14 @@ public class FourierFragment extends Fragment {
 
     private static String[] MAXYTXT = {"auto range", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
 
+    private String[] units = new String[AttysComm.NCHANNELS];
+
+    public void setUnits(String [] _units) {
+        for(int i=0;i<AttysComm.NCHANNELS;i++) {
+            units[i] = _units[i];
+        }
+    }
+
     private FourierTransformRunnable fourierTransformRunnable = null;
 
     private Thread fourierTransformThread = null;
@@ -144,7 +152,7 @@ public class FourierFragment extends Fragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 channel = position;
                 spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
-                spectrumPlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
+                spectrumPlot.setRangeLabel(units[channel]);
             }
 
             @Override
@@ -174,7 +182,7 @@ public class FourierFragment extends Fragment {
 
         spectrumPlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
         spectrumPlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
-        spectrumPlot.setRangeLabel(AttysComm.CHANNEL_UNITS[channel]);
+        spectrumPlot.setRangeLabel(units[channel]);
 
         spectrumPlot.setDomainLowerBoundary(0, BoundaryMode.FIXED);
         spectrumPlot.setDomainUpperBoundary(samplingRate/2, BoundaryMode.FIXED);
@@ -194,7 +202,7 @@ public class FourierFragment extends Fragment {
         spectrumPlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT, lineLabelRendererY);
         XYGraphWidget.LineLabelStyle lineLabelStyle = spectrumPlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
         Rect bounds = new Rect();
-        String dummyTxt = String.format("%04.5f ", 0.000597558899);
+        String dummyTxt = String.format("%04.5f ", 1000.000597558899);
         lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
         spectrumPlot.getGraph().setMarginLeft(bounds.width());
 

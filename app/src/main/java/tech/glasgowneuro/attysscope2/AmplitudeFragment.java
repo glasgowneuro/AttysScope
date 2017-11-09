@@ -57,7 +57,7 @@ public class AmplitudeFragment extends Fragment {
     private Spinner spinnerMaxY;
 
     private static String[] MAXYTXT = {
-            "auto range", "1E8", "1E7", "1E6", "1E5", "1E4", "500", "50", "5", "2", "1", "0.5", "0.1", "0.05",
+            "auto range", "1E8", "1E7", "1E6", "1E5", "1E4", "500", "50", "20", "10", "5", "2", "1", "0.5", "0.1", "0.05",
             "0.01", "0.005", "0.001", "0.0005", "0.0001"};
 
     private static String[] WINDOW_LENGTH = {"0.1 sec", "0.2 sec", "0.5 sec", "1 sec", "2 sec", "5 sec", "10 sec"};
@@ -304,16 +304,13 @@ public class AmplitudeFragment extends Fragment {
                 if (position == 0) {
                     amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
                     amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.AUTO);
-                    //amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
                     Screensize screensize = new Screensize(getActivity().getWindowManager());
                     amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
                     if (screensize.isTablet()) {
                         amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, Float.parseFloat(MAXYTXT[position]) / 10);
-                        //amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_PIXELS, 50);
                     } else {
                         amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, Float.parseFloat(MAXYTXT[position]) / 10);
-                        //amplitudePlot.setDomainStep(StepMode.INCREMENT_BY_PIXELS, 100);
                     }
                     amplitudePlot.setRangeUpperBoundary(Float.parseFloat(MAXYTXT[position]), BoundaryMode.FIXED);
                 }
