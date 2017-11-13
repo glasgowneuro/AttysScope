@@ -38,9 +38,7 @@ dependencies {
 
     repositories {
         mavenLocal()
-        maven {
-            url "https://maven.google.com"
-        }
+        google()
     }
 
     compile fileTree(dir: 'libs', include: ['*.jar'])
@@ -50,5 +48,5 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     compile "com.androidplot:androidplot-core:1.4.1"
     compile 'com.android.support:percent:27.0.1'
-    compile 'com.google.android.gms:play-services:11.6.0'
+    compile 'com.google.android.gms:play-services-base:11.6.0'
 }

@@ -49,9 +49,6 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -68,7 +65,7 @@ public class AttysScope extends AppCompatActivity {
 
     private Timer timer = null;
     // screen refresh rate
-    private final int REFRESH_IN_MS = 25;
+    private final int REFRESH_IN_MS = 50;
 
     private final int HIGHPASSORDER = 2;
 
