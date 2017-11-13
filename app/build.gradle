@@ -1,15 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 27
 
     defaultConfig {
         applicationId "tech.glasgowneuro.attysscope2"
         minSdkVersion 16
-        targetSdkVersion 26
-        versionCode 16
-        versionName "2.1.1"
+        targetSdkVersion 27
+        versionCode 17
+        versionName "2.1.2"
     }
     buildTypes {
         release {
@@ -46,13 +45,10 @@ dependencies {
 
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.android.support:appcompat-v7:27.0.1'
     compile group: 'uk.me.berndporr', name:'iirj', version: '1.0'
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     compile "com.androidplot:androidplot-core:1.4.1"
-    compile 'com.android.support:percent:26.1.0'
-}
-
-dependencies {
-    compile 'com.google.firebase:firebase-appindexing:11.6.0'
+    compile 'com.android.support:percent:27.0.1'
+    compile 'com.google.android.gms:play-services:11.6.0'
 }

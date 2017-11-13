@@ -68,7 +68,7 @@ public class AttysScope extends AppCompatActivity {
 
     private Timer timer = null;
     // screen refresh rate
-    private final int REFRESH_IN_MS = 50;
+    private final int REFRESH_IN_MS = 25;
 
     private final int HIGHPASSORDER = 2;
 
