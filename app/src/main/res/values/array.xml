@@ -20,7 +20,7 @@
     </string-array>
 
     <string-array name="ch2Options">
-        <item>off</item>
+        <item>normal operation</item>
         <item>0.006 \u00b5A</item>
         <item>0.022 \u00b5A</item>
         <item>6.000 \u00b5A</item>
