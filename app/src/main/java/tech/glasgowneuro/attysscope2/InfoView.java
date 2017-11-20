@@ -28,6 +28,7 @@ public class InfoView extends View {
     static private int textHeight = 0;
     static private String largeText;
     static private String smallText;
+    static Rect bounds = new Rect();
 
     public InfoView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
@@ -66,7 +67,6 @@ public class InfoView extends View {
         int xLarge = 0;
         int width = canvas.getWidth();
         int txtDiv = 25;
-        Rect bounds = new Rect();
         do {
             paintSmall.setTextSize(getHeight() / txtDiv);
             paintSmall.getTextBounds(smallText+"|y`", 0, smallText.length(), bounds);
@@ -75,7 +75,6 @@ public class InfoView extends View {
         int y2 = bounds.height();
         if (largeText != null) {
             if (largeText.length()>0) {
-                bounds = new Rect();
                 int txtDivTmp = 7;
                 do {
                     paintLarge.setTextSize(getHeight() / txtDivTmp);

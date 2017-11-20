@@ -35,8 +35,6 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     static private int xpos = 0;
     static private int nLeft = 0;
     static private SurfaceHolder holder = null;
-    static private float[] minData = null;
-    static private float[] maxData = null;
     static private int nMaxChannels = 0;
     static private float[][] ypos = null;
     static Paint paint = new Paint();
@@ -46,7 +44,7 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
     static Paint paintLabel = new Paint();
     static Canvas canvas = null;
     static private int gap = 10;
-    static private int xtic = 250;
+    static private final int xtic = 250;
     static private float[] yZero = null;
     static private float yHeight = 0;
     static private String TAG = "RealtimePlotView";
@@ -92,12 +90,8 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
 
     public void setMaxChannels(int n) {
         nMaxChannels = n;
-        minData = new float[n];
-        maxData = new float[n];
         yZero = new float[n];
         for (int i = 0; i < n; i++) {
-            minData[i] = -1;
-            maxData[i] = 1;
             yZero[i] = -1;
         }
     }
