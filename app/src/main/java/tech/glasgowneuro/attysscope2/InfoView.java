@@ -26,7 +26,7 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
     static private Canvas canvas = null;
     static private Paint paintLarge = new Paint();
     static private Paint paintSmall = new Paint();
-
+    int txtDiv = 7;
     static private int textHeight = 0;
 
     public InfoView(Context context, AttributeSet attrs, int defStyle) {
@@ -63,6 +63,7 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
         holder.setFormat(PixelFormat.TRANSLUCENT);
         paintLarge.setColor(Color.argb(128, 0, 255, 0));
         paintSmall.setColor(Color.argb(128, 0, 255, 0));
+        txtDiv = 7;
     }
 
     public void removeText() {
@@ -88,13 +89,16 @@ public class InfoView extends SurfaceView implements SurfaceHolder.Callback {
         if (surface.isValid()) {
             if (largeText != null) {
                 Rect bounds = new Rect();
-                int txtDiv = 7;
+                int txtDivTmp = 7;
                 do {
-                    paintLarge.setTextSize(getHeight() / txtDiv);
+                    paintLarge.setTextSize(getHeight() / txtDivTmp);
                     paintLarge.getTextBounds(largeText, 0, largeText.length(), bounds);
                     xLarge = width - (bounds.width() * 10 / 9);
-                    txtDiv++;
+                    txtDivTmp++;
                 } while (xLarge < 0);
+                if (txtDivTmp > txtDiv) {
+                    txtDiv = txtDivTmp;
+                }
                 String dummyText = "1.2424Vpp";
                 paintLarge.getTextBounds(dummyText, 0, dummyText.length(), bounds);
                 yLarge = bounds.height();
