@@ -429,6 +429,11 @@ public class AttysScope extends AppCompatActivity {
         private String m_unit = "";
 
         private void resetAnalysis() {
+            realtimePlotView.resetX();
+            if (textAnnotation == TextAnnotation.NONE) {
+                annotatePlot(null);
+                return;
+            }
             signalAnalysis.reset();
             ecg_rr_det.reset();
 
@@ -1300,8 +1305,8 @@ public class AttysScope extends AppCompatActivity {
 
             case R.id.largeStatusOff:
                 textAnnotation = TextAnnotation.NONE;
-                updatePlotTask.annotatePlot("");
-                ygapForInfo = 0;
+                updatePlotTask.resetAnalysis();
+                infoView.resetInfoHeight();
                 return true;
 
             case R.id.largeStatusPP:

@@ -54,6 +54,8 @@ public class InfoView extends View {
         return textHeight;
     }
 
+    public void resetInfoHeight() { textHeight = 0;}
+
     public void drawText(String _largeText, String _smallText) {
         largeText = _largeText;
         smallText = _smallText;
@@ -89,6 +91,8 @@ public class InfoView extends View {
             }
         }
         canvas.drawText(smallText, width / 100, y2, paintSmall);
-        textHeight = y2 + yLarge;
+        if ((y2+yLarge)>textHeight) {
+            textHeight = y2 + yLarge;
+        }
     }
 }
