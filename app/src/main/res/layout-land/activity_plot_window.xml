@@ -29,9 +29,8 @@
             android:id="@+id/mainplotlayout"
             android:orientation="vertical">
 
-            <tech.glasgowneuro.attysscope2.InfoView
-                android:id="@+id/infoview"
-                title="Plot Window"
+            <tech.glasgowneuro.attysscope2.RealtimePlotView
+                android:id="@+id/realtimeplotview"
                 android:layout_gravity="bottom|end"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
@@ -40,9 +39,8 @@
                 android:layout_marginRight="10dp"
                 android:layout_marginTop="10dp" />
 
-            <tech.glasgowneuro.attysscope2.RealtimePlotView
-                android:id="@+id/realtimeplotview"
-                title="Plot Window"
+            <tech.glasgowneuro.attysscope2.InfoView
+                android:id="@+id/infoview"
                 android:layout_gravity="bottom|end"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"

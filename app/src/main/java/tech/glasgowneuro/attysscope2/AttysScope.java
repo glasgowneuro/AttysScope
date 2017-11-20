@@ -467,7 +467,14 @@ public class AttysScope extends AppCompatActivity {
             }
             if (infoView != null) {
                 if (attysComm != null) {
-                    infoView.drawText(largeText, small);
+                    final String lt = largeText;
+                    final String st = small;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            infoView.drawText(lt, st);
+                        }
+                    });
                 }
             }
         }
@@ -636,12 +643,10 @@ public class AttysScope extends AppCompatActivity {
                                 }
                             }
                             if (infoView != null) {
-                                if (ygapForInfo == 0) {
-                                    ygapForInfo = infoView.getInfoHeight();
-                                    if ((Log.isLoggable(TAG, Log.DEBUG)) && (ygapForInfo > 0)) {
-                                        Log.d(TAG, "ygap=" + ygapForInfo);
-                                    }
-                                }
+                                ygapForInfo = infoView.getInfoHeight();
+//                                if ((Log.isLoggable(TAG, Log.DEBUG)) && (ygapForInfo > 0)) {
+//                                    Log.d(TAG, "ygap=" + ygapForInfo);
+//                                }
                             }
                             if (realtimePlotView != null) {
                                 tbCtr--;
@@ -849,8 +854,6 @@ public class AttysScope extends AppCompatActivity {
                 });
 
         infoView = findViewById(R.id.infoview);
-        infoView.setZOrderOnTop(true);
-        infoView.setZOrderMediaOverlay(true);
 
         signalAnalysis = new SignalAnalysis(attysComm.getSamplingRateInHz());
 
