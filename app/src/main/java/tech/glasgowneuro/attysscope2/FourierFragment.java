@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
+import uk.me.berndporr.kiss_fft.KISSFastFourierTransformer;
 
 /**
  * Fourier Transform Fragment
@@ -413,7 +414,8 @@ public class FourierFragment extends Fragment {
 
         public void run() {
 
-            FastFourierTransformer fastFourierTransformer = new FastFourierTransformer(DftNormalization.STANDARD);
+            //FastFourierTransformer fastFourierTransformer = new FastFourierTransformer(DftNormalization.STANDARD);
+            KISSFastFourierTransformer fastFourierTransformer = new KISSFastFourierTransformer();
 
             while (doRun) {
 
@@ -425,7 +427,11 @@ public class FourierFragment extends Fragment {
                 // Log.d(TAG, "FFT acc=" + acceptData + " ready=" + ready + " nVal=" + nValues);
 
                 if (ready && acceptData && (nValues == BUFFERSIZE)) {
-                    Complex[] spectrum = fastFourierTransformer.transform(values, TransformType.FORWARD);
+                    Complex[] cv = new Complex[BUFFERSIZE];
+                    for(int i=0;i<BUFFERSIZE;i++) {
+                        cv[i] = new Complex(values[i]);
+                    }
+                    Complex[] spectrum = fastFourierTransformer.transform(cv, TransformType.FORWARD);
 
                     if (!doRun) return;
 
