@@ -427,11 +427,8 @@ public class FourierFragment extends Fragment {
                 // Log.d(TAG, "FFT acc=" + acceptData + " ready=" + ready + " nVal=" + nValues);
 
                 if (ready && acceptData && (nValues == BUFFERSIZE)) {
-                    Complex[] cv = new Complex[BUFFERSIZE];
-                    for(int i=0;i<BUFFERSIZE;i++) {
-                        cv[i] = new Complex(values[i]);
-                    }
-                    Complex[] spectrum = fastFourierTransformer.transform(cv, TransformType.FORWARD);
+
+                    Complex[] spectrum = fastFourierTransformer.transform(values, TransformType.FORWARD);
 
                     if (!doRun) return;
 
