@@ -428,11 +428,11 @@ public class FourierFragment extends Fragment {
 
                 if (ready && acceptData && (nValues == BUFFERSIZE)) {
 
-                    Complex[] spectrum = fastFourierTransformer.transform(values, TransformType.FORWARD);
+                    Complex[] spectrum = fastFourierTransformer.transformRealOptimisedForward(values);
 
                     if (!doRun) return;
 
-                    for (int i = 0; (i <= BUFFERSIZE / 2) && doRun; i++) {
+                    for (int i = 0; (i < spectrum.length ) && doRun; i++) {
                         if (spectrumSeries != null) {
                             spectrumSeries.setX(i*samplingRate/BUFFERSIZE, i);
                             spectrumSeries.setY(spectrum[i].divide(spectrum.length).abs(), i);
