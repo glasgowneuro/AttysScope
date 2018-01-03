@@ -434,8 +434,8 @@ public class FourierFragment extends Fragment {
 
                     for (int i = 0; (i < spectrum.length ) && doRun; i++) {
                         if (spectrumSeries != null) {
-                            spectrumSeries.setX(i*samplingRate/BUFFERSIZE, i);
-                            spectrumSeries.setY(spectrum[i].divide(spectrum.length).abs(), i);
+                            spectrumSeries.setX(Math.round(i*samplingRate/(values.length-1)), i);
+                            spectrumSeries.setY(spectrum[i].divide(values.length).abs(), i);
                         }
                     }
                     if (channel<AttysComm.INDEX_Analogue_channel_1) {
