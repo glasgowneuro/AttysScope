@@ -47,6 +47,6 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     compile "com.androidplot:androidplot-core:1.4.1"
     compile 'com.android.support:percent:27.0.2'
-    compile 'com.google.android.gms:play-services-base:11.6.0'
+    compile 'com.google.android.gms:play-services-base:11.8.0'
     compile project(":jnifft-release")
 }
