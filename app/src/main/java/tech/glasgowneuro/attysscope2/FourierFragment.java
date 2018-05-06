@@ -353,7 +353,7 @@ public class FourierFragment extends Fragment {
         filenameEditText.setText(dataFilename);
 
         new AlertDialog.Builder(getContext())
-                .setTitle("Saving fast/slow data")
+                .setTitle("Saving the Fourier spectrum")
                 .setMessage("Enter the filename of the data textfile")
                 .setView(filenameEditText)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
