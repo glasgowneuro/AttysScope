@@ -805,10 +805,10 @@ public class AttysScope extends AppCompatActivity {
         if (btAttysDevice == null) {
             alertDialog = new AlertDialog.Builder(this)
                     .setTitle("No Attys found")
-                    .setMessage("Visit www.attys.tech for help?")
+                    .setMessage("Have you paired your attys with this device? Visit www.attys.tech for help.")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
-                            String url = "http://www.attys.tech";
+                            String url = "http://www.attys.tech/how-to";
                             Intent i = new Intent(Intent.ACTION_VIEW);
                             i.setData(Uri.parse(url));
                             startActivity(i);
