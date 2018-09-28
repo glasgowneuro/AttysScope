@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "tech.glasgowneuro.attysscope2"
         minSdkVersion 23
-        targetSdkVersion 27
-        versionCode 28
-        versionName "2.2.7"
+        targetSdkVersion 28
+        versionCode 29
+        versionName "2.2.8"
     }
     buildTypes {
         release {
@@ -42,11 +42,11 @@ dependencies {
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
-    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation group: 'uk.me.berndporr', name:'iirj', version: '1.1'
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     implementation "com.androidplot:androidplot-core:1.4.1"
-    implementation 'com.android.support:percent:27.1.1'
     implementation 'com.google.android.gms:play-services-base:15.0.1'
     implementation project(":jnifft-release")
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 }

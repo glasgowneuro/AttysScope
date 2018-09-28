@@ -49,12 +49,11 @@
 
     </LinearLayout>
 
-    <android.support.percent.PercentFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
+    <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent">
 
-        <com.androidplot.xy.XYPlot
+    <com.androidplot.xy.XYPlot
             android:id="@+id/spectrum_PlotView"
             style="@style/APDefacto.Dark"
             android:layout_width="match_parent"
@@ -63,11 +62,8 @@
             ap:lineLabelRotationBottom="-45"
             ap:lineLabels="left|bottom"
             ap:rangeTitle="range"
-            ap:title="  "
-            app:layout_marginLeftPercent="5%"
-            app:layout_widthPercent="90%" />
+            ap:title="  " />
 
-    </android.support.percent.PercentFrameLayout>
-
+    </android.support.constraint.ConstraintLayout>
 
 </LinearLayout>
