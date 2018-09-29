@@ -77,6 +77,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="5dp"
         android:orientation="horizontal">
 
         <TextView
@@ -97,10 +98,10 @@
 
     </LinearLayout>
 
-
     <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+        android:layout_height="fill_parent"
+        android:layout_margin="5dp">
 
         <com.androidplot.xy.XYPlot
             android:id="@+id/amplitude_PlotView"
