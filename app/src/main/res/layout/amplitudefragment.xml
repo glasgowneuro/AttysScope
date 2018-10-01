@@ -77,7 +77,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"
+        android:layout_marginEnd="5dp"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="0dp"
         android:orientation="horizontal">
 
         <TextView
@@ -91,6 +94,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="2"
+            android:layout_margin="0dp"
             android:gravity="end"
             android:text=""
             android:textColor="#00FFFF"
@@ -101,7 +105,8 @@
     <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_margin="5dp">
+        android:layout_marginEnd="5dp"
+        android:layout_marginStart="5dp">
 
         <com.androidplot.xy.XYPlot
             android:id="@+id/amplitude_PlotView"

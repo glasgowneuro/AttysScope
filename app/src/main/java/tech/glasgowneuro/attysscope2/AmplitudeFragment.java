@@ -274,7 +274,7 @@ public class AmplitudeFragment extends Fragment {
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT, lineLabelRendererY);
         XYGraphWidget.LineLabelStyle lineLabelStyle = amplitudePlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
         Rect bounds = new Rect();
-        String dummyTxt = String.format("%04.5f ", 100000.000597558899);
+        String dummyTxt = String.format("%04.5f ", 100000.000599);
         lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
         amplitudePlot.getGraph().setMarginLeft(bounds.width());
 
