@@ -6,7 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.DeadObjectException;
 import android.os.RemoteException;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
