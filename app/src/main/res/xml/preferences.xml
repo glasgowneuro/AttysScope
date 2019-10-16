@@ -40,6 +40,11 @@
         android:key="data_separator"
         android:defaultValue="2"
         android:title="Separator (TSV, CSV or SSV)" />
+    <CheckBoxPreference
+        android:key="GPIO_logging"
+        android:defaultValue="false"
+        android:summary="Write GPIO to the file"
+        android:title="Log GPIO" />
     <ListPreference
         android:entries="@array/powerlineOptions"
         android:entryValues="@array/powerlineValues"

@@ -28,11 +28,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Menu;
@@ -302,6 +304,7 @@ public class AttysScope extends AppCompatActivity {
         private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
         private File file = null;
         private long sampleNo = 0;
+        private boolean gpioLogging = false;
 
         // starts the recording
         public void startRec(File _file) throws java.io.FileNotFoundException {
@@ -347,6 +350,8 @@ public class AttysScope extends AppCompatActivity {
             data_separator = s;
         }
 
+        public void setGPIOlogging(boolean g) { gpioLogging = g; }
+
         private void saveData(float[] data_unfilt, float[] data_filt) {
             if (textdataFile == null) return;
             if (textdataFileStream == null) return;
@@ -369,6 +374,11 @@ public class AttysScope extends AppCompatActivity {
             }
             tmp = tmp + String.format(Locale.US, "%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
             tmp = tmp + String.format(Locale.US, "%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
+
+            if (gpioLogging) {
+                tmp = tmp + String.format(Locale.US, "%c%f", s, data_filt[AttysComm.INDEX_GPIO0]);
+                tmp = tmp + String.format(Locale.US, "%c%f", s, data_filt[AttysComm.INDEX_GPIO1]);
+            }
 
             if (textdataFileStream != null) {
                 textdataFileStream.format(Locale.US, "%s\n", tmp);
@@ -1104,12 +1114,10 @@ public class AttysScope extends AppCompatActivity {
                 })
                 .show();
 
-        if (listview != null) {
-            ViewGroup.LayoutParams layoutParams = listview.getLayoutParams();
-            Screensize screensize = new Screensize(getWindowManager());
-            layoutParams.height = screensize.getHeightInPixels() / 2;
-            listview.setLayoutParams(layoutParams);
-        }
+        ViewGroup.LayoutParams layoutParams = listview.getLayoutParams();
+        Screensize screensize = new Screensize(getWindowManager());
+        layoutParams.height = screensize.getHeightInPixels() / 2;
+        listview.setLayoutParams(layoutParams);
 
     }
 
@@ -1450,6 +1458,9 @@ public class AttysScope extends AppCompatActivity {
 
         byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
         dataRecorder.setDataSeparator(data_separator);
+
+        boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
+        dataRecorder.setGPIOlogging(withGPIO);
 
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
