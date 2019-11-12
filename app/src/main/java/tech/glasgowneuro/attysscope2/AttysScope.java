@@ -126,6 +126,9 @@ public class AttysScope extends AppCompatActivity {
 
     private int[] actualChannelIdx;
 
+    private int gpio0 = 0;
+    private int gpio1 = 0;
+
     public enum TextAnnotation {
         NONE,
         PEAKTOPEAK,
@@ -477,6 +480,7 @@ public class AttysScope extends AppCompatActivity {
             if (dataRecorder.isRecording()) {
                 small = small + " !!RECORDING to:" + dataFilename;
             }
+            small = small + String.format(Locale.getDefault(), " d=%d,%d", gpio0, gpio1);
             if (largeText != null) {
                 largeText = String.format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
@@ -487,7 +491,7 @@ public class AttysScope extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            infoView.drawText(lt, st);
+                            infoView.drawText(lt, st, dataRecorder.isRecording());
                         }
                     });
                 }
@@ -587,6 +591,9 @@ public class AttysScope extends AppCompatActivity {
                                 }
                                 sample[j] = v;
                             }
+
+                            gpio0 = (int) sample[AttysComm.INDEX_GPIO0];
+                            gpio1 = (int) sample[AttysComm.INDEX_GPIO1];
 
                             ecg_rr_det.detect(sample[AttysComm.INDEX_Analogue_channel_1]);
 

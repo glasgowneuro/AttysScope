@@ -56,9 +56,14 @@ public class InfoView extends View {
 
     public void resetInfoHeight() { textHeight = 0;}
 
-    public void drawText(String _largeText, String _smallText) {
+    public void drawText(String _largeText, String _smallText, boolean recording) {
         largeText = _largeText;
         smallText = _smallText;
+        if (recording) {
+            paintSmall.setColor(Color.argb(128, 255, 255, 0));
+        } else {
+            paintSmall.setColor(Color.argb(128, 0, 255, 0));
+        }
         invalidate();
         //Log.d(TAG,String.format("textHeight=%d",textHeight));
     }
@@ -67,7 +72,7 @@ public class InfoView extends View {
     protected void onDraw(Canvas canvas) {
         int yLarge = 0;
         int xLarge = 0;
-        int width = canvas.getWidth();
+        int width = getWidth();
         int txtDiv = 25;
         do {
             paintSmall.setTextSize(getHeight() / txtDiv);
