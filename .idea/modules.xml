@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/AttysScope.iml" filepath="$PROJECT_DIR$/AttysScope.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/jnifft-release/jnifft-release.iml" filepath="$PROJECT_DIR$/jnifft-release/jnifft-release.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AttysScope.iml" filepath="$PROJECT_DIR$/AttysScope.iml" group="AttysScope" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="AttysScope/app" />
+      <module fileurl="file://$PROJECT_DIR$/jnifft-release/jnifft-release.iml" filepath="$PROJECT_DIR$/jnifft-release/jnifft-release.iml" group="AttysScope/jnifft-release" />
     </modules>
   </component>
 </project>

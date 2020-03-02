@@ -717,9 +717,7 @@ public class AttysScope extends AppCompatActivity {
             ATTYSDIR.mkdirs();
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
-        }
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
 
         setContentView(R.layout.activity_plot_window);
 
@@ -1529,17 +1527,15 @@ public class AttysScope extends AppCompatActivity {
 
     private synchronized void deleteFragmentWindow() {
         List<Fragment> fragments = getSupportFragmentManager().getFragments();
-        if (fragments != null) {
-            if (!(fragments.isEmpty())) {
-                for (Fragment fragment : fragments) {
-                    if (Log.isLoggable(TAG, Log.DEBUG)) {
-                        if (fragment != null) {
-                            Log.d(TAG, "Removing fragment: " + fragment.getTag());
-                        }
-                    }
+        if (!(fragments.isEmpty())) {
+            for (Fragment fragment : fragments) {
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
                     if (fragment != null) {
-                        getSupportFragmentManager().beginTransaction().remove(fragment).commit();
+                        Log.d(TAG, "Removing fragment: " + fragment.getTag());
                     }
+                }
+                if (fragment != null) {
+                    getSupportFragmentManager().beginTransaction().remove(fragment).commit();
                 }
             }
         }
