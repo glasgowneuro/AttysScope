@@ -1,1 +1,1 @@
-include ':app', ':jnifft-release'
+include ':app'

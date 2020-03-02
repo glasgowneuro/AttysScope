@@ -10,6 +10,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
@@ -27,6 +29,9 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
 
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.LineAndPointFormatter;
@@ -38,9 +43,9 @@ import com.androidplot.xy.XYPlot;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
-import uk.me.berndporr.kiss_fft.KISSFastFourierTransformer;
 
 /**
  * Fourier Transform Fragment
@@ -48,49 +53,35 @@ import uk.me.berndporr.kiss_fft.KISSFastFourierTransformer;
 
 public class FourierFragment extends Fragment {
 
-    String TAG = "FourierFragment";
+    private String TAG = "FourierFragment";
 
-    int channel = AttysComm.INDEX_Analogue_channel_1;
+    private int channel = AttysComm.INDEX_Analogue_channel_1;
 
     private SimpleXYSeries spectrumSeries = null;
 
     private XYPlot spectrumPlot = null;
 
-    private ToggleButton toggleButtonDoRecord;
-
-    private Button saveButton;
-
-    private Spinner spinnerChannel;
-
-    private Spinner spinnerMaxY;
-
     private static String[] MAXYTXT = {"auto range", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
 
     private String[] units = new String[AttysComm.NCHANNELS];
 
-    public void setUnits(String [] _units) {
-        for(int i=0;i<AttysComm.NCHANNELS;i++) {
-            units[i] = _units[i];
-        }
+    void setUnits(String[] _units) {
+        System.arraycopy(_units, 0, units, 0, AttysComm.NCHANNELS);
     }
 
     private FourierTransformRunnable fourierTransformRunnable = null;
 
-    private Thread fourierTransformThread = null;
+    private int samplingRate = 250;
 
-    View view = null;
+    private boolean ready = false;
 
-    int samplingRate = 250;
+    private boolean acceptData = false;
 
-    boolean ready = false;
+    private static final int BUFFERSIZE = 256;
 
-    boolean acceptData = false;
+    private double[] values = new double[BUFFERSIZE];
 
-    static final int BUFFERSIZE = 256;
-
-    double[] values = new double[BUFFERSIZE];
-
-    int nValues = 0;
+    private int nValues = 0;
 
     private String dataFilename = null;
 
@@ -104,7 +95,7 @@ public class FourierFragment extends Fragment {
      * Called when the activity is first created.
      */
     @Override
-    public View onCreateView(LayoutInflater inflater,
+    public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
 
@@ -116,12 +107,12 @@ public class FourierFragment extends Fragment {
             return null;
         }
 
-        view = inflater.inflate(R.layout.spectrumfragment, container, false);
+        View view = inflater.inflate(R.layout.spectrumfragment, container, false);
 
         // setup the APR Levels plot:
         spectrumPlot = view.findViewById(R.id.spectrum_PlotView);
         spectrumPlot.setTitle("Frequency spectrum");
-        toggleButtonDoRecord = view.findViewById(R.id.spectrum_doRecord);
+        ToggleButton toggleButtonDoRecord = view.findViewById(R.id.spectrum_doRecord);
         toggleButtonDoRecord.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
@@ -133,14 +124,14 @@ public class FourierFragment extends Fragment {
             }
         });
         toggleButtonDoRecord.setChecked(true);
-        saveButton = view.findViewById(R.id.spectrum_Save);
+        Button saveButton = view.findViewById(R.id.spectrum_Save);
         saveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 saveSpectrum();
             }
         });
-        spinnerChannel = view.findViewById(R.id.spectrum_channel);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
+        Spinner spinnerChannel = view.findViewById(R.id.spectrum_channel);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(Objects.requireNonNull(getContext()),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -222,14 +213,14 @@ public class FourierFragment extends Fragment {
 
         spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
-        final Screensize screensize = new Screensize(getActivity().getWindowManager());
+        final Screensize screensize = new Screensize(Objects.requireNonNull(getActivity()).getWindowManager());
         if (screensize.isTablet()) {
             spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
         } else {
             spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 50);
         }
 
-        spinnerMaxY = view.findViewById(R.id.spectrum_maxy);
+        Spinner spinnerMaxY = view.findViewById(R.id.spectrum_maxy);
         ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMaxY.setAdapter(adapter1);
@@ -240,7 +231,7 @@ public class FourierFragment extends Fragment {
                     spectrumPlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
                     spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_PIXELS, 50);
                 } else {
-                    float maxy = Float.valueOf(MAXYTXT[position]);
+                    float maxy = Float.parseFloat(MAXYTXT[position]);
                     if (screensize.isTablet()) {
                         spectrumPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, maxy/10);
                     } else {
@@ -258,7 +249,7 @@ public class FourierFragment extends Fragment {
 
         fourierTransformRunnable = new FourierTransformRunnable();
 
-        fourierTransformThread = new Thread(fourierTransformRunnable);
+        Thread fourierTransformThread = new Thread(fourierTransformRunnable);
         fourierTransformThread.start();
 
         ready = true;
@@ -322,7 +313,7 @@ public class FourierFragment extends Fragment {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         Uri contentUri = Uri.fromFile(file);
         mediaScanIntent.setData(contentUri);
-        getActivity().sendBroadcast(mediaScanIntent);
+        Objects.requireNonNull(getActivity()).sendBroadcast(mediaScanIntent);
     }
 
 
@@ -336,11 +327,11 @@ public class FourierFragment extends Fragment {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         };
 
-        int permission = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permission = ActivityCompat.checkSelfPermission(Objects.requireNonNull(getContext()), Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
         if (permission != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
-                    getActivity(),
+                    Objects.requireNonNull(getActivity()),
                     PERMISSIONS_STORAGE,
                     REQUEST_EXTERNAL_STORAGE
             );
@@ -392,7 +383,7 @@ public class FourierFragment extends Fragment {
     }
 
 
-    public synchronized void addValue(final float[] sample) {
+    synchronized void addValue(final float[] sample) {
         if (!ready) return;
         if (nValues < BUFFERSIZE) {
             values[nValues] = sample[channel];
@@ -405,33 +396,35 @@ public class FourierFragment extends Fragment {
 
         boolean doRun = true;
 
-        public void cancel() {
+        void cancel() {
             doRun = false;
         }
 
         public void run() {
 
-            //FastFourierTransformer fastFourierTransformer = new FastFourierTransformer(DftNormalization.STANDARD);
-            KISSFastFourierTransformer fastFourierTransformer = new KISSFastFourierTransformer();
+            FastFourierTransformer fastFourierTransformer =
+                    new FastFourierTransformer(DftNormalization.STANDARD);
 
             while (doRun) {
 
                 try {
                     Thread.sleep(1250);
                 } catch (Exception e) {
+                    Log.v(TAG,"Sleep:",e);
                 }
-
-                // Log.d(TAG, "FFT acc=" + acceptData + " ready=" + ready + " nVal=" + nValues);
 
                 if (ready && acceptData && (nValues == BUFFERSIZE)) {
 
-                    Complex[] spectrum = fastFourierTransformer.transformRealOptimisedForward(values);
+                    Complex[] spectrum = fastFourierTransformer.transform(
+                            values,
+                            TransformType.FORWARD
+                    );
 
                     if (!doRun) return;
 
-                    for (int i = 0; (i < spectrum.length ) && doRun; i++) {
-                        if (spectrumSeries != null) {
-                            spectrumSeries.setX(Math.round(i*samplingRate/(values.length-1)), i);
+                    if (spectrumSeries != null) {
+                        for (int i = 0; (i < spectrumSeries.size()) && doRun; i++) {
+                            spectrumSeries.setX(Math.round((float) i * samplingRate / (values.length - 1)), i);
                             spectrumSeries.setY(spectrum[i].divide(values.length).abs(), i);
                         }
                     }
