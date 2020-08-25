@@ -78,10 +78,12 @@
     <string-array name="samplingRateOptions">
         <item>125Hz</item>
         <item>250Hz</item>
+        <item>500Hz</item>
     </string-array>
     <string-array name="samplingRateValues">
         <item>0</item>
         <item>1</item>
+        <item>2</item>
     </string-array>
 
     <string-array name="accOptions">
