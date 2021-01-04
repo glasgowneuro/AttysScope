@@ -319,6 +319,7 @@ public class AttysScope extends AppCompatActivity {
             } catch (java.io.FileNotFoundException e) {
                 textdataFileStream = null;
                 textdataFile = null;
+                Log.d(TAG,"Could not start recording:",e);
                 throw e;
             }
             sampleNo = 0;
