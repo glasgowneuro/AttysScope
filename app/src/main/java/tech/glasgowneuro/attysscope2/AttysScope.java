@@ -1478,13 +1478,17 @@ public class AttysScope extends AppCompatActivity {
 
         samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "1"));
         if (samplingRate < 0) samplingRate = 0;
-        if (btAttysDevice.getName().contains("ATTYS2")) {
-            if (samplingRate > 2) {
-                samplingRate = 2;
-            }
-        } else {
-            if (samplingRate > 1) {
-                samplingRate = 1;
+        if (null != btAttysDevice) {
+            if (null != btAttysDevice.getName()) {
+                if (btAttysDevice.getName().contains("ATTYS2")) {
+                    if (samplingRate > 2) {
+                        samplingRate = 2;
+                    }
+                } else {
+                    if (samplingRate > 1) {
+                        samplingRate = 1;
+                    }
+                }
             }
         }
         SharedPreferences.Editor editor = prefs.edit();
