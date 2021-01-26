@@ -86,7 +86,8 @@ public class FourierFragment extends Fragment {
 
     private String dataFilename = null;
 
-    private byte dataSeparator = AttysService.DataRecorder.DATA_SEPARATOR_TAB;
+    // private byte dataSeparator = AttysService.DataRecorder.DATA_SEPARATOR_TAB;
+    private byte dataSeparator = AttysScope.DataRecorder.DATA_SEPARATOR_TAB;
 
     public void setSamplingrate(int _samplingrate) {
         samplingRate = _samplingrate;
@@ -289,13 +290,13 @@ public class FourierFragment extends Fragment {
 
         char s = ' ';
         switch (dataSeparator) {
-            case AttysService.DataRecorder.DATA_SEPARATOR_SPACE:
+            case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
                 s = ' ';
                 break;
-            case AttysService.DataRecorder.DATA_SEPARATOR_COMMA:
+            case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
                 s = ',';
                 break;
-            case AttysService.DataRecorder.DATA_SEPARATOR_TAB:
+            case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
                 s = 9;
                 break;
         }
@@ -351,13 +352,13 @@ public class FourierFragment extends Fragment {
                         dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
                         if (!dataFilename.contains(".")) {
                             switch (dataSeparator) {
-                                case AttysService.DataRecorder.DATA_SEPARATOR_COMMA:
+                                case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
                                     dataFilename = dataFilename + ".csv";
                                     break;
-                                case AttysService.DataRecorder.DATA_SEPARATOR_SPACE:
+                                case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
                                     dataFilename = dataFilename + ".dat";
                                     break;
-                                case AttysService.DataRecorder.DATA_SEPARATOR_TAB:
+                                case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".tsv";
                             }
                         }

@@ -24,6 +24,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -36,6 +37,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Menu;
@@ -50,9 +53,11 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -85,6 +90,8 @@ public class AttysScope extends AppCompatActivity {
     MenuItem menuItemHighpass2 = null;
     MenuItem menuItemMains1 = null;
     MenuItem menuItemMains2 = null;
+
+    MenuItem menuItemRec = null;
 
     private AttysService attysService = null;
     private byte samplingRate = AttysComm.ADC_RATE_250HZ;
@@ -306,7 +313,10 @@ public class AttysScope extends AppCompatActivity {
                 AttysService.AttysBinder binder = (AttysService.AttysBinder) service;
                 attysService = binder.getService();
                 initAll();
-                attysService.getAttysComm().start();
+                if (attysService.getAttysComm() != null) {
+                    attysService.getAttysComm().registerDataListener(dataRecorder.dataListener);
+                    attysService.getAttysComm().start();
+                }
             }
 
             public void onServiceDisconnected(ComponentName className) {
@@ -317,8 +327,13 @@ public class AttysScope extends AppCompatActivity {
         bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
+
     private void stopAttysService() {
+        dataRecorder.stopRec();
         if (serviceConnection == null) return;
+        if (attysService != null) {
+            attysService.stop();
+        }
         unbindService(serviceConnection);
         serviceConnection = null;
         stopService(new Intent(getBaseContext(), AttysService.class));
@@ -409,7 +424,7 @@ public class AttysScope extends AppCompatActivity {
             if (showMag) {
                 small = small + String.format(Locale.getDefault(), "MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
-            if (attysService.getDataRecorder().isRecording()) {
+            if (dataRecorder.isRecording()) {
                 small = small + " !!RECORDING to:" + dataFilename;
             }
             small = small + String.format(Locale.getDefault(), " d=%d,%d", gpio0, gpio1);
@@ -423,7 +438,16 @@ public class AttysScope extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            infoView.drawText(lt, st, attysService.getDataRecorder().isRecording());
+                            infoView.drawText(lt, st, dataRecorder.isRecording());
+                            if (dataRecorder.isRecording()) {
+                                setMenuColour(menuItemRec,Color.RED);
+                            } else {
+                                if (dataFilename != null) {
+                                    setMenuColour(menuItemRec,Color.GREEN);
+                                } else {
+                                    setMenuColour(menuItemRec,Color.GRAY);
+                                }
+                            }
                         }
                     });
                 }
@@ -814,7 +838,7 @@ public class AttysScope extends AppCompatActivity {
 
         signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
 
-        attysService.registerMessageListener(messageListener);
+        attysService.getAttysComm().registerMessageListener(messageListener);
 
         ecg_rr_det = new ECG_rr_det(attysService.getAttysComm().getSamplingRateInHz(), powerlineHz);
 
@@ -842,11 +866,13 @@ public class AttysScope extends AppCompatActivity {
 
 
     public void startAnimation() {
+        if (null != timer) return;
         timer = new Timer();
         updatePlotTask = new UpdatePlotTask();
         updatePlotTask.resetAnalysis();
         timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
         Log.d(TAG,"Timer started");
+        attysService.getAttysComm().resetRingbuffer();
     }
 
     private void stopAnimation() {
@@ -892,11 +918,9 @@ public class AttysScope extends AppCompatActivity {
     protected void onRestart() {
         super.onRestart();
 
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "Restarting");
-        }
+        Log.d(TAG, "Restarting");
         startAnimation();
-        if (!(attysService.getDataRecorder().isRecording())) {
+        if (!(dataRecorder.isRecording())) {
             attysService.getAttysComm().start();
         }
     }
@@ -922,7 +946,7 @@ public class AttysScope extends AppCompatActivity {
         }
 
         stopAnimation();
-        if (!(attysService.getDataRecorder().isRecording())) {
+        if (!(dataRecorder.isRecording())) {
             attysService.getAttysComm().stop();
         }
     }
@@ -961,13 +985,13 @@ public class AttysScope extends AppCompatActivity {
                         dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
                         if (!dataFilename.contains(".")) {
                             switch (dataSeparator) {
-                                case AttysService.DataRecorder.DATA_SEPARATOR_COMMA:
+                                case DataRecorder.DATA_SEPARATOR_COMMA:
                                     dataFilename = dataFilename + ".csv";
                                     break;
-                                case AttysService.DataRecorder.DATA_SEPARATOR_SPACE:
+                                case DataRecorder.DATA_SEPARATOR_SPACE:
                                     dataFilename = dataFilename + ".dat";
                                     break;
-                                case AttysService.DataRecorder.DATA_SEPARATOR_TAB:
+                                case DataRecorder.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".tsv";
                             }
                         }
@@ -1068,6 +1092,13 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
+    private void setMenuColour(MenuItem menuItem, int c) {
+        if (null == menuItem) return;
+        SpannableString s = new SpannableString(menuItem.getTitle());
+        s.setSpan(new ForegroundColorSpan(c), 0, s.length(), 0);
+        menuItem.setTitle(s);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -1078,6 +1109,9 @@ public class AttysScope extends AppCompatActivity {
 
         menuItemMains1 = menu.findItem(R.id.Ch1notch);
         menuItemMains2 = menu.findItem(R.id.Ch2notch);
+
+        menuItemRec = menu.findItem(R.id.toggleRec);
+        setMenuColour(menuItemRec,Color.GRAY);
 
         return true;
     }
@@ -1094,13 +1128,14 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.toggleRec:
-                if (attysService.getDataRecorder().isRecording()) {
-                    File file = attysService.getDataRecorder().getFile();
-                    attysService.getDataRecorder().stopRec();
+                if (dataRecorder.isRecording()) {
+                    File file = dataRecorder.getFile();
+                    dataRecorder.stopRec();
+                    dataFilename = null;
                 } else {
                     if (dataFilename != null) {
                         File file = new File(ATTYSDIR, dataFilename.trim());
-                        attysService.getDataRecorder().setDataSeparator(dataSeparator);
+                        dataRecorder.setDataSeparator(dataSeparator);
                         if (file.exists()) {
                             Toast.makeText(getApplicationContext(),
                                     "File exists already. Enter a different one.",
@@ -1108,14 +1143,14 @@ public class AttysScope extends AppCompatActivity {
                             return true;
                         }
                         try {
-                            attysService.getDataRecorder().startRec(file);
+                            dataRecorder.startRec(file);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not open data file: " + e.getMessage());
                             }
                             return true;
                         }
-                        if (attysService.getDataRecorder().isRecording()) {
+                        if (dataRecorder.isRecording()) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Saving to " + file.getAbsolutePath());
                             }
@@ -1395,10 +1430,10 @@ public class AttysScope extends AppCompatActivity {
         }
 
         byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
-        attysService.getDataRecorder().setDataSeparator(data_separator);
+        dataRecorder.setDataSeparator(data_separator);
 
         boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
-        attysService.getDataRecorder().setGPIOlogging(withGPIO);
+        dataRecorder.setGPIOlogging(withGPIO);
 
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
@@ -1492,5 +1527,102 @@ public class AttysScope extends AppCompatActivity {
         heartRateFragment = null;
     }
 
+    public class DataRecorder {
+        /////////////////////////////////////////////////////////////
+        // saving data into a file
+
+        public final static byte DATA_SEPARATOR_TAB = 0;
+        public final static byte DATA_SEPARATOR_COMMA = 1;
+        public final static byte DATA_SEPARATOR_SPACE = 2;
+
+        private PrintWriter textdataFileStream = null;
+        private File textdataFile = null;
+        private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
+        private File file = null;
+        private boolean gpioLogging = false;
+
+        private AttysComm.DataListener dataListener = new AttysComm.DataListener() {
+            @Override
+            public void gotData(long samplenumber, float[] data) {
+                saveData(samplenumber,data);
+            }
+        };
+
+        // starts the recording
+        public void startRec(File _file) throws java.io.FileNotFoundException {
+            file = _file;
+            try {
+                textdataFileStream = new PrintWriter(file);
+                textdataFile = file;
+            } catch (java.io.FileNotFoundException e) {
+                textdataFileStream = null;
+                textdataFile = null;
+                Log.d(TAG,"Could not start recording:",e);
+                throw e;
+            }
+        }
+
+        // stops it
+        public void stopRec() {
+            if (textdataFileStream != null) {
+                textdataFileStream.close();
+                textdataFileStream = null;
+                textdataFile = null;
+                if (file != null) {
+                    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                    Uri contentUri = Uri.fromFile(file);
+                    mediaScanIntent.setData(contentUri);
+                    sendBroadcast(mediaScanIntent);
+                }
+            }
+        }
+
+        public File getFile() {
+            return textdataFile;
+        }
+
+        public void setDataSeparator(byte s) {
+            data_separator = s;
+        }
+
+        public void setGPIOlogging(boolean g) { gpioLogging = g; }
+
+        public boolean isRecording() {
+            return (textdataFileStream != null) && (textdataFile != null);
+        }
+
+        public void saveData(long sampleNo, float[] data) {
+            if (textdataFile == null) return;
+            if (textdataFileStream == null) return;
+
+            char s = ' ';
+            switch (data_separator) {
+                case DATA_SEPARATOR_SPACE:
+                    s = ' ';
+                    break;
+                case DATA_SEPARATOR_COMMA:
+                    s = ',';
+                    break;
+                case DATA_SEPARATOR_TAB:
+                    s = 9;
+                    break;
+            }
+            String tmp = String.format(Locale.US, "%e%c", (double) sampleNo / (double) attysService.getAttysComm().getSamplingRateInHz(), s);
+            for (float aData_unfilt : data) {
+                tmp = tmp + String.format(Locale.US, "%e%c", aData_unfilt, s);
+            }
+
+            if (gpioLogging) {
+                tmp = tmp + String.format(Locale.US, "%c%e", s, data[AttysComm.INDEX_GPIO0]);
+                tmp = tmp + String.format(Locale.US, "%c%e", s, data[AttysComm.INDEX_GPIO1]);
+            }
+
+            if (textdataFileStream != null) {
+                textdataFileStream.format(Locale.US, "%s\n", tmp);
+            }
+        }
+    }
+
+    private final DataRecorder dataRecorder = new DataRecorder();
 
 }
