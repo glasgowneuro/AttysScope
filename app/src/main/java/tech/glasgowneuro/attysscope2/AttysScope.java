@@ -314,12 +314,14 @@ public class AttysScope extends AppCompatActivity {
                 attysService = binder.getService();
                 initAll();
                 if (attysService.getAttysComm() != null) {
-                    attysService.getAttysComm().registerDataListener(dataRecorder.dataListener);
                     attysService.getAttysComm().start();
                 }
             }
 
             public void onServiceDisconnected(ComponentName className) {
+                if (attysService != null) {
+                    attysService.stop();
+                }
                 attysService = null;
             }
         };
@@ -681,6 +683,44 @@ public class AttysScope extends AppCompatActivity {
 
         progress = findViewById(R.id.indeterminateBar);
 
+        int nChannels = AttysComm.NCHANNELS;
+        highpass = new Butterworth[nChannels];
+        gain = new float[nChannels];
+        iirNotch = new Butterworth[nChannels];
+        invert = new boolean[nChannels];
+        actualChannelIdx = new int[nChannels];
+        for (int i = 0; i < nChannels; i++) {
+            highpass[i] = null;
+            iirNotch[i] = null;
+            // set it to 1st ADC channel
+            actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
+            gain[i] = 1;
+            if ((i >= AttysComm.INDEX_Magnetic_field_X) && (i <= AttysComm.INDEX_Magnetic_field_Z)) {
+                gain[i] = 20;
+            }
+        }
+
+        realtimePlotView = findViewById(R.id.realtimeplotview);
+        realtimePlotView.setMaxChannels(15);
+        realtimePlotView.init();
+
+        realtimePlotView.registerTouchEventListener(
+                new RealtimePlotView.TouchEventListener() {
+                    @Override
+                    public void touchedChannel(int chNo) {
+                        try {
+                            theChannelWeDoAnalysis = actualChannelIdx[chNo];
+                            updatePlotTask.resetAnalysis();
+                        } catch (Exception e) {
+                            if (Log.isLoggable(TAG, Log.ERROR)) {
+                                Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
+                            }
+                        }
+                    }
+                });
+
+        infoView = findViewById(R.id.infoview);
+
     }
 
     // this is called whenever the app is starting
@@ -784,22 +824,7 @@ public class AttysScope extends AppCompatActivity {
             return;
         }
 
-        int nChannels = AttysComm.NCHANNELS;
-        highpass = new Butterworth[nChannels];
-        gain = new float[nChannels];
-        iirNotch = new Butterworth[nChannels];
-        invert = new boolean[nChannels];
-        actualChannelIdx = new int[nChannels];
-        for (int i = 0; i < nChannels; i++) {
-            highpass[i] = null;
-            iirNotch[i] = null;
-            // set it to 1st ADC channel
-            actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
-            gain[i] = 1;
-            if ((i >= AttysComm.INDEX_Magnetic_field_X) && (i <= AttysComm.INDEX_Magnetic_field_Z)) {
-                gain[i] = 20;
-            }
-        }
+        signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
 
         getsetAttysPrefs();
 
@@ -815,30 +840,8 @@ public class AttysScope extends AppCompatActivity {
             theChannelWeDoAnalysis = AttysComm.INDEX_Magnetic_field_X;
         }
 
-        realtimePlotView = findViewById(R.id.realtimeplotview);
-        realtimePlotView.setMaxChannels(15);
-        realtimePlotView.init();
-
-        realtimePlotView.registerTouchEventListener(
-                new RealtimePlotView.TouchEventListener() {
-                    @Override
-                    public void touchedChannel(int chNo) {
-                        try {
-                            theChannelWeDoAnalysis = actualChannelIdx[chNo];
-                            updatePlotTask.resetAnalysis();
-                        } catch (Exception e) {
-                            if (Log.isLoggable(TAG, Log.ERROR)) {
-                                Log.e(TAG, "Exception in the TouchEventListener (BUG!):", e);
-                            }
-                        }
-                    }
-                });
-
-        infoView = findViewById(R.id.infoview);
-
-        signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
-
         attysService.getAttysComm().registerMessageListener(messageListener);
+        attysService.getAttysComm().registerDataListener(dataRecorder.dataListener);
 
         ecg_rr_det = new ECG_rr_det(attysService.getAttysComm().getSamplingRateInHz(), powerlineHz);
 
