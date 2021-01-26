@@ -22,13 +22,8 @@ android {
     sourceSets {
         main {
             res.srcDirs = ['src/main/res', 'src/main/res/menu']
-            String osj = '../../science-journal/api/ScienceJournalApi/src/main'
             String attyscomm = '../../AttysComm/app/src/main/'
-            aidl {
-                srcDir osj + '/aidl'
-            }
             java {
-                srcDir osj + '/java'
                 srcDir attyscomm + '/java'
             }
         }

@@ -18,8 +18,10 @@ package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -27,6 +29,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 
 import androidx.core.app.ActivityCompat;
@@ -61,6 +64,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
+import tech.glasgowneuro.attyscomm.AttysService;
 import uk.me.berndporr.iirj.Butterworth;
 
 public class AttysScope extends AppCompatActivity {
@@ -85,8 +89,7 @@ public class AttysScope extends AppCompatActivity {
     MenuItem menuItemMains1 = null;
     MenuItem menuItemMains2 = null;
 
-    private AttysComm attysComm = null;
-    private BluetoothDevice btAttysDevice = null;
+    private AttysService attysService = null;
     private byte samplingRate = AttysComm.ADC_RATE_250HZ;
 
     private UpdatePlotTask updatePlotTask = null;
@@ -234,7 +237,7 @@ public class AttysScope extends AppCompatActivity {
                 case 0:
                 case 1:
                 case 2:
-                    return attysComm.getADCFullScaleRange(1);
+                    return attysService.getAttysComm().getADCFullScaleRange(1);
                 case 3:
                     return 81E6F - Rbaseline;
                 case 4:
@@ -244,7 +247,7 @@ public class AttysScope extends AppCompatActivity {
                 case 6:
                     return 1000;
             }
-            return attysComm.getADCFullScaleRange(1);
+            return attysService.getAttysComm().getADCFullScaleRange(1);
         }
 
         // min range for plotting
@@ -253,7 +256,7 @@ public class AttysScope extends AppCompatActivity {
                 case 0:
                 case 1:
                 case 2:
-                    return -attysComm.getADCFullScaleRange(1);
+                    return -attysService.getAttysComm().getADCFullScaleRange(1);
                 case 3:
                 case 4:
                     return 0;
@@ -262,7 +265,7 @@ public class AttysScope extends AppCompatActivity {
                 case 6:
                     return -100;
             }
-            return -attysComm.getADCFullScaleRange(1);
+            return -attysService.getAttysComm().getADCFullScaleRange(1);
         }
 
         // ticks of the coordiante system
@@ -294,105 +297,34 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
-    public class DataRecorder {
-        /////////////////////////////////////////////////////////////
-        // saving data into a file
 
-        public final static byte DATA_SEPARATOR_TAB = 0;
-        public final static byte DATA_SEPARATOR_COMMA = 1;
-        public final static byte DATA_SEPARATOR_SPACE = 2;
+    private ServiceConnection serviceConnection = null;
 
-        private PrintWriter textdataFileStream = null;
-        private File textdataFile = null;
-        private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
-        private File file = null;
-        private long sampleNo = 0;
-        private boolean gpioLogging = false;
-
-        // starts the recording
-        public void startRec(File _file) throws java.io.FileNotFoundException {
-            file = _file;
-            try {
-                textdataFileStream = new PrintWriter(file);
-                textdataFile = file;
-                messageListener.haveMessage(AttysComm.MESSAGE_STARTED_RECORDING);
-            } catch (java.io.FileNotFoundException e) {
-                textdataFileStream = null;
-                textdataFile = null;
-                Log.d(TAG,"Could not start recording:",e);
-                throw e;
-            }
-            sampleNo = 0;
-        }
-
-        // stops it
-        public void stopRec() {
-            if (textdataFileStream != null) {
-                textdataFileStream.close();
-                messageListener.haveMessage(AttysComm.MESSAGE_STOPPED_RECORDING);
-                textdataFileStream = null;
-                textdataFile = null;
-                if (file != null) {
-                    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                    Uri contentUri = Uri.fromFile(file);
-                    mediaScanIntent.setData(contentUri);
-                    sendBroadcast(mediaScanIntent);
-                }
-            }
-        }
-
-        // are we recording?
-        public boolean isRecording() {
-            return (textdataFileStream != null);
-        }
-
-        public File getFile() {
-            return textdataFile;
-        }
-
-        public void setDataSeparator(byte s) {
-            data_separator = s;
-        }
-
-        public void setGPIOlogging(boolean g) { gpioLogging = g; }
-
-        private void saveData(float[] data_unfilt, float[] data_filt) {
-            if (textdataFile == null) return;
-            if (textdataFileStream == null) return;
-
-            char s = ' ';
-            switch (data_separator) {
-                case DATA_SEPARATOR_SPACE:
-                    s = ' ';
-                    break;
-                case DATA_SEPARATOR_COMMA:
-                    s = ',';
-                    break;
-                case DATA_SEPARATOR_TAB:
-                    s = 9;
-                    break;
-            }
-            String tmp = String.format(Locale.US, "%f%c", (double) sampleNo / (double) attysComm.getSamplingRateInHz(), s);
-            for (float aData_unfilt : data_unfilt) {
-                tmp = tmp + String.format(Locale.US, "%f%c", aData_unfilt, s);
-            }
-            tmp = tmp + String.format(Locale.US, "%f%c", data_filt[AttysComm.INDEX_Analogue_channel_1], s);
-            tmp = tmp + String.format(Locale.US, "%f", data_filt[AttysComm.INDEX_Analogue_channel_2]);
-
-            if (gpioLogging) {
-                tmp = tmp + String.format(Locale.US, "%c%f", s, data_filt[AttysComm.INDEX_GPIO0]);
-                tmp = tmp + String.format(Locale.US, "%c%f", s, data_filt[AttysComm.INDEX_GPIO1]);
+    private void startAttysService() {
+        final Intent intent = new Intent(getBaseContext(), AttysService.class);
+        serviceConnection = new ServiceConnection() {
+            public void onServiceConnected(ComponentName className, IBinder service) {
+                Log.d(TAG, "Attys service connected. Starting now.");
+                startService(intent);
+                AttysService.AttysBinder binder = (AttysService.AttysBinder) service;
+                attysService = binder.getService();
             }
 
-            if (textdataFileStream != null) {
-                textdataFileStream.format(Locale.US, "%s\n", tmp);
+            public void onServiceDisconnected(ComponentName className) {
+                attysService = null;
             }
-            sampleNo++;
-        }
+        };
+        Log.d(TAG, "Binding Player service");
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
-
-    DataRecorder dataRecorder = new DataRecorder();
+    private void stopAttysService() {
+        if (serviceConnection == null) return;
+        unbindService(serviceConnection);
+        serviceConnection = null;
+        stopService(new Intent(getBaseContext(), AttysService.class));
+        attysService = null;
+    }
 
 
     AttysComm.MessageListener messageListener = new AttysComm.MessageListener() {
@@ -405,8 +337,8 @@ public class AttysScope extends AppCompatActivity {
                         case AttysComm.MESSAGE_ERROR:
                             Toast.makeText(getApplicationContext(),
                                     "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
-                            if (attysComm != null) {
-                                attysComm.stop();
+                            if (attysService.getAttysComm() != null) {
+                                attysService.getAttysComm().stop();
                             }
                             progress.setVisibility(View.GONE);
                             finish();
@@ -478,7 +410,7 @@ public class AttysScope extends AppCompatActivity {
             if (showMag) {
                 small = small + String.format(Locale.getDefault(), "MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
-            if (dataRecorder.isRecording()) {
+            if (attysService.getDataRecorder().isRecording()) {
                 small = small + " !!RECORDING to:" + dataFilename;
             }
             small = small + String.format(Locale.getDefault(), " d=%d,%d", gpio0, gpio1);
@@ -486,13 +418,13 @@ public class AttysScope extends AppCompatActivity {
                 largeText = String.format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
             }
             if (infoView != null) {
-                if (attysComm != null) {
+                if (attysService.getAttysComm() != null) {
                     final String lt = largeText;
                     final String st = small;
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            infoView.drawText(lt, st, dataRecorder.isRecording());
+                            infoView.drawText(lt, st, attysService.getDataRecorder().isRecording());
                         }
                     });
                 }
@@ -503,7 +435,7 @@ public class AttysScope extends AppCompatActivity {
 
             switch (textAnnotation) {
                 case NONE:
-                    int interval = attysComm.getSamplingRateInHz();
+                    int interval = attysService.getAttysComm().getSamplingRateInHz();
                     if ((timestamp % interval) == 0) {
                         annotatePlot(null);
                     }
@@ -531,32 +463,32 @@ public class AttysScope extends AppCompatActivity {
 
         public synchronized void run() {
 
-            if (attysComm != null) {
-                if (attysComm.hasFatalError()) {
+            if (attysService.getAttysComm() != null) {
+                if (attysService.getAttysComm().hasFatalError()) {
                     // Log.d(TAG,String.format("No bluetooth connection"));
                     return;
                 }
             }
-            if (attysComm != null) {
-                if (!attysComm.hasActiveConnection()) return;
+            if (attysService.getAttysComm() != null) {
+                if (!attysService.getAttysComm().hasActiveConnection()) return;
             }
 
             int nCh = 0;
-            if (attysComm != null) nCh = attysComm.NCHANNELS;
-            if (attysComm != null) {
+            if (attysService.getAttysComm() != null) nCh = AttysComm.NCHANNELS;
+            if (attysService.getAttysComm() != null) {
                 float[] tmpSample = new float[nCh];
                 float[] tmpMin = new float[nCh];
                 float[] tmpMax = new float[nCh];
                 float[] tmpTick = new float[nCh];
-                float[] sample = new float[attysComm.NCHANNELS];
+                float[] sample = new float[AttysComm.NCHANNELS];
                 String[] tmpLabels = new String[nCh];
-                int n = attysComm.getNumSamplesAvilable();
+                int n = attysService.getAttysComm().getNumSamplesAvilable();
                 if (realtimePlotView != null) {
                     if (!realtimePlotView.startAddSamples(n)) return;
-                    for (int i = 0; ((i < n) && (attysComm != null)); i++) {
+                    for (int i = 0; ((i < n) && (attysService.getAttysComm() != null)); i++) {
                         float[] sample_unfilt = null;
-                        if (attysComm != null) {
-                            sample_unfilt = attysComm.getSampleFromBuffer();
+                        if (attysService.getAttysComm() != null) {
+                            sample_unfilt = attysService.getAttysComm().getSampleFromBuffer();
                         }
                         if (sample_unfilt != null) {
                             // debug ECG detector
@@ -606,15 +538,13 @@ public class AttysScope extends AppCompatActivity {
                                 fourierFragment.addValue(sample);
                             }
 
-                            dataRecorder.saveData(sample_unfilt, sample);
-
                             int nRealChN = 0;
                             if (showCh1) {
-                                if (attysComm != null) {
-                                    tmpMin[nRealChN] = -attysComm.getADCFullScaleRange(0);
-                                    tmpMax[nRealChN] = attysComm.getADCFullScaleRange(0);
+                                if (attysService.getAttysComm() != null) {
+                                    tmpMin[nRealChN] = -attysService.getAttysComm().getADCFullScaleRange(0);
+                                    tmpMax[nRealChN] = attysService.getAttysComm().getADCFullScaleRange(0);
                                     ch1Div = 1.0F / gain[AttysComm.INDEX_Analogue_channel_1];
-                                    if (attysComm.getADCFullScaleRange(0) < 1) {
+                                    if (attysService.getAttysComm().getADCFullScaleRange(0) < 1) {
                                         ch1Div = ch1Div / 10;
                                     }
                                     tmpTick[nRealChN] = ch1Div * gain[AttysComm.INDEX_Analogue_channel_1];
@@ -624,7 +554,7 @@ public class AttysScope extends AppCompatActivity {
                                 }
                             }
                             if (showCh2) {
-                                if (attysComm != null) {
+                                if (attysService.getAttysComm() != null) {
                                     tmpMin[nRealChN] = ch2Converter.getMinRange();
                                     tmpMax[nRealChN] = ch2Converter.getMaxRange();
                                     ch2Div = ch2Converter.getTick() / gain[AttysComm.INDEX_Analogue_channel_2];
@@ -635,9 +565,9 @@ public class AttysScope extends AppCompatActivity {
                                 }
                             }
                             if (showAcc) {
-                                if (attysComm != null) {
-                                    float min = -attysComm.getAccelFullScaleRange();
-                                    float max = attysComm.getAccelFullScaleRange();
+                                if (attysService.getAttysComm() != null) {
+                                    float min = -attysService.getAttysComm().getAccelFullScaleRange();
+                                    float max = attysService.getAttysComm().getAccelFullScaleRange();
 
                                     for (int k = 0; k < 3; k++) {
                                         tmpMin[nRealChN] = min;
@@ -650,13 +580,13 @@ public class AttysScope extends AppCompatActivity {
                                 }
                             }
                             if (showMag) {
-                                if (attysComm != null) {
+                                if (attysService.getAttysComm() != null) {
                                     for (int k = 0; k < 3; k++) {
-                                        if (attysComm != null) {
-                                            tmpMin[nRealChN] = -attysComm.getMagFullScaleRange();
+                                        if (attysService.getAttysComm() != null) {
+                                            tmpMin[nRealChN] = -attysService.getAttysComm().getMagFullScaleRange();
                                         }
-                                        if (attysComm != null) {
-                                            tmpMax[nRealChN] = attysComm.getMagFullScaleRange();
+                                        if (attysService.getAttysComm() != null) {
+                                            tmpMax[nRealChN] = attysService.getAttysComm().getMagFullScaleRange();
                                         }
                                         tmpLabels[nRealChN] = labels[k + 3];
                                         actualChannelIdx[nRealChN] = k + 3;
@@ -727,6 +657,8 @@ public class AttysScope extends AppCompatActivity {
 
         progress = findViewById(R.id.indeterminateBar);
 
+        startAttysService();
+
         int nChannels = AttysComm.NCHANNELS;
         highpass = new Butterworth[nChannels];
         gain = new float[nChannels];
@@ -766,7 +698,7 @@ public class AttysScope extends AppCompatActivity {
 
     private void highpass1on() {
         highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
-        highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER, attysComm.getSamplingRateInHz(), highpass1Hz);
+        highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER, attysService.getAttysComm().getSamplingRateInHz(), highpass1Hz);
     }
 
 
@@ -777,7 +709,7 @@ public class AttysScope extends AppCompatActivity {
 
     private void highpass2on() {
         highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
-        highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER, attysComm.getSamplingRateInHz(), highpass2Hz);
+        highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER, attysService.getAttysComm().getSamplingRateInHz(), highpass2Hz);
     }
 
 
@@ -836,13 +768,9 @@ public class AttysScope extends AppCompatActivity {
 
     public void startDAQ() {
 
-        btAttysDevice = AttysComm.findAttysBtDevice();
-        if (btAttysDevice == null) {
+        if (attysService.getAttysComm() == null) {
             noAttysFoundAlert();
         }
-
-        attysComm = new AttysComm(btAttysDevice);
-        attysComm.registerMessageListener(messageListener);
 
         getsetAttysPrefs();
 
@@ -879,11 +807,11 @@ public class AttysScope extends AppCompatActivity {
 
         infoView = findViewById(R.id.infoview);
 
-        signalAnalysis = new SignalAnalysis(attysComm.getSamplingRateInHz());
+        signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
 
-        attysComm.start();
+        attysService.getAttysComm().start();
 
-        ecg_rr_det = new ECG_rr_det(attysComm.getSamplingRateInHz(), powerlineHz);
+        ecg_rr_det = new ECG_rr_det(attysService.getAttysComm().getSamplingRateInHz(), powerlineHz);
 
         ecg_rr_det.setRrListener(new ECG_rr_det.RRlistener() {
             @Override
@@ -929,9 +857,8 @@ public class AttysScope extends AppCompatActivity {
             }
         }
 
-        if (attysComm != null) {
-            attysComm.stop();
-            attysComm = null;
+        if (attysService.getAttysComm() != null) {
+            attysService.getAttysComm().stop();
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "Killed AttysComm");
             }
@@ -941,6 +868,8 @@ public class AttysScope extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        stopAttysService();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Destroy!");
@@ -1021,13 +950,13 @@ public class AttysScope extends AppCompatActivity {
                         dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
                         if (!dataFilename.contains(".")) {
                             switch (dataSeparator) {
-                                case DataRecorder.DATA_SEPARATOR_COMMA:
+                                case AttysService.DataRecorder.DATA_SEPARATOR_COMMA:
                                     dataFilename = dataFilename + ".csv";
                                     break;
-                                case DataRecorder.DATA_SEPARATOR_SPACE:
+                                case AttysService.DataRecorder.DATA_SEPARATOR_SPACE:
                                     dataFilename = dataFilename + ".dat";
                                     break;
-                                case DataRecorder.DATA_SEPARATOR_TAB:
+                                case AttysService.DataRecorder.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".tsv";
                             }
                         }
@@ -1156,19 +1085,13 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.toggleRec:
-                if (dataRecorder.isRecording()) {
-                    File file = dataRecorder.getFile();
-                    dataRecorder.stopRec();
-                    if (file != null) {
-                        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                        Uri contentUri = Uri.fromFile(file);
-                        mediaScanIntent.setData(contentUri);
-                        sendBroadcast(mediaScanIntent);
-                    }
+                if (attysService.getDataRecorder().isRecording()) {
+                    File file = attysService.getDataRecorder().getFile();
+                    attysService.getDataRecorder().stopRec();
                 } else {
                     if (dataFilename != null) {
                         File file = new File(ATTYSDIR, dataFilename.trim());
-                        dataRecorder.setDataSeparator(dataSeparator);
+                        attysService.getDataRecorder().setDataSeparator(dataSeparator);
                         if (file.exists()) {
                             Toast.makeText(getApplicationContext(),
                                     "File exists already. Enter a different one.",
@@ -1176,14 +1099,14 @@ public class AttysScope extends AppCompatActivity {
                             return true;
                         }
                         try {
-                            dataRecorder.startRec(file);
+                            attysService.getDataRecorder().startRec(file);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not open data file: " + e.getMessage());
                             }
                             return true;
                         }
-                        if (dataRecorder.isRecording()) {
+                        if (attysService.getDataRecorder().isRecording()) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Saving to " + file.getAbsolutePath());
                             }
@@ -1241,7 +1164,7 @@ public class AttysScope extends AppCompatActivity {
                 if (iirNotch[AttysComm.INDEX_Analogue_channel_1] == null) {
                     iirNotch[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
                     iirNotch[AttysComm.INDEX_Analogue_channel_1].bandStop(notchOrder,
-                            attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+                            attysService.getAttysComm().getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
                     iirNotch[AttysComm.INDEX_Analogue_channel_1] = null;
                 }
@@ -1252,7 +1175,7 @@ public class AttysScope extends AppCompatActivity {
                 if (iirNotch[AttysComm.INDEX_Analogue_channel_2] == null) {
                     iirNotch[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
                     iirNotch[AttysComm.INDEX_Analogue_channel_2].bandStop(notchOrder,
-                            attysComm.getSamplingRateInHz(), powerlineHz, notchBW);
+                            attysService.getAttysComm().getSamplingRateInHz(), powerlineHz, notchBW);
                 } else {
                     iirNotch[AttysComm.INDEX_Analogue_channel_2] = null;
                 }
@@ -1346,8 +1269,8 @@ public class AttysScope extends AppCompatActivity {
                 // Create a new Fragment to be placed in the activity layout
                 amplitudeFragment = new AmplitudeFragment();
                 amplitudeFragment.setUnits(units);
-                if (attysComm != null) {
-                    amplitudeFragment.setSamplingrate(attysComm.getSamplingRateInHz());
+                if (attysService.getAttysComm() != null) {
+                    amplitudeFragment.setSamplingrate(attysService.getAttysComm().getSamplingRateInHz());
                 } else {
                     amplitudeFragment = null;
                     return true;
@@ -1369,8 +1292,8 @@ public class AttysScope extends AppCompatActivity {
                 // Create a new Fragment to be placed in the activity layout
                 fourierFragment = new FourierFragment();
                 fourierFragment.setUnits(units);
-                if (attysComm != null) {
-                    fourierFragment.setSamplingrate(attysComm.getSamplingRateInHz());
+                if (attysService.getAttysComm() != null) {
+                    fourierFragment.setSamplingrate(attysService.getAttysComm().getSamplingRateInHz());
                 } else {
                     fourierFragment = null;
                     return true;
@@ -1446,31 +1369,31 @@ public class AttysScope extends AppCompatActivity {
             mux = AttysComm.ADC_MUX_NORMAL;
         }
         byte gain0 = (byte) (Integer.parseInt(prefs.getString("ch1_gainpref", "0")));
-        attysComm.setAdc1_gain_index(gain0);
-        attysComm.setAdc0_mux_index(mux);
+        attysService.getAttysComm().setAdc1_gain_index(gain0);
+        attysService.getAttysComm().setAdc0_mux_index(mux);
         byte gain1 = (byte) (Integer.parseInt(prefs.getString("ch2_gainpref", "0")));
-        attysComm.setAdc2_gain_index(gain1);
-        attysComm.setAdc1_mux_index(mux);
+        attysService.getAttysComm().setAdc2_gain_index(gain1);
+        attysService.getAttysComm().setAdc1_mux_index(mux);
 
         int ch2_option = Integer.parseInt(prefs.getString("ch2_options", "-1"));
         ch2Converter.setRule(ch2_option);
         int currentIndex = ch2Converter.getCurrentIndex();
         if (currentIndex < 0) {
-            attysComm.enableCurrents(false, false, false);
+            attysService.getAttysComm().enableCurrents(false, false, false);
         } else {
-            attysComm.setBiasCurrent((byte) currentIndex);
-            attysComm.enableCurrents(false, false, true);
+            attysService.getAttysComm().setBiasCurrent((byte) currentIndex);
+            attysService.getAttysComm().enableCurrents(false, false, true);
         }
 
         byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
-        dataRecorder.setDataSeparator(data_separator);
+        attysService.getDataRecorder().setDataSeparator(data_separator);
 
         boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
-        dataRecorder.setGPIOlogging(withGPIO);
+        attysService.getDataRecorder().setGPIOlogging(withGPIO);
 
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
-        attysComm.setAccel_full_scale_index((byte) fullscaleAcc);
+        attysService.getAttysComm().setAccel_full_scale_index((byte) fullscaleAcc);
 
         powerlineHz = Float.parseFloat(prefs.getString("powerline", "50"));
         if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -1479,9 +1402,9 @@ public class AttysScope extends AppCompatActivity {
 
         samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "1"));
         if (samplingRate < 0) samplingRate = 0;
-        if (null != btAttysDevice) {
-            if (null != btAttysDevice.getName()) {
-                if (btAttysDevice.getName().contains("ATTYS2")) {
+        if (null != attysService.getBtAttysDevice()) {
+            if (null != attysService.getBtAttysDevice().getName()) {
+                if (attysService.getBtAttysDevice().getName().contains("ATTYS2")) {
                     if (samplingRate > 2) {
                         samplingRate = 2;
                     }
@@ -1496,7 +1419,7 @@ public class AttysScope extends AppCompatActivity {
         editor.putString("samplingrate", String.valueOf(samplingRate));
         editor.apply();
 
-        attysComm.setAdc_samplingrate_index(samplingRate);
+        attysService.getAttysComm().setAdc_samplingrate_index(samplingRate);
 
         highpass1Hz = Float.parseFloat(prefs.getString("highpass1", "0.1"));
         if (Log.isLoggable(TAG, Log.DEBUG)) {

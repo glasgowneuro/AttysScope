@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/AttysScope.iml" filepath="$PROJECT_DIR$/AttysScope.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/AttysScope.iml" filepath="$PROJECT_DIR$/.idea/modules/AttysScope.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/AttysScope.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/AttysScope.app.iml" />
     </modules>
   </component>
