@@ -17,7 +17,6 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
-import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -26,7 +25,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -55,7 +53,6 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -308,6 +305,7 @@ public class AttysScope extends AppCompatActivity {
                 startService(intent);
                 AttysService.AttysBinder binder = (AttysService.AttysBinder) service;
                 attysService = binder.getService();
+                initAll();
             }
 
             public void onServiceDisconnected(ComponentName className) {
@@ -629,11 +627,12 @@ public class AttysScope extends AppCompatActivity {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Back button pressed");
         }
-        killAttysComm();
+        stopAnimation();
         Intent startMain = new Intent(Intent.ACTION_MAIN);
         startMain.addCategory(Intent.CATEGORY_HOME);
         startActivity(startMain);
     }
+
 
     /**
      * Called when the activity is first created.
@@ -657,33 +656,13 @@ public class AttysScope extends AppCompatActivity {
 
         progress = findViewById(R.id.indeterminateBar);
 
-        startAttysService();
-
-        int nChannels = AttysComm.NCHANNELS;
-        highpass = new Butterworth[nChannels];
-        gain = new float[nChannels];
-        iirNotch = new Butterworth[nChannels];
-        invert = new boolean[nChannels];
-        actualChannelIdx = new int[nChannels];
-        for (int i = 0; i < nChannels; i++) {
-            highpass[i] = null;
-            iirNotch[i] = null;
-            // set it to 1st ADC channel
-            actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
-            gain[i] = 1;
-            if ((i >= AttysComm.INDEX_Magnetic_field_X) && (i <= AttysComm.INDEX_Magnetic_field_Z)) {
-                gain[i] = 20;
-            }
-        }
     }
 
-    // this is called whenever the app is starting or re-starting
+    // this is called whenever the app is starting
     @Override
     public void onStart() {
         super.onStart();
-
-        startDAQ();
-
+        startAttysService();
     }
 
 
@@ -691,7 +670,7 @@ public class AttysScope extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        updatePlotTask.resetAnalysis();
+//        updatePlotTask.resetAnalysis();
 
     }
 
@@ -766,10 +745,31 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
-    public void startDAQ() {
+    void initAll() {
+        Log.d(TAG,"Starting to init all the settings.");
 
+        attysService.createAttysComm();
         if (attysService.getAttysComm() == null) {
             noAttysFoundAlert();
+            Log.d(TAG,"No Attys found!");
+            return;
+        }
+
+        int nChannels = AttysComm.NCHANNELS;
+        highpass = new Butterworth[nChannels];
+        gain = new float[nChannels];
+        iirNotch = new Butterworth[nChannels];
+        invert = new boolean[nChannels];
+        actualChannelIdx = new int[nChannels];
+        for (int i = 0; i < nChannels; i++) {
+            highpass[i] = null;
+            iirNotch[i] = null;
+            // set it to 1st ADC channel
+            actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
+            gain[i] = 1;
+            if ((i >= AttysComm.INDEX_Magnetic_field_X) && (i <= AttysComm.INDEX_Magnetic_field_Z)) {
+                gain[i] = 20;
+            }
         }
 
         getsetAttysPrefs();
@@ -809,6 +809,8 @@ public class AttysScope extends AppCompatActivity {
 
         signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
 
+        attysService.getAttysComm().registerMessageListener(messageListener);
+
         attysService.getAttysComm().start();
 
         ecg_rr_det = new ECG_rr_det(attysService.getAttysComm().getSamplingRateInHz(), powerlineHz);
@@ -831,14 +833,20 @@ public class AttysScope extends AppCompatActivity {
             }
         });
 
+        startAnimation();
 
+    }
+
+
+    public void startAnimation() {
         timer = new Timer();
         updatePlotTask = new UpdatePlotTask();
         updatePlotTask.resetAnalysis();
         timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
+        Log.d(TAG,"Timer started");
     }
 
-    private void killAttysComm() {
+    private void stopAnimation() {
 
         if (timer != null) {
             timer.cancel();
@@ -857,12 +865,6 @@ public class AttysScope extends AppCompatActivity {
             }
         }
 
-        if (attysService.getAttysComm() != null) {
-            attysService.getAttysComm().stop();
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "Killed AttysComm");
-            }
-        }
     }
 
     @Override
@@ -874,7 +876,7 @@ public class AttysScope extends AppCompatActivity {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Destroy!");
         }
-        killAttysComm();
+        stopAnimation();
         if (alertDialog != null) {
             if (alertDialog.isShowing()) {
                 alertDialog.dismiss();
@@ -890,7 +892,7 @@ public class AttysScope extends AppCompatActivity {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Restarting");
         }
-        killAttysComm();
+        stopAnimation();
     }
 
 
@@ -913,7 +915,7 @@ public class AttysScope extends AppCompatActivity {
             Log.d(TAG, "Stopped");
         }
 
-        killAttysComm();
+        stopAnimation();
     }
 
 
@@ -1067,8 +1069,6 @@ public class AttysScope extends AppCompatActivity {
 
         menuItemMains1 = menu.findItem(R.id.Ch1notch);
         menuItemMains2 = menu.findItem(R.id.Ch2notch);
-
-        checkMenuItems();
 
         return true;
     }

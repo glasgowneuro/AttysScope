@@ -76,7 +76,9 @@ public class InfoView extends View {
         int txtDiv = 25;
         do {
             paintSmall.setTextSize(getHeight() / txtDiv);
-            paintSmall.getTextBounds(smallText+"|y`", 0, smallText.length(), bounds);
+            if (null != smallText) {
+                paintSmall.getTextBounds(smallText + "|y`", 0, smallText.length(), bounds);
+            }
             txtDiv++;
         } while ((width - (bounds.width() * 10 / 9)) < 0);
         int y2 = bounds.height();
@@ -95,7 +97,9 @@ public class InfoView extends View {
                 canvas.drawText(largeText, xLarge, yLarge + y2 * 10 / 9, paintLarge);
             }
         }
-        canvas.drawText(smallText, width / 100, y2, paintSmall);
+        if (null != smallText) {
+            canvas.drawText(smallText, width / 100, y2, paintSmall);
+        }
         if ((y2+yLarge)>textHeight) {
             textHeight = y2 + yLarge;
         }
