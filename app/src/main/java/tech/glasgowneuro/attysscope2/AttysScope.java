@@ -306,6 +306,7 @@ public class AttysScope extends AppCompatActivity {
                 AttysService.AttysBinder binder = (AttysService.AttysBinder) service;
                 attysService = binder.getService();
                 initAll();
+                attysService.getAttysComm().start();
             }
 
             public void onServiceDisconnected(ComponentName className) {
@@ -670,8 +671,12 @@ public class AttysScope extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-//        updatePlotTask.resetAnalysis();
-
+        if (null != attysService) {
+            attysService.getAttysComm().start();
+        }
+        if (null != updatePlotTask) {
+            updatePlotTask.resetAnalysis();
+        }
     }
 
 
@@ -809,9 +814,7 @@ public class AttysScope extends AppCompatActivity {
 
         signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
 
-        attysService.getAttysComm().registerMessageListener(messageListener);
-
-        attysService.getAttysComm().start();
+        attysService.registerMessageListener(messageListener);
 
         ecg_rr_det = new ECG_rr_det(attysService.getAttysComm().getSamplingRateInHz(), powerlineHz);
 
@@ -892,7 +895,10 @@ public class AttysScope extends AppCompatActivity {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Restarting");
         }
-        stopAnimation();
+        startAnimation();
+        if (!(attysService.getDataRecorder().isRecording())) {
+            attysService.getAttysComm().start();
+        }
     }
 
 
@@ -916,6 +922,9 @@ public class AttysScope extends AppCompatActivity {
         }
 
         stopAnimation();
+        if (!(attysService.getDataRecorder().isRecording())) {
+            attysService.getAttysComm().stop();
+        }
     }
 
 
