@@ -1557,6 +1557,7 @@ public class AttysScope extends AppCompatActivity {
             try {
                 textdataFileStream = new PrintWriter(file);
                 textdataFile = file;
+                attysService.getAttysComm().setTimestamp(0);
             } catch (java.io.FileNotFoundException e) {
                 textdataFileStream = null;
                 textdataFile = null;
