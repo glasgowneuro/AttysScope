@@ -721,13 +721,13 @@ public class AttysScope extends AppCompatActivity {
 
         infoView = findViewById(R.id.infoview);
 
+        startAttysService();
     }
 
     // this is called whenever the app is starting
     @Override
     public void onStart() {
         super.onStart();
-        startAttysService();
     }
 
 
