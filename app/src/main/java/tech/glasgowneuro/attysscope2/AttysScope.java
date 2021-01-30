@@ -54,6 +54,7 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -1112,7 +1113,6 @@ public class AttysScope extends AppCompatActivity {
                         Uri uri = Uri.EMPTY;
                         try {
                             uri = getUri2Filename(this,dataFilename,dataSeparator);
-                            dataRecorder.setDataSeparator(dataSeparator);
                             dataRecorder.startRec(uri);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -1410,7 +1410,6 @@ public class AttysScope extends AppCompatActivity {
 
         dataSeparator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
         Log.d(TAG,"Data separator = "+dataSeparator+", suff:"+getFileSuffix());
-        dataRecorder.setDataSeparator(dataSeparator);
 
         boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
         dataRecorder.setGPIOlogging(withGPIO);
@@ -1577,7 +1576,6 @@ public class AttysScope extends AppCompatActivity {
         // saving data into a file
 
         private PrintWriter textdataFileStream = null;
-        private byte data_separator = AttysScope.DATA_SEPARATOR_TAB;
         private Uri uri = null;
         private boolean gpioLogging = false;
 
@@ -1586,8 +1584,8 @@ public class AttysScope extends AppCompatActivity {
             uri = _uri;
             try {
                 Log.d(TAG,"Starting recording. URI = "+uri.toString());
-                textdataFileStream = new PrintWriter(getContentResolver().openOutputStream(uri));
-                attysService.getAttysComm().setTimestamp(0);
+                textdataFileStream = new PrintWriter(Objects.requireNonNull(getContentResolver().openOutputStream(uri)));
+                attysService.getAttysComm().setSampleCounter(0);
                 Log.d(TAG,"textdataFileStream = "+textdataFileStream);
             } catch (Exception e) {
                 textdataFileStream = null;
@@ -1614,10 +1612,6 @@ public class AttysScope extends AppCompatActivity {
         }
 
         public String getFileName() { return uri.getLastPathSegment(); }
-
-        public void setDataSeparator(byte s) {
-            data_separator = s;
-        }
 
         public void setGPIOlogging(boolean g) { gpioLogging = g; }
 
