@@ -953,6 +953,7 @@ public class AttysScope extends AppCompatActivity {
     }
 
     final int CHOOSE_DIR_CODE = 1;
+    final int PICK_FILE_CODE = 2;
 
     @Override
     public void onActivityResult(int requestCode, int resultCode,
@@ -969,6 +970,14 @@ public class AttysScope extends AppCompatActivity {
                 resolver.takePersistableUriPermission(directoryUri, takeFlags);
                 Log.d(TAG, "URI=" + directoryUri);
             }
+        }
+        if (requestCode == PICK_FILE_CODE
+                && resultCode == Activity.RESULT_OK) {
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_STREAM, resultData.getData());
+            sendIntent.setType("text/*");
+            startActivity(Intent.createChooser(sendIntent, "Send your files"));
         }
     }
 
@@ -1014,88 +1023,11 @@ public class AttysScope extends AppCompatActivity {
                 .show();
     }
 
-
     private void shareData() {
-
-        final int REQUEST_EXTERNAL_STORAGE = 1;
-        String[] PERMISSIONS_STORAGE = {
-                Manifest.permission.READ_EXTERNAL_STORAGE
-        };
-
-        int permission = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
-            );
-        }
-
-        final List files = new ArrayList();
-//        final String[] list = directoryUri.
-//        if (list == null) return;
-        /**
-        for (String file : list) {
-            if (files != null) {
-                if (file != null) {
-                    if (files != null) {
-                        files.add(file);
-                    }
-                }
-            }
-        }
-**/
-
-        final ListView listview = new ListView(this);
-        ArrayAdapter adapter = new ArrayAdapter(this,
-                android.R.layout.simple_list_item_multiple_choice,
-                files);
-        listview.setAdapter(adapter);
-        listview.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                view.setSelected(true);
-            }
-        });
-
-        new AlertDialog.Builder(this)
-                .setTitle("Share")
-                .setMessage("Select filename(s)")
-                .setView(listview)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        SparseBooleanArray checked = listview.getCheckedItemPositions();
-                        Intent sendIntent = new Intent();
-                        sendIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
-                        ArrayList<Uri> files = new ArrayList<>();
-                        for (int i = 0; i < listview.getCount(); i++) {
-                            if (checked.get(i)) {
-                                String filename; // = list[i];
-                                // File fp = new File(ATTYSDIR, filename);
-                                // files.add(Uri.fromFile(fp));
-                            }
-                        }
-                        sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files);
-                        sendIntent.setType("text/*");
-                        startActivity(Intent.createChooser(sendIntent, "Send your files"));
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                    }
-                })
-                .show();
-
-        ViewGroup.LayoutParams layoutParams = listview.getLayoutParams();
-        Screensize screensize = new Screensize(getWindowManager());
-        layoutParams.height = screensize.getHeightInPixels() / 2;
-        listview.setLayoutParams(layoutParams);
-
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("text/*");
+        startActivityForResult(intent, PICK_FILE_CODE);
     }
-
 
     private void setMenuColour(MenuItem menuItem, int c) {
         if (null == menuItem) return;
