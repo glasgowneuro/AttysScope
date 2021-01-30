@@ -125,9 +125,9 @@ public class AttysScope extends AppCompatActivity {
     private float ch1Div = 1;
     private float ch2Div = 1;
 
-    private float magTick = 1000.0E-6F; //1000uT
+    private final float magTick = 1000.0E-6F; //1000uT
 
-    private float accTick = AttysComm.oneG; // 1G
+    private final float accTick = AttysComm.oneG; // 1G
 
     private int timebase = 1;
 
@@ -852,7 +852,7 @@ public class AttysScope extends AppCompatActivity {
                                   double confidence) {
                 if (updatePlotTask != null) {
                     if (textAnnotation == TextAnnotation.ECG) {
-                        updatePlotTask.annotatePlot(String.format("%03d BPM", (int) bpm));
+                        updatePlotTask.annotatePlot(String.format(Locale.US,"%03d BPM", (int) bpm));
                     }
                 }
                 if (heartRateFragment != null) {
@@ -922,6 +922,7 @@ public class AttysScope extends AppCompatActivity {
         Log.d(TAG, "Restarting");
         startAnimation();
         if (!(dataRecorder.isRecording())) {
+            getsetAttysPrefs();
             attysService.getAttysComm().start();
         }
     }
@@ -1362,8 +1363,9 @@ public class AttysScope extends AppCompatActivity {
             attysService.getAttysComm().enableCurrents(false, false, true);
         }
 
-        byte data_separator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
-        dataRecorder.setDataSeparator(data_separator);
+        dataSeparator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
+        Log.d(TAG,"Data separator = "+dataSeparator+", suff:"+getFileSuffix(dataSeparator));
+        dataRecorder.setDataSeparator(dataSeparator);
 
         boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
         dataRecorder.setGPIOlogging(withGPIO);
