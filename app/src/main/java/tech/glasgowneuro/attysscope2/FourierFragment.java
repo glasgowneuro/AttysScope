@@ -1,10 +1,7 @@
 package tech.glasgowneuro.attysscope2;
 
-import android.Manifest;
-import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -13,8 +10,6 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import android.util.Log;
@@ -42,14 +37,12 @@ import com.androidplot.xy.StepMode;
 import com.androidplot.xy.XYGraphWidget;
 import com.androidplot.xy.XYPlot;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Locale;
 import java.util.Objects;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
-import tech.glasgowneuro.attyscomm.AttysService;
 
 /**
  * Fourier Transform Fragment
@@ -57,7 +50,7 @@ import tech.glasgowneuro.attyscomm.AttysService;
 
 public class FourierFragment extends Fragment {
 
-    private String TAG = "FourierFragment";
+    private final String TAG = "FourierFragment";
 
     private int channel = AttysComm.INDEX_Analogue_channel_1;
 
@@ -65,9 +58,9 @@ public class FourierFragment extends Fragment {
 
     private XYPlot spectrumPlot = null;
 
-    private static String[] MAXYTXT = {"auto range", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
+    private static final String[] MAXYTXT = {"auto range", "1", "0.5", "0.1", "0.05", "0.01", "0.005", "0.001", "0.0005", "0.0001", "0.00005", "0.00001"};
 
-    private String[] units = new String[AttysComm.NCHANNELS];
+    private final String[] units = new String[AttysComm.NCHANNELS];
 
     void setUnits(String[] _units) {
         System.arraycopy(_units, 0, units, 0, AttysComm.NCHANNELS);
@@ -83,14 +76,14 @@ public class FourierFragment extends Fragment {
 
     private static final int BUFFERSIZE = 256;
 
-    private double[] values = new double[BUFFERSIZE];
+    private final double[] values = new double[BUFFERSIZE];
 
     private int nValues = 0;
 
     private String dataFilename = null;
 
     // private byte dataSeparator = AttysService.DataRecorder.DATA_SEPARATOR_TAB;
-    private byte dataSeparator = AttysScope.DATA_SEPARATOR_TAB;
+    private final byte dataSeparator = AttysScope.DATA_SEPARATOR_TAB;
 
     public void setSamplingrate(int _samplingrate) {
         samplingRate = _samplingrate;
@@ -188,15 +181,15 @@ public class FourierFragment extends Fragment {
                                   Number val, float x, float y, boolean isOrigin) {
                 Rect bounds = new Rect();
                 style.getPaint().getTextBounds("a", 0, 1, bounds);
-                drawLabel(canvas, String.format("%04.6f ", val.floatValue()),
-                        style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
+                drawLabel(canvas, String.format(Locale.US,"%04.6f ", val.floatValue()),
+                        style.getPaint(), x + (float)bounds.width() / 2, y + bounds.height(), isOrigin);
             }
         };
 
         spectrumPlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT, lineLabelRendererY);
         XYGraphWidget.LineLabelStyle lineLabelStyle = spectrumPlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
         Rect bounds = new Rect();
-        String dummyTxt = String.format("%04.5f ", 1000.000597558899);
+        String dummyTxt = String.format(Locale.US,"%04.5f ", 1000.000597558899);
         lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
         spectrumPlot.getGraph().setMarginLeft(bounds.width());
 
@@ -208,8 +201,8 @@ public class FourierFragment extends Fragment {
                 if (!isOrigin) {
                     Rect bounds = new Rect();
                     style.getPaint().getTextBounds("a", 0, 1, bounds);
-                    drawLabel(canvas, String.format("%d", val.intValue()),
-                            style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
+                    drawLabel(canvas, String.format(Locale.US,"%d", val.intValue()),
+                            style.getPaint(), x + (float)bounds.width() / 2, y + bounds.height(), isOrigin);
                 }
             }
         };
@@ -272,35 +265,27 @@ public class FourierFragment extends Fragment {
     }
 
 
-    private void writeSpectrumfile() throws IOException {
+    private void writeSpectrumfile(String dataFilename, SimpleXYSeries simpleXYSeries) throws IOException {
 
-        PrintWriter aepdataFileStream;
-
-        if (dataFilename == null) return;
+        PrintWriter fftFileStream;
 
         Uri uri = Uri.EMPTY;
 
-        try {
-            DocumentFile documentTree = DocumentFile.fromTreeUri(getActivity().getApplicationContext(),AttysScope.directoryUri);
-            DocumentFile documentFile = documentTree.createFile(AttysScope.getMimeType(dataSeparator),dataFilename.trim());
-            uri = documentFile.getUri();
-            aepdataFileStream = new PrintWriter(getActivity().getContentResolver().openOutputStream(uri));
-        } catch (java.io.FileNotFoundException e) {
-            throw e;
-        }
+        uri = AttysScope.getUri2Filename(getActivity(),dataFilename,dataSeparator);
+        fftFileStream = new PrintWriter(Objects.requireNonNull(getActivity().getContentResolver().openOutputStream(uri)));
 
-        char s = AttysScope.getDataSeparator(dataSeparator);
+        char s = AttysScope.getDataSeparatorChar();
 
-        for (int i = 0; i < spectrumSeries.size(); i++) {
-            aepdataFileStream.format("%e%c%e%c\n",
-                    spectrumSeries.getX(i).floatValue(), s,
-                    spectrumSeries.getY(i).floatValue(), s);
-            if (aepdataFileStream.checkError()) {
+        for (int i = 0; i < simpleXYSeries.size(); i++) {
+            fftFileStream.format("%e%c%e%c\n",
+                    simpleXYSeries.getX(i).floatValue(), s,
+                    simpleXYSeries.getY(i).floatValue(), s);
+            if (fftFileStream.checkError()) {
                 throw new IOException("file write error");
             }
         }
 
-        aepdataFileStream.close();
+        fftFileStream.close();
 
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         mediaScanIntent.setData(uri);
@@ -311,48 +296,29 @@ public class FourierFragment extends Fragment {
     private void saveSpectrum() {
 
         final EditText filenameEditText = new EditText(getContext());
-        filenameEditText.setSingleLine(true);
+        final SimpleXYSeries savedSpectrumSeries = new SimpleXYSeries(" ");
 
-        final int REQUEST_EXTERNAL_STORAGE = 1;
-        String[] PERMISSIONS_STORAGE = {
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        };
-
-        int permission = ActivityCompat.checkSelfPermission(Objects.requireNonNull(getContext()), Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    Objects.requireNonNull(getActivity()),
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
-            );
+        for (int i = 0; i <= (BUFFERSIZE / 2); i++) {
+            savedSpectrumSeries.addLast(spectrumSeries.getX(i), spectrumSeries.getY(i));
         }
+
+        AttysScope.triggerRequestDirectoryAccess(getActivity());
+
+        filenameEditText.setSingleLine(true);
 
         filenameEditText.setHint("");
         filenameEditText.setText(dataFilename);
 
-        new AlertDialog.Builder(getContext())
+        new AlertDialog.Builder(Objects.requireNonNull(getContext()))
                 .setTitle("Saving the Fourier spectrum")
                 .setMessage("Enter the filename of the data textfile")
                 .setView(filenameEditText)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dataFilename = filenameEditText.getText().toString();
-                        dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-                        if (!dataFilename.contains(".")) {
-                            switch (dataSeparator) {
-                                case AttysScope.DATA_SEPARATOR_COMMA:
-                                    dataFilename = dataFilename + ".csv";
-                                    break;
-                                case AttysScope.DATA_SEPARATOR_SPACE:
-                                    dataFilename = dataFilename + ".dat";
-                                    break;
-                                case AttysScope.DATA_SEPARATOR_TAB:
-                                    dataFilename = dataFilename + ".tsv";
-                            }
-                        }
+                        dataFilename = AttysScope.fixFilename(dataFilename);
                         try {
-                            writeSpectrumfile();
+                            writeSpectrumfile(dataFilename,savedSpectrumSeries);
                             Toast.makeText(getActivity(),
                                     "Successfully written '" + dataFilename + "' to the external memory",
                                     Toast.LENGTH_SHORT).show();
@@ -387,8 +353,13 @@ public class FourierFragment extends Fragment {
 
         boolean doRun = true;
 
+        private final Object sleeper = new Object();
+
         void cancel() {
             doRun = false;
+            synchronized (sleeper) {
+                sleeper.notify();
+            }
         }
 
         public void run() {
@@ -399,7 +370,9 @@ public class FourierFragment extends Fragment {
             while (doRun) {
 
                 try {
-                    Thread.sleep(1250);
+                    synchronized (sleeper) {
+                        sleeper.wait(1250);
+                    }
                 } catch (Exception e) {
                     Log.v(TAG,"Sleep:",e);
                 }

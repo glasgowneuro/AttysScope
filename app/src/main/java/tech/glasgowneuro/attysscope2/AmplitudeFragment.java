@@ -10,6 +10,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
@@ -38,6 +40,8 @@ import com.androidplot.xy.XYPlot;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Locale;
+import java.util.Objects;
 
 import tech.glasgowneuro.attyscomm.AttysComm;
 import tech.glasgowneuro.attyscomm.AttysService;
@@ -56,15 +60,13 @@ public class AmplitudeFragment extends Fragment {
 
     private boolean isRMSmode = false;
 
-    private Spinner spinnerMaxY;
-
-    private static String[] MAXYTXT = {
+    private static final String[] MAXYTXT = {
             "auto range", "1E8", "1E7", "1E6", "1E5", "1E4", "500", "50", "20", "10", "5", "2", "1", "0.5", "0.1", "0.05",
             "0.01", "0.005", "0.001", "0.0005", "0.0001"};
 
-    private static String[] WINDOW_LENGTH = {"0.1 sec", "0.2 sec", "0.5 sec", "1 sec", "2 sec", "5 sec", "10 sec"};
+    private static final String[] WINDOW_LENGTH = {"0.1 sec", "0.2 sec", "0.5 sec", "1 sec", "2 sec", "5 sec", "10 sec"};
 
-    private int DEFAULT_WINDOW_LENGTH = 3;
+    private static final int DEFAULT_WINDOW_LENGTH = 3;
 
     private int windowLength = 100;
 
@@ -75,26 +77,12 @@ public class AmplitudeFragment extends Fragment {
 
     private TextView amplitudeReadingText = null;
 
-    private ToggleButton toggleButtonDoRecord;
-
-    private ToggleButton toggleButtonRMS_pp;
-
-    private Button resetButton;
-
-    private Button saveButton;
-
-    private Spinner spinnerChannel;
-
-    private Spinner spinnerWindow;
-
     private SignalAnalysis signalAnalysis = null;
 
-    private String[] units = new String[AttysComm.NCHANNELS];
+    private final String[] units = new String[AttysComm.NCHANNELS];
 
     public void setUnits(String [] _units) {
-        for(int i=0;i<AttysComm.NCHANNELS;i++) {
-            units[i] = _units[i];
-        }
+        System.arraycopy(_units, 0, units, 0, AttysComm.NCHANNELS);
     }
 
     View view = null;
@@ -111,7 +99,7 @@ public class AmplitudeFragment extends Fragment {
 
     private String dataFilename = null;
 
-    private byte dataSeparator = AttysScope.DATA_SEPARATOR_TAB;
+    private final byte dataSeparator = AttysScope.DATA_SEPARATOR_TAB;
 
     public void setSamplingrate(int _samplingrate) {
         samplingRate = _samplingrate;
@@ -148,7 +136,7 @@ public class AmplitudeFragment extends Fragment {
      * Called when the activity is first created.
      */
     @Override
-    public View onCreateView(LayoutInflater inflater,
+    public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
 
@@ -168,8 +156,8 @@ public class AmplitudeFragment extends Fragment {
         amplitudePlot = view.findViewById(R.id.amplitude_PlotView);
         amplitudeHistorySeries = new SimpleXYSeries(" ");
         amplitudeReadingText = view.findViewById(R.id.amplitude_valueTextView);
-        amplitudeReadingText.setText(String.format("%04d", 0));
-        toggleButtonDoRecord = view.findViewById(R.id.amplitude_doRecord);
+        amplitudeReadingText.setText(String.format(Locale.US,"%04d", 0));
+        ToggleButton toggleButtonDoRecord = view.findViewById(R.id.amplitude_doRecord);
         toggleButtonDoRecord.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 acceptData = isChecked;
@@ -177,7 +165,7 @@ public class AmplitudeFragment extends Fragment {
         });
         toggleButtonDoRecord.setChecked(true);
 
-        toggleButtonRMS_pp = view.findViewById(R.id.amplitude_rms_pp);
+        ToggleButton toggleButtonRMS_pp = view.findViewById(R.id.amplitude_rms_pp);
         toggleButtonRMS_pp.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 isRMSmode = isChecked;
@@ -186,21 +174,15 @@ public class AmplitudeFragment extends Fragment {
         });
         toggleButtonRMS_pp.setChecked(false);
 
-        resetButton = view.findViewById(R.id.amplitude_Reset);
+        Button resetButton = view.findViewById(R.id.amplitude_Reset);
         resetButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 reset();
             }
         });
-        saveButton = view.findViewById(R.id.amplitude_Save);
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                saveAmplitude();
-            }
-        });
 
-        spinnerChannel = view.findViewById(R.id.amplitude_channel);
-        ArrayAdapter<String> adapterChannel = new ArrayAdapter<>(getContext(),
+        Spinner spinnerChannel = view.findViewById(R.id.amplitude_channel);
+        ArrayAdapter<String> adapterChannel = new ArrayAdapter<>(Objects.requireNonNull(getContext()),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
         adapterChannel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -220,7 +202,7 @@ public class AmplitudeFragment extends Fragment {
         spinnerChannel.setSelection(AttysComm.INDEX_Analogue_channel_1);
 
 
-        spinnerWindow = view.findViewById(R.id.amplitude_window);
+        Spinner spinnerWindow = view.findViewById(R.id.amplitude_window);
         ArrayAdapter<String> adapterWindow = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 WINDOW_LENGTH);
@@ -268,15 +250,15 @@ public class AmplitudeFragment extends Fragment {
                                   Number val, float x, float y, boolean isOrigin) {
                 Rect bounds = new Rect();
                 style.getPaint().getTextBounds("a", 0, 1, bounds);
-                drawLabel(canvas, String.format("%04.5f ", val.floatValue()),
-                        style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
+                drawLabel(canvas, String.format(Locale.US,"%04.5f ", val.floatValue()),
+                        style.getPaint(), x + (float)bounds.width() / 2, y + bounds.height(), isOrigin);
             }
         };
 
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.LEFT, lineLabelRendererY);
         XYGraphWidget.LineLabelStyle lineLabelStyle = amplitudePlot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.LEFT);
         Rect bounds = new Rect();
-        String dummyTxt = String.format("%04.5f ", 100000.000599);
+        String dummyTxt = String.format(Locale.US,"%04.5f ", 100000.000599);
         lineLabelStyle.getPaint().getTextBounds(dummyTxt, 0, dummyTxt.length(), bounds);
         amplitudePlot.getGraph().setMarginLeft(bounds.width());
 
@@ -288,15 +270,15 @@ public class AmplitudeFragment extends Fragment {
                 if (!isOrigin) {
                     Rect bounds = new Rect();
                     style.getPaint().getTextBounds("a", 0, 1, bounds);
-                    drawLabel(canvas, String.format("%d", val.intValue()),
-                            style.getPaint(), x + bounds.width() / 2, y + bounds.height(), isOrigin);
+                    drawLabel(canvas, String.format(Locale.US,"%d", val.intValue()),
+                            style.getPaint(), x + (float)bounds.width() / 2, y + bounds.height(), isOrigin);
                 }
             }
         };
 
         amplitudePlot.getGraph().setLineLabelRenderer(XYGraphWidget.Edge.BOTTOM, lineLabelRendererX);
 
-        spinnerMaxY = view.findViewById(R.id.amplitude_maxy);
+        Spinner spinnerMaxY = view.findViewById(R.id.amplitude_maxy);
         ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, MAXYTXT);
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMaxY.setAdapter(adapter1);
@@ -307,7 +289,7 @@ public class AmplitudeFragment extends Fragment {
                     amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
                     amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.AUTO);
                 } else {
-                    Screensize screensize = new Screensize(getActivity().getWindowManager());
+                    Screensize screensize = new Screensize(Objects.requireNonNull(getActivity()).getWindowManager());
                     amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
                     if (screensize.isTablet()) {
                         amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, Float.parseFloat(MAXYTXT[position]) / 10);
@@ -329,96 +311,6 @@ public class AmplitudeFragment extends Fragment {
 
         return view;
 
-    }
-
-
-    private void writeAmplitudefile() throws IOException {
-
-        PrintWriter aepdataFileStream;
-
-        if (dataFilename == null) return;
-
-        char s = AttysScope.getDataSeparator(dataSeparator);
-
-        Uri uri = Uri.EMPTY;
-
-        try {
-            DocumentFile documentTree = DocumentFile.fromTreeUri(getActivity().getApplicationContext(),AttysScope.directoryUri);
-            DocumentFile documentFile = documentTree.createFile(AttysScope.getMimeType(dataSeparator),dataFilename.trim());
-            uri = documentFile.getUri();
-            aepdataFileStream = new PrintWriter(getActivity().getContentResolver().openOutputStream(uri));
-        } catch (java.io.FileNotFoundException e) {
-            throw e;
-        }
-
-        for (int i = 0; i < amplitudeFullSeries.size(); i++) {
-            aepdataFileStream.format("%e%c%e%c\n",
-                    amplitudeFullSeries.getX(i).floatValue(), s,
-                    amplitudeFullSeries.getY(i).floatValue(), s);
-            if (aepdataFileStream.checkError()) {
-                throw new IOException("file write error");
-            }
-        }
-
-        aepdataFileStream.close();
-
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(uri);
-        getActivity().sendBroadcast(mediaScanIntent);
-    }
-
-
-    private void saveAmplitude() {
-
-        final EditText filenameEditText = new EditText(getContext());
-        filenameEditText.setSingleLine(true);
-
-        final int REQUEST_EXTERNAL_STORAGE = 1;
-        String[] PERMISSIONS_STORAGE = {
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        };
-
-        int permission = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    getActivity(),
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
-            );
-        }
-
-        filenameEditText.setHint("");
-        filenameEditText.setText(dataFilename);
-
-        new AlertDialog.Builder(getContext())
-                .setTitle("Saving fast/slow data")
-                .setMessage("Enter the filename of the data textfile")
-                .setView(filenameEditText)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        dataFilename = filenameEditText.getText().toString();
-                        dataFilename = AttysScope.fixFilename(dataFilename,dataSeparator);
-                        try {
-                            writeAmplitudefile();
-                            Toast.makeText(getActivity(),
-                                    "Successfully written '" + dataFilename + "' to the external memory",
-                                    Toast.LENGTH_SHORT).show();
-                        } catch (IOException e) {
-                            Toast.makeText(getActivity(),
-                                    "Write Error while saving '" + dataFilename + "' to the external memory",
-                                    Toast.LENGTH_SHORT).show();
-                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Error saving file: ", e);
-                            }
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                    }
-                })
-                .show();
     }
 
 
@@ -480,9 +372,9 @@ public class AmplitudeFragment extends Fragment {
                 public void run() {
                     if (amplitudeReadingText != null) {
                         if (isRMSmode) {
-                            amplitudeReadingText.setText(String.format("%1.05f %s RMS", current_stat_result, units[channel]));
+                            amplitudeReadingText.setText(String.format(Locale.US,"%1.05f %s RMS", current_stat_result, units[channel]));
                         } else {
-                            amplitudeReadingText.setText(String.format("%1.05f %s pp", current_stat_result, units[channel]));
+                            amplitudeReadingText.setText(String.format(Locale.US,"%1.05f %s pp", current_stat_result, units[channel]));
                         }
                     }
                 }

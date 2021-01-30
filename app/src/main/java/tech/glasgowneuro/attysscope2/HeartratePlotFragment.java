@@ -3,6 +3,8 @@ package tech.glasgowneuro.attysscope2;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,6 +20,9 @@ import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.StepMode;
 import com.androidplot.xy.XYPlot;
+
+import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Heartrate plot fragment.
@@ -36,12 +41,6 @@ public class HeartratePlotFragment extends Fragment {
 
     private TextView bpmText = null;
 
-    private Button bpmResetButton = null;
-
-    private ToggleButton bpmAutoscaleButton = null;
-
-    private ToggleButton bpmChannelButton = null;
-
     private TextView bpmStatsView = null;
 
     View view = null;
@@ -50,7 +49,7 @@ public class HeartratePlotFragment extends Fragment {
      * Called when the activity is first created.
      */
     @Override
-    public View onCreateView(LayoutInflater inflater,
+    public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
 
@@ -79,7 +78,7 @@ public class HeartratePlotFragment extends Fragment {
         bpmPlot.setDomainLabel("Heartbeat #");
         bpmPlot.setRangeLabel("");
 
-        Screensize screensize = new Screensize(getActivity().getWindowManager());
+        Screensize screensize = new Screensize(Objects.requireNonNull(getActivity()).getWindowManager());
         if (screensize.isTablet()) {
             bpmPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 10);
         } else {
@@ -92,12 +91,12 @@ public class HeartratePlotFragment extends Fragment {
         bpmPlot.getGraph().setRangeGridLinePaint(paint);
 
         bpmStatsView = view.findViewById(R.id.bpmstats);
-        bpmResetButton = view.findViewById(R.id.bpmreset);
-        bpmAutoscaleButton = view.findViewById(R.id.bpmautoscale);
+        Button bpmResetButton = view.findViewById(R.id.bpmreset);
+        ToggleButton bpmAutoscaleButton = view.findViewById(R.id.bpmautoscale);
 
         bpmAutoscaleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Screensize screensize = new Screensize(getActivity().getWindowManager());
+                Screensize screensize = new Screensize(Objects.requireNonNull(getActivity()).getWindowManager());
                 if (isChecked) {
                     if (screensize.isTablet()) {
                         bpmPlot.setRangeStep(StepMode.INCREMENT_BY_VAL, 5);
@@ -144,7 +143,7 @@ public class HeartratePlotFragment extends Fragment {
                 @Override
                 public void run() {
                     if (bpmText != null) {
-                        bpmText.setText(String.format("%03d BPM", (int) v));
+                        bpmText.setText(String.format(Locale.US,"%03d BPM", (int) v));
                     }
                 }
             });
@@ -193,7 +192,7 @@ public class HeartratePlotFragment extends Fragment {
                                     bpmFullSeries.getY(i+1).floatValue()),2);
                         }
                         rms = rms / bpmFullSeries.size();
-                        bpmStatsView.setText(String.format("avg = %3.02f BPM, sd = %3.02f, rmssd = %3.02f",
+                        bpmStatsView.setText(String.format(Locale.US,"avg = %3.02f BPM, sd = %3.02f, rmssd = %3.02f",
                                 avg,dev,rms));
                     }
                 }

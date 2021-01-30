@@ -16,7 +16,6 @@
 
 package tech.glasgowneuro.attysscope2;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -25,44 +24,33 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 
-import androidx.core.app.ActivityCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.provider.DocumentsContract;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -114,7 +102,7 @@ public class AttysScope extends AppCompatActivity {
 
     private final double notchBW = 2.5; // Hz
     private final int notchOrder = 2;
-        private float powerlineHz = 50;
+    private float powerlineHz = 50;
     private float highpass1Hz = 0.1F;
     private float highpass2Hz = 0.1F;
 
@@ -181,7 +169,7 @@ public class AttysScope extends AppCompatActivity {
     String[] units = new String[AttysComm.NCHANNELS];
 
     private String dataFilename = null;
-    private byte dataSeparator = 0;
+    public static byte dataSeparator = 0;
     public static Uri directoryUri = null;
 
     private static final String ATTYS_SUBDIR = "attys";
@@ -457,12 +445,12 @@ public class AttysScope extends AppCompatActivity {
                         public void run() {
                             infoView.drawText(lt, st, dataRecorder.isRecording());
                             if (dataRecorder.isRecording()) {
-                                setMenuColour(menuItemRec,Color.RED);
+                                setMenuColour(menuItemRec, Color.RED);
                             } else {
                                 if (dataFilename != null) {
-                                    setMenuColour(menuItemRec,Color.GREEN);
+                                    setMenuColour(menuItemRec, Color.GREEN);
                                 } else {
-                                    setMenuColour(menuItemRec,Color.GRAY);
+                                    setMenuColour(menuItemRec, Color.GRAY);
                                 }
                             }
                         }
@@ -673,7 +661,7 @@ public class AttysScope extends AppCompatActivity {
 
         progress = findViewById(R.id.indeterminateBar);
 
-        for(int i=0; i<2; i++){
+        for (int i = 0; i < 2; i++) {
             highpass[i] = null;
             iirNotch[i] = null;
         }
@@ -841,7 +829,7 @@ public class AttysScope extends AppCompatActivity {
                 }
             }
 
-            dataRecorder.saveData(samplenumber,data,adc1,adc2);
+            dataRecorder.saveData(samplenumber, data, adc1, adc2);
 
             data[AttysComm.INDEX_Analogue_channel_1] = adc1;
             data[AttysComm.INDEX_Analogue_channel_2] = adc2;
@@ -853,12 +841,12 @@ public class AttysScope extends AppCompatActivity {
 
 
     void initAll() {
-        Log.d(TAG,"Starting to init all the settings.");
+        Log.d(TAG, "Starting to init all the settings.");
 
         attysService.createAttysComm();
         if (attysService.getAttysComm() == null) {
             noAttysFoundAlert();
-            Log.d(TAG,"No Attys found!");
+            Log.d(TAG, "No Attys found!");
             return;
         }
 
@@ -894,7 +882,7 @@ public class AttysScope extends AppCompatActivity {
                                   double confidence) {
                 if (updatePlotTask != null) {
                     if (textAnnotation == TextAnnotation.ECG) {
-                        updatePlotTask.annotatePlot(String.format(Locale.US,"%03d BPM", (int) bpm));
+                        updatePlotTask.annotatePlot(String.format(Locale.US, "%03d BPM", (int) bpm));
                     }
                 }
                 if (heartRateFragment != null) {
@@ -914,7 +902,7 @@ public class AttysScope extends AppCompatActivity {
         updatePlotTask = new UpdatePlotTask();
         updatePlotTask.resetAnalysis();
         timer.schedule(updatePlotTask, 0, REFRESH_IN_MS);
-        Log.d(TAG,"Timer started");
+        Log.d(TAG, "Timer started");
         attysService.getAttysComm().resetRingbuffer();
     }
 
@@ -995,8 +983,17 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
-    final int CHOOSE_DIR_CODE = 1;
-    final int PICK_FILE_CODE = 2;
+    static final int CHOOSE_DIR_CODE = 1;
+    static final int PICK_FILE_CODE = 2;
+
+    static Uri getUri2Filename(Activity activity, String filename, int dataSeparator) throws IOException {
+        if (null == activity) throw new IOException();
+        DocumentFile documentTree = DocumentFile.fromTreeUri(activity.getApplicationContext(), AttysScope.directoryUri);
+        if (null == documentTree) throw new IOException();
+        DocumentFile documentFile = documentTree.createFile(AttysScope.getMimeType(), filename.trim());
+        if (null == documentFile) throw new IOException();
+        return documentFile.getUri();
+    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode,
@@ -1024,21 +1021,20 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
-    private void enterFilename() {
-
+    static void triggerRequestDirectoryAccess(Activity activity) {
         if (null == directoryUri) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
 
-            // Provide read access to files and sub-directories in the user-selected
-            // directory.
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION );
 
-            // Optionally, specify a URI for the directory that should be opened in
-            // the system file picker when it loads.
-            // intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uriToLoad);
-            startActivityForResult(intent, CHOOSE_DIR_CODE);
+            activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
         }
+    }
+
+    private void enterFilename() {
+
+        triggerRequestDirectoryAccess(this);
 
         final EditText filenameEditText = new EditText(this);
         filenameEditText.setSingleLine(true);
@@ -1053,7 +1049,7 @@ public class AttysScope extends AppCompatActivity {
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dataFilename = filenameEditText.getText().toString();
-                        dataFilename = fixFilename(dataFilename,dataSeparator);
+                        dataFilename = fixFilename(dataFilename);
                         Toast.makeText(getApplicationContext(),
                                 "Press rec to record to '" + dataFilename + "'",
                                 Toast.LENGTH_SHORT).show();
@@ -1113,12 +1109,10 @@ public class AttysScope extends AppCompatActivity {
                     dataFilename = null;
                 } else {
                     if (dataFilename != null) {
-                        DocumentFile documentTree = DocumentFile.fromTreeUri(getApplicationContext(),directoryUri);
-                        String mimeType = getMimeType(dataSeparator);
-                        DocumentFile documentFile = documentTree.createFile(mimeType,dataFilename.trim());
-                        Uri uri = documentFile.getUri();
-                        dataRecorder.setDataSeparator(dataSeparator);
+                        Uri uri = Uri.EMPTY;
                         try {
+                            uri = getUri2Filename(this,dataFilename,dataSeparator);
+                            dataRecorder.setDataSeparator(dataSeparator);
                             dataRecorder.startRec(uri);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -1415,7 +1409,7 @@ public class AttysScope extends AppCompatActivity {
         }
 
         dataSeparator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
-        Log.d(TAG,"Data separator = "+dataSeparator+", suff:"+getFileSuffix(dataSeparator));
+        Log.d(TAG,"Data separator = "+dataSeparator+", suff:"+getFileSuffix());
         dataRecorder.setDataSeparator(dataSeparator);
 
         boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
@@ -1518,9 +1512,9 @@ public class AttysScope extends AppCompatActivity {
     public final static byte DATA_SEPARATOR_SPACE = 2;
 
 
-    static char getDataSeparator(int data_separator) {
+    static char getDataSeparatorChar() {
         char s = ' ';
-        switch (data_separator) {
+        switch (dataSeparator) {
             case DATA_SEPARATOR_SPACE:
                 s = ' ';
                 break;
@@ -1535,9 +1529,9 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
-    static String getMimeType(int data_separator) {
+    static String getMimeType() {
         String s = "text/dat";
-        switch (data_separator) {
+        switch (dataSeparator) {
             case DATA_SEPARATOR_SPACE:
                 s = "text/dat";
                 break;
@@ -1552,9 +1546,9 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
-    static String getFileSuffix(int data_separator) {
+    static String getFileSuffix() {
         String s = ".dat";
-        switch (data_separator) {
+        switch (dataSeparator) {
             case DATA_SEPARATOR_SPACE:
                 s = ".dat";
                 break;
@@ -1569,10 +1563,10 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
-    static String fixFilename(String dataFilename, int dataSeparator) {
+    static String fixFilename(String dataFilename) {
         dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
         if (!dataFilename.contains(".")) {
-            dataFilename = dataFilename + getFileSuffix(dataSeparator);
+            dataFilename = dataFilename + getFileSuffix();
         }
         return dataFilename;
     }
@@ -1634,7 +1628,7 @@ public class AttysScope extends AppCompatActivity {
         public void saveData(long sampleNo, float[] data,float adc1,float adc2) {
             if (textdataFileStream == null) return;
 
-            char s = getDataSeparator(data_separator);
+            char s = getDataSeparatorChar();
 
             String tmp = String.format(Locale.US, "%e%c", (double) sampleNo / (double) attysService.getAttysComm().getSamplingRateInHz(), s);
             for (float aData_unfilt : data) {
