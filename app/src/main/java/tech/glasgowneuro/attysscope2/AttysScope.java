@@ -17,7 +17,9 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -32,11 +34,13 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 
 import androidx.core.app.ActivityCompat;
+import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.provider.DocumentsContract;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -165,11 +169,9 @@ public class AttysScope extends AppCompatActivity {
 
     private String dataFilename = null;
     private byte dataSeparator = 0;
+    public static Uri directoryUri = null;
 
     private static final String ATTYS_SUBDIR = "attys";
-
-    static final File ATTYSDIR =
-            new File(Environment.getExternalStorageDirectory().getPath(), ATTYS_SUBDIR);
 
     ProgressBar progress = null;
 
@@ -670,10 +672,6 @@ public class AttysScope extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        if (!ATTYSDIR.exists()) {
-            ATTYSDIR.mkdirs();
-        }
-
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
 
         setContentView(R.layout.activity_plot_window);
@@ -954,26 +952,48 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
+    final int CHOOSE_DIR_CODE = 1;
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode,
+                                 Intent resultData) {
+        super.onActivityResult(requestCode, resultCode, resultData);
+        if (requestCode == CHOOSE_DIR_CODE
+                && resultCode == Activity.RESULT_OK) {
+            if (resultData != null) {
+                directoryUri = resultData.getData();
+                final int takeFlags = resultData.getFlags()
+                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                ContentResolver resolver = getContentResolver();
+                resolver.takePersistableUriPermission(directoryUri, takeFlags);
+                Log.d(TAG, "URI=" + directoryUri);
+                Log.d(TAG, "URI path =" + directoryUri.getPath());
+                Uri.Builder builder = AttysScope.directoryUri.buildUpon().path("bla");
+                Uri uri = builder.build();
+                Log.d(TAG,"Example URI: "+uri.toString());
+            }
+        }
+    }
 
     private void enterFilename() {
 
+        if (null == directoryUri) {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+
+            // Provide read access to files and sub-directories in the user-selected
+            // directory.
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION );
+
+            // Optionally, specify a URI for the directory that should be opened in
+            // the system file picker when it loads.
+            // intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uriToLoad);
+            startActivityForResult(intent, CHOOSE_DIR_CODE);
+        }
+
         final EditText filenameEditText = new EditText(this);
         filenameEditText.setSingleLine(true);
-
-        final int REQUEST_EXTERNAL_STORAGE = 1;
-        String[] PERMISSIONS_STORAGE = {
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        };
-
-        int permission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
-            );
-        }
 
         filenameEditText.setHint("");
         filenameEditText.setText(dataFilename);
@@ -985,19 +1005,7 @@ public class AttysScope extends AppCompatActivity {
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dataFilename = filenameEditText.getText().toString();
-                        dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-                        if (!dataFilename.contains(".")) {
-                            switch (dataSeparator) {
-                                case DataRecorder.DATA_SEPARATOR_COMMA:
-                                    dataFilename = dataFilename + ".csv";
-                                    break;
-                                case DataRecorder.DATA_SEPARATOR_SPACE:
-                                    dataFilename = dataFilename + ".dat";
-                                    break;
-                                case DataRecorder.DATA_SEPARATOR_TAB:
-                                    dataFilename = dataFilename + ".tsv";
-                            }
-                        }
+                        dataFilename = fixFilename(dataFilename,dataSeparator);
                         Toast.makeText(getApplicationContext(),
                                 "Press rec to record to '" + dataFilename + "'",
                                 Toast.LENGTH_SHORT).show();
@@ -1029,8 +1037,9 @@ public class AttysScope extends AppCompatActivity {
         }
 
         final List files = new ArrayList();
-        final String[] list = ATTYSDIR.list();
-        if (list == null) return;
+//        final String[] list = directoryUri.
+//        if (list == null) return;
+        /**
         for (String file : list) {
             if (files != null) {
                 if (file != null) {
@@ -1040,7 +1049,7 @@ public class AttysScope extends AppCompatActivity {
                 }
             }
         }
-
+**/
 
         final ListView listview = new ListView(this);
         ArrayAdapter adapter = new ArrayAdapter(this,
@@ -1068,12 +1077,9 @@ public class AttysScope extends AppCompatActivity {
                         ArrayList<Uri> files = new ArrayList<>();
                         for (int i = 0; i < listview.getCount(); i++) {
                             if (checked.get(i)) {
-                                String filename = list[i];
-                                File fp = new File(ATTYSDIR, filename);
-                                files.add(Uri.fromFile(fp));
-                                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                    Log.d(TAG, "filename=" + filename);
-                                }
+                                String filename; // = list[i];
+                                // File fp = new File(ATTYSDIR, filename);
+                                // files.add(Uri.fromFile(fp));
                             }
                         }
                         sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files);
@@ -1132,21 +1138,17 @@ public class AttysScope extends AppCompatActivity {
 
             case R.id.toggleRec:
                 if (dataRecorder.isRecording()) {
-                    File file = dataRecorder.getFile();
                     dataRecorder.stopRec();
                     dataFilename = null;
                 } else {
                     if (dataFilename != null) {
-                        File file = new File(ATTYSDIR, dataFilename.trim());
+                        DocumentFile documentTree = DocumentFile.fromTreeUri(getApplicationContext(),directoryUri);
+                        String mimeType = getMimeType(dataSeparator);
+                        DocumentFile documentFile = documentTree.createFile(mimeType,dataFilename.trim());
+                        Uri uri = documentFile.getUri();
                         dataRecorder.setDataSeparator(dataSeparator);
-                        if (file.exists()) {
-                            Toast.makeText(getApplicationContext(),
-                                    "File exists already. Enter a different one.",
-                                    Toast.LENGTH_LONG).show();
-                            return true;
-                        }
                         try {
-                            dataRecorder.startRec(file);
+                            dataRecorder.startRec(uri);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not open data file: " + e.getMessage());
@@ -1155,7 +1157,7 @@ public class AttysScope extends AppCompatActivity {
                         }
                         if (dataRecorder.isRecording()) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Saving to " + file.getAbsolutePath());
+                                Log.d(TAG, "Saving to " + uri.getPath());
                             }
                         }
                     } else {
@@ -1530,18 +1532,78 @@ public class AttysScope extends AppCompatActivity {
         heartRateFragment = null;
     }
 
+    public final static byte DATA_SEPARATOR_TAB = 0;
+    public final static byte DATA_SEPARATOR_COMMA = 1;
+    public final static byte DATA_SEPARATOR_SPACE = 2;
+
+
+    static char getDataSeparator(int data_separator) {
+        char s = ' ';
+        switch (data_separator) {
+            case DATA_SEPARATOR_SPACE:
+                s = ' ';
+                break;
+            case DATA_SEPARATOR_COMMA:
+                s = ',';
+                break;
+            case DATA_SEPARATOR_TAB:
+                s = 9;
+                break;
+        }
+        return s;
+    }
+
+
+    static String getMimeType(int data_separator) {
+        String s = "text/dat";
+        switch (data_separator) {
+            case DATA_SEPARATOR_SPACE:
+                s = "text/dat";
+                break;
+            case DATA_SEPARATOR_COMMA:
+                s = "text/csv";
+                break;
+            case DATA_SEPARATOR_TAB:
+                s = "text/tsv";
+                break;
+        }
+        return s;
+    }
+
+
+    static String getFileSuffix(int data_separator) {
+        String s = ".dat";
+        switch (data_separator) {
+            case DATA_SEPARATOR_SPACE:
+                s = ".dat";
+                break;
+            case DATA_SEPARATOR_COMMA:
+                s = ".csv";
+                break;
+            case DATA_SEPARATOR_TAB:
+                s = ".tsv";
+                break;
+        }
+        return s;
+    }
+
+
+    static String fixFilename(String dataFilename, int dataSeparator) {
+        dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+        if (!dataFilename.contains(".")) {
+            dataFilename = dataFilename + getFileSuffix(dataSeparator);
+        }
+        return dataFilename;
+    }
+
+
     public class DataRecorder {
         /////////////////////////////////////////////////////////////
         // saving data into a file
 
-        public final static byte DATA_SEPARATOR_TAB = 0;
-        public final static byte DATA_SEPARATOR_COMMA = 1;
-        public final static byte DATA_SEPARATOR_SPACE = 2;
-
         private PrintWriter textdataFileStream = null;
-        private File textdataFile = null;
-        private byte data_separator = DataRecorder.DATA_SEPARATOR_TAB;
-        private File file = null;
+        private byte data_separator = AttysScope.DATA_SEPARATOR_TAB;
+        private Uri uri = null;
         private boolean gpioLogging = false;
 
         private AttysComm.DataListener dataListener = new AttysComm.DataListener() {
@@ -1552,16 +1614,16 @@ public class AttysScope extends AppCompatActivity {
         };
 
         // starts the recording
-        public void startRec(File _file) throws java.io.FileNotFoundException {
-            file = _file;
+        public void startRec(Uri _uri) throws Exception {
+            uri = _uri;
             try {
-                textdataFileStream = new PrintWriter(file);
-                textdataFile = file;
+                Log.d(TAG,"Starting recording. URI = "+uri.toString());
+                textdataFileStream = new PrintWriter(getContentResolver().openOutputStream(uri));
                 attysService.getAttysComm().setTimestamp(0);
-            } catch (java.io.FileNotFoundException e) {
+                Log.d(TAG,"textdataFileStream = "+textdataFileStream);
+            } catch (Exception e) {
                 textdataFileStream = null;
-                textdataFile = null;
-                Log.d(TAG,"Could not start recording:",e);
+                Log.d(TAG,"Could not start recording. URI = "+uri.toString(),e);
                 throw e;
             }
         }
@@ -1571,19 +1633,19 @@ public class AttysScope extends AppCompatActivity {
             if (textdataFileStream != null) {
                 textdataFileStream.close();
                 textdataFileStream = null;
-                textdataFile = null;
-                if (file != null) {
+                if (uri != null) {
                     Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                    Uri contentUri = Uri.fromFile(file);
-                    mediaScanIntent.setData(contentUri);
+                    mediaScanIntent.setData(uri);
                     sendBroadcast(mediaScanIntent);
                 }
             }
         }
 
-        public File getFile() {
-            return textdataFile;
+        public Uri getUri() {
+            return uri;
         }
+
+        public String getFileName() { return uri.getLastPathSegment(); }
 
         public void setDataSeparator(byte s) {
             data_separator = s;
@@ -1592,25 +1654,14 @@ public class AttysScope extends AppCompatActivity {
         public void setGPIOlogging(boolean g) { gpioLogging = g; }
 
         public boolean isRecording() {
-            return (textdataFileStream != null) && (textdataFile != null);
+            return (textdataFileStream != null);
         }
 
         public void saveData(long sampleNo, float[] data) {
-            if (textdataFile == null) return;
             if (textdataFileStream == null) return;
 
-            char s = ' ';
-            switch (data_separator) {
-                case DATA_SEPARATOR_SPACE:
-                    s = ' ';
-                    break;
-                case DATA_SEPARATOR_COMMA:
-                    s = ',';
-                    break;
-                case DATA_SEPARATOR_TAB:
-                    s = 9;
-                    break;
-            }
+            char s = getDataSeparator(data_separator);
+
             String tmp = String.format(Locale.US, "%e%c", (double) sampleNo / (double) attysService.getAttysComm().getSamplingRateInHz(), s);
             for (float aData_unfilt : data) {
                 tmp = tmp + String.format(Locale.US, "%e%c", aData_unfilt, s);

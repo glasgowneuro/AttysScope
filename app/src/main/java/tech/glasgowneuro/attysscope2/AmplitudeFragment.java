@@ -11,6 +11,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
+import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import android.util.Log;
@@ -110,7 +111,7 @@ public class AmplitudeFragment extends Fragment {
 
     private String dataFilename = null;
 
-    private byte dataSeparator = AttysScope.DataRecorder.DATA_SEPARATOR_TAB;
+    private byte dataSeparator = AttysScope.DATA_SEPARATOR_TAB;
 
     public void setSamplingrate(int _samplingrate) {
         samplingRate = _samplingrate;
@@ -337,30 +338,17 @@ public class AmplitudeFragment extends Fragment {
 
         if (dataFilename == null) return;
 
-        File file;
+        char s = AttysScope.getDataSeparator(dataSeparator);
+
+        Uri uri = Uri.EMPTY;
 
         try {
-            file = new File(AttysScope.ATTYSDIR, dataFilename.trim());
-            file.createNewFile();
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "Saving amplitude data to " + file.getAbsolutePath());
-            }
-            aepdataFileStream = new PrintWriter(file);
+            DocumentFile documentTree = DocumentFile.fromTreeUri(getActivity().getApplicationContext(),AttysScope.directoryUri);
+            DocumentFile documentFile = documentTree.createFile(AttysScope.getMimeType(dataSeparator),dataFilename.trim());
+            uri = documentFile.getUri();
+            aepdataFileStream = new PrintWriter(getActivity().getContentResolver().openOutputStream(uri));
         } catch (java.io.FileNotFoundException e) {
             throw e;
-        }
-
-        char s = ' ';
-        switch (dataSeparator) {
-            case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
-                s = ' ';
-                break;
-            case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
-                s = ',';
-                break;
-            case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
-                s = 9;
-                break;
         }
 
         for (int i = 0; i < amplitudeFullSeries.size(); i++) {
@@ -375,8 +363,7 @@ public class AmplitudeFragment extends Fragment {
         aepdataFileStream.close();
 
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        Uri contentUri = Uri.fromFile(file);
-        mediaScanIntent.setData(contentUri);
+        mediaScanIntent.setData(uri);
         getActivity().sendBroadcast(mediaScanIntent);
     }
 
@@ -411,19 +398,7 @@ public class AmplitudeFragment extends Fragment {
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dataFilename = filenameEditText.getText().toString();
-                        dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-                        if (!dataFilename.contains(".")) {
-                            switch (dataSeparator) {
-                                case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
-                                    dataFilename = dataFilename + ".csv";
-                                    break;
-                                case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
-                                    dataFilename = dataFilename + ".dat";
-                                    break;
-                                case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
-                                    dataFilename = dataFilename + ".tsv";
-                            }
-                        }
+                        dataFilename = AttysScope.fixFilename(dataFilename,dataSeparator);
                         try {
                             writeAmplitudefile();
                             Toast.makeText(getActivity(),

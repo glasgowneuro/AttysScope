@@ -1,6 +1,7 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.Manifest;
+import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,6 +14,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import android.util.Log;
@@ -41,6 +43,7 @@ import com.androidplot.xy.XYGraphWidget;
 import com.androidplot.xy.XYPlot;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Objects;
@@ -87,7 +90,7 @@ public class FourierFragment extends Fragment {
     private String dataFilename = null;
 
     // private byte dataSeparator = AttysService.DataRecorder.DATA_SEPARATOR_TAB;
-    private byte dataSeparator = AttysScope.DataRecorder.DATA_SEPARATOR_TAB;
+    private byte dataSeparator = AttysScope.DATA_SEPARATOR_TAB;
 
     public void setSamplingrate(int _samplingrate) {
         samplingRate = _samplingrate;
@@ -275,31 +278,18 @@ public class FourierFragment extends Fragment {
 
         if (dataFilename == null) return;
 
-        File file;
+        Uri uri = Uri.EMPTY;
 
         try {
-            file = new File(AttysScope.ATTYSDIR, dataFilename.trim());
-            file.createNewFile();
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "Saving spectrum to " + file.getAbsolutePath());
-            }
-            aepdataFileStream = new PrintWriter(file);
+            DocumentFile documentTree = DocumentFile.fromTreeUri(getActivity().getApplicationContext(),AttysScope.directoryUri);
+            DocumentFile documentFile = documentTree.createFile(AttysScope.getMimeType(dataSeparator),dataFilename.trim());
+            uri = documentFile.getUri();
+            aepdataFileStream = new PrintWriter(getActivity().getContentResolver().openOutputStream(uri));
         } catch (java.io.FileNotFoundException e) {
             throw e;
         }
 
-        char s = ' ';
-        switch (dataSeparator) {
-            case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
-                s = ' ';
-                break;
-            case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
-                s = ',';
-                break;
-            case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
-                s = 9;
-                break;
-        }
+        char s = AttysScope.getDataSeparator(dataSeparator);
 
         for (int i = 0; i < spectrumSeries.size(); i++) {
             aepdataFileStream.format("%e%c%e%c\n",
@@ -313,8 +303,7 @@ public class FourierFragment extends Fragment {
         aepdataFileStream.close();
 
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        Uri contentUri = Uri.fromFile(file);
-        mediaScanIntent.setData(contentUri);
+        mediaScanIntent.setData(uri);
         Objects.requireNonNull(getActivity()).sendBroadcast(mediaScanIntent);
     }
 
@@ -352,13 +341,13 @@ public class FourierFragment extends Fragment {
                         dataFilename = dataFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
                         if (!dataFilename.contains(".")) {
                             switch (dataSeparator) {
-                                case AttysScope.DataRecorder.DATA_SEPARATOR_COMMA:
+                                case AttysScope.DATA_SEPARATOR_COMMA:
                                     dataFilename = dataFilename + ".csv";
                                     break;
-                                case AttysScope.DataRecorder.DATA_SEPARATOR_SPACE:
+                                case AttysScope.DATA_SEPARATOR_SPACE:
                                     dataFilename = dataFilename + ".dat";
                                     break;
-                                case AttysScope.DataRecorder.DATA_SEPARATOR_TAB:
+                                case AttysScope.DATA_SEPARATOR_TAB:
                                     dataFilename = dataFilename + ".tsv";
                             }
                         }
