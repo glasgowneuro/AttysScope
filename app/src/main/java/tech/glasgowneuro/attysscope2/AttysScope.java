@@ -968,10 +968,6 @@ public class AttysScope extends AppCompatActivity {
                 ContentResolver resolver = getContentResolver();
                 resolver.takePersistableUriPermission(directoryUri, takeFlags);
                 Log.d(TAG, "URI=" + directoryUri);
-                Log.d(TAG, "URI path =" + directoryUri.getPath());
-                Uri.Builder builder = AttysScope.directoryUri.buildUpon().path("bla");
-                Uri uri = builder.build();
-                Log.d(TAG,"Example URI: "+uri.toString());
             }
         }
     }
