@@ -106,13 +106,15 @@ public class AttysScope extends AppCompatActivity {
 
     public Ch2Converter ch2Converter = new Ch2Converter();
 
-    private Butterworth[] highpass = null;
-    private float[] gain;
-    private Butterworth[] iirNotch;
+    private final Butterworth[] highpass = new Butterworth[2];
+    private final Butterworth[] iirNotch = new Butterworth[2];
+    private final float[] gain = new float[AttysComm.NCHANNELS];
+    private final boolean[] invert = new boolean[AttysComm.NCHANNELS];
+    private final int[] actualChannelIdx = new int[AttysComm.NCHANNELS];
+
     private final double notchBW = 2.5; // Hz
     private final int notchOrder = 2;
-    private boolean[] invert;
-    private float powerlineHz = 50;
+        private float powerlineHz = 50;
     private float highpass1Hz = 0.1F;
     private float highpass2Hz = 0.1F;
 
@@ -149,8 +151,6 @@ public class AttysScope extends AppCompatActivity {
     private int tbCtr = 1;
 
     private int theChannelWeDoAnalysis = 0;
-
-    private int[] actualChannelIdx;
 
     private int gpio0 = 0;
     private int gpio1 = 0;
@@ -523,7 +523,8 @@ public class AttysScope extends AppCompatActivity {
                 String[] tmpLabels = new String[nCh];
                 if (realtimePlotView != null) {
                     if (!realtimePlotView.startAddSamples(nSamplesInBuffer)) return;
-                    for (int i = 0; ((i < nSamplesInBuffer) && (attysService.getAttysComm() != null)); i++) {
+                    final int n = nSamplesInBuffer;
+                    for (int i = 0; ((i < n) && (attysService.getAttysComm() != null)); i++) {
                         float[] sample = ringBuffer[outPtr];
                         outPtr++;
                         if (outPtr == RINGBUFFERSIZE) {
@@ -531,11 +532,6 @@ public class AttysScope extends AppCompatActivity {
                         }
                         for (int j = 0; j < nCh; j++) {
                             float v = sample[j];
-                            if (j >= AttysComm.INDEX_Analogue_channel_1) {
-                                if (highpass[j] != null) {
-                                    v = (float) highpass[j].filter((double) v);
-                                }
-                            }
                             if (invert[j]) {
                                 v = -v;
                             }
@@ -677,15 +673,13 @@ public class AttysScope extends AppCompatActivity {
 
         progress = findViewById(R.id.indeterminateBar);
 
-        int nChannels = AttysComm.NCHANNELS;
-        highpass = new Butterworth[nChannels];
-        gain = new float[nChannels];
-        iirNotch = new Butterworth[nChannels];
-        invert = new boolean[nChannels];
-        actualChannelIdx = new int[nChannels];
-        for (int i = 0; i < nChannels; i++) {
+        for(int i=0; i<2; i++){
             highpass[i] = null;
             iirNotch[i] = null;
+        }
+
+        int nChannels = AttysComm.NCHANNELS;
+        for (int i = 0; i < nChannels; i++) {
             // set it to 1st ADC channel
             actualChannelIdx[i] = AttysComm.INDEX_Analogue_channel_1;
             gain[i] = 1;
@@ -739,24 +733,32 @@ public class AttysScope extends AppCompatActivity {
 
 
     private void highpass1on() {
-        highpass[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
-        highpass[AttysComm.INDEX_Analogue_channel_1].highPass(HIGHPASSORDER, attysService.getAttysComm().getSamplingRateInHz(), highpass1Hz);
+        synchronized (highpass) {
+            highpass[0] = new Butterworth();
+            highpass[0].highPass(HIGHPASSORDER, attysService.getAttysComm().getSamplingRateInHz(), highpass1Hz);
+        }
     }
 
 
     private void highpass1off() {
-        highpass[AttysComm.INDEX_Analogue_channel_1] = null;
+        synchronized (highpass) {
+            highpass[0] = null;
+        }
     }
 
 
     private void highpass2on() {
-        highpass[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
-        highpass[AttysComm.INDEX_Analogue_channel_2].highPass(HIGHPASSORDER, attysService.getAttysComm().getSamplingRateInHz(), highpass2Hz);
+        synchronized (highpass) {
+            highpass[1] = new Butterworth();
+            highpass[1].highPass(HIGHPASSORDER, attysService.getAttysComm().getSamplingRateInHz(), highpass2Hz);
+        }
     }
 
 
     private void highpass2off() {
-        highpass[AttysComm.INDEX_Analogue_channel_2] = null;
+        synchronized (highpass) {
+            highpass[1] = null;
+        }
     }
 
 
@@ -815,13 +817,28 @@ public class AttysScope extends AppCompatActivity {
             data[AttysComm.INDEX_Analogue_channel_2] = ch2Converter.convert(data[AttysComm.INDEX_Analogue_channel_2]);
 
             float adc1 = data[AttysComm.INDEX_Analogue_channel_1];
-            if (iirNotch[AttysComm.INDEX_Analogue_channel_1] != null) {
-                adc1 = (float) iirNotch[AttysComm.INDEX_Analogue_channel_1].filter((double) data[AttysComm.INDEX_Analogue_channel_1]);
+            synchronized (iirNotch) {
+                if (iirNotch[0] != null) {
+                    adc1 = (float) iirNotch[0].filter(adc1);
+                }
+            }
+            synchronized (highpass) {
+                if (highpass[0] != null) {
+                    adc1 = (float) highpass[0].filter(adc1);
+                }
             }
 
+
             float adc2 = data[AttysComm.INDEX_Analogue_channel_2];
-            if (iirNotch[AttysComm.INDEX_Analogue_channel_2] != null) {
-                adc2 = (float) iirNotch[AttysComm.INDEX_Analogue_channel_2].filter((double) data[AttysComm.INDEX_Analogue_channel_2]);
+            synchronized (iirNotch) {
+                if (iirNotch[1] != null) {
+                    adc2 = (float) iirNotch[1].filter(adc2);
+                }
+            }
+            synchronized (highpass) {
+                if (highpass[1] != null) {
+                    adc2 = (float) highpass[1].filter(adc2);
+                }
             }
 
             dataRecorder.saveData(samplenumber,data,adc1,adc2);
@@ -1164,25 +1181,34 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.Ch1notch:
-                if (iirNotch[AttysComm.INDEX_Analogue_channel_1] == null) {
-                    iirNotch[AttysComm.INDEX_Analogue_channel_1] = new Butterworth();
-                    iirNotch[AttysComm.INDEX_Analogue_channel_1].bandStop(notchOrder,
-                            attysService.getAttysComm().getSamplingRateInHz(), powerlineHz, notchBW);
-                } else {
-                    iirNotch[AttysComm.INDEX_Analogue_channel_1] = null;
+                synchronized (iirNotch) {
+                    final int idx = 0;
+                    if (iirNotch[idx] == null) {
+                        iirNotch[idx] = new Butterworth();
+                        iirNotch[idx].bandStop(
+                                notchOrder,
+                                attysService.getAttysComm().getSamplingRateInHz(),
+                                powerlineHz,
+                                notchBW);
+                    } else {
+                        iirNotch[idx] = null;
+                    }
+                    item.setChecked(iirNotch[idx] != null);
                 }
-                item.setChecked(iirNotch[AttysComm.INDEX_Analogue_channel_1] != null);
                 return true;
 
             case R.id.Ch2notch:
-                if (iirNotch[AttysComm.INDEX_Analogue_channel_2] == null) {
-                    iirNotch[AttysComm.INDEX_Analogue_channel_2] = new Butterworth();
-                    iirNotch[AttysComm.INDEX_Analogue_channel_2].bandStop(notchOrder,
-                            attysService.getAttysComm().getSamplingRateInHz(), powerlineHz, notchBW);
-                } else {
-                    iirNotch[AttysComm.INDEX_Analogue_channel_2] = null;
+                synchronized (iirNotch) {
+                    final int idx = 1;
+                    if (iirNotch[idx] == null) {
+                        iirNotch[idx] = new Butterworth();
+                        iirNotch[idx].bandStop(notchOrder,
+                                attysService.getAttysComm().getSamplingRateInHz(), powerlineHz, notchBW);
+                    } else {
+                        iirNotch[idx] = null;
+                    }
+                    item.setChecked(iirNotch[idx] != null);
                 }
-                item.setChecked(iirNotch[AttysComm.INDEX_Analogue_channel_2] != null);
                 return true;
 
             case R.id.Ch1invert:
