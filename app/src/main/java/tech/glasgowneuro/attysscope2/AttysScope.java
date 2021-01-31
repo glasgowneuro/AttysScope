@@ -1418,9 +1418,6 @@ public class AttysScope extends AppCompatActivity {
         dataSeparator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
         Log.d(TAG,"Data separator = "+dataSeparator+", suff:"+getFileSuffix());
 
-        boolean withGPIO = prefs.getBoolean("GPIO_logging",false);
-        dataRecorder.setGPIOlogging(withGPIO);
-
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
         attysService.getAttysComm().setAccel_full_scale_index((byte) fullscaleAcc);
@@ -1584,7 +1581,6 @@ public class AttysScope extends AppCompatActivity {
 
         private PrintWriter textdataFileStream = null;
         private Uri uri = null;
-        private boolean gpioLogging = false;
 
         // starts the recording
         public void startRec(Uri _uri) throws Exception {
@@ -1620,8 +1616,6 @@ public class AttysScope extends AppCompatActivity {
 
         public String getFileName() { return uri.getLastPathSegment(); }
 
-        public void setGPIOlogging(boolean g) { gpioLogging = g; }
-
         public boolean isRecording() {
             return (textdataFileStream != null);
         }
@@ -1637,11 +1631,6 @@ public class AttysScope extends AppCompatActivity {
             }
             tmp = tmp + String.format(Locale.US, "%e%c", adc1, s);
             tmp = tmp + String.format(Locale.US, "%e", adc2);
-
-            if (gpioLogging) {
-                tmp = tmp + String.format(Locale.US, "%c%e", s, data[AttysComm.INDEX_GPIO0]);
-                tmp = tmp + String.format(Locale.US, "%c%e", s, data[AttysComm.INDEX_GPIO1]);
-            }
 
             if (textdataFileStream != null) {
                 textdataFileStream.format(Locale.US, "%s\n", tmp);
