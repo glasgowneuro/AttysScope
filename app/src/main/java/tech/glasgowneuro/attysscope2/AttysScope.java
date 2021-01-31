@@ -339,9 +339,7 @@ public class AttysScope extends AppCompatActivity {
             attysService.stop();
         }
         unbindService(serviceConnection);
-        serviceConnection = null;
         stopService(new Intent(getBaseContext(), AttysService.class));
-        attysService = null;
     }
 
 
@@ -355,8 +353,8 @@ public class AttysScope extends AppCompatActivity {
                         case AttysComm.MESSAGE_ERROR:
                             Toast.makeText(getApplicationContext(),
                                     "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
-                            if (attysService.getAttysComm() != null) {
-                                attysService.getAttysComm().stop();
+                            if (attysService != null) {
+                                attysService.stop();
                             }
                             progress.setVisibility(View.GONE);
                             finish();
@@ -641,7 +639,9 @@ public class AttysScope extends AppCompatActivity {
         }
         stopAnimation();
         if (!(dataRecorder.isRecording())) {
-            attysService.getAttysComm().stop();
+            if (null != attysService) {
+                attysService.stop();
+            }
         }
         Intent startMain = new Intent(Intent.ACTION_MAIN);
         startMain.addCategory(Intent.CATEGORY_HOME);
@@ -937,18 +937,20 @@ public class AttysScope extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        stopAttysService();
-
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Destroy!");
         }
+
         stopAnimation();
+
         if (alertDialog != null) {
             if (alertDialog.isShowing()) {
                 alertDialog.dismiss();
             }
         }
         alertDialog = null;
+
+        stopAttysService();
     }
 
     @Override
@@ -984,8 +986,11 @@ public class AttysScope extends AppCompatActivity {
         }
 
         stopAnimation();
+
         if (!(dataRecorder.isRecording())) {
-            attysService.getAttysComm().stop();
+            if (null != attysService) {
+                attysService.stop();
+            }
         }
     }
 
