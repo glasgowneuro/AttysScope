@@ -428,9 +428,6 @@ public class AttysScope extends AppCompatActivity {
             if (showMag) {
                 small = small + String.format(Locale.getDefault(), "MAG = %d\u00b5T/div, ", Math.round(magTick / 1E-6));
             }
-            if (dataRecorder.isRecording()) {
-                small = small + " !!RECORDING to:" + dataFilename;
-            }
             small = small + String.format(Locale.getDefault(), " d=%d,%d", gpio0, gpio1);
             if (largeText != null) {
                 largeText = String.format("%s: ", labels[theChannelWeDoAnalysis]) + largeText;
@@ -442,7 +439,11 @@ public class AttysScope extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            infoView.drawText(lt, st, dataRecorder.isRecording());
+                            String rectxt = null;
+                            if (dataRecorder.isRecording()) {
+                                rectxt = "RECORDING: " + dataFilename;
+                            }
+                            infoView.drawText(lt, st, rectxt);
                             if (dataRecorder.isRecording()) {
                                 setMenuColour(menuItemRec, Color.RED);
                             } else {
@@ -1038,6 +1039,8 @@ public class AttysScope extends AppCompatActivity {
     }
 
     private void enterFilename() {
+
+        if (dataRecorder.isRecording()) return;
 
         triggerRequestDirectoryAccess(this);
 

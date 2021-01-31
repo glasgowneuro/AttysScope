@@ -23,11 +23,13 @@ public class InfoView extends View {
 
     static private String TAG = "InfoView";
 
-    static private Paint paintLarge = new Paint();
-    static private Paint paintSmall = new Paint();
+    static private final Paint paintLarge = new Paint();
+    static private final Paint paintSmall = new Paint();
+    static private final Paint paintRec = new Paint();
     static private int textHeight = 0;
     static private String largeText;
     static private String smallText;
+    static private String recText;
     static Rect bounds = new Rect();
 
     public InfoView(Context context, AttributeSet attrs, int defStyle) {
@@ -48,6 +50,7 @@ public class InfoView extends View {
     private void init() {
         paintLarge.setColor(Color.argb(128, 0, 255, 0));
         paintSmall.setColor(Color.argb(128, 0, 255, 0));
+        paintRec.setColor(Color.argb(128,255,0,0));
     }
 
     public int getInfoHeight() {
@@ -56,16 +59,11 @@ public class InfoView extends View {
 
     public void resetInfoHeight() { textHeight = 0;}
 
-    public void drawText(String _largeText, String _smallText, boolean recording) {
+    public void drawText(String _largeText, String _smallText, String _rectxt) {
         largeText = _largeText;
         smallText = _smallText;
-        if (recording) {
-            paintSmall.setColor(Color.argb(128, 255, 255, 0));
-        } else {
-            paintSmall.setColor(Color.argb(128, 0, 255, 0));
-        }
+        recText = _rectxt;
         invalidate();
-        //Log.d(TAG,String.format("textHeight=%d",textHeight));
     }
 
     @Override
@@ -75,7 +73,7 @@ public class InfoView extends View {
         int width = getWidth();
         int txtDiv = 25;
         do {
-            paintSmall.setTextSize(getHeight() / txtDiv);
+            paintSmall.setTextSize((float)getHeight() / txtDiv);
             if (null != smallText) {
                 paintSmall.getTextBounds(smallText + "|y`", 0, smallText.length(), bounds);
             }
@@ -86,7 +84,7 @@ public class InfoView extends View {
             if (largeText.length()>0) {
                 int txtDivTmp = 7;
                 do {
-                    paintLarge.setTextSize(getHeight() / txtDivTmp);
+                    paintLarge.setTextSize((float)getHeight() / txtDivTmp);
                     paintLarge.getTextBounds(largeText+"|y`", 0, largeText.length(), bounds);
                     xLarge = width - (bounds.width() * 10 / 9);
                     txtDivTmp++;
@@ -94,14 +92,18 @@ public class InfoView extends View {
                 String dummyText = "1.2424Vpp";
                 paintLarge.getTextBounds(dummyText, 0, dummyText.length(), bounds);
                 yLarge = bounds.height();
-                canvas.drawText(largeText, xLarge, yLarge + y2 * 10 / 9, paintLarge);
+                canvas.drawText(largeText, xLarge, yLarge + (float)y2 * 10 / 9, paintLarge);
             }
         }
         if (null != smallText) {
-            canvas.drawText(smallText, width / 100, y2, paintSmall);
+            canvas.drawText(smallText, (float)width / 100, y2, paintSmall);
         }
         if ((y2+yLarge)>textHeight) {
             textHeight = y2 + yLarge;
+        }
+        if (null != recText) {
+            paintRec.setTextSize((float)getHeight() / 30);
+            canvas.drawText(recText, (float)width / 50, getHeight() - (float)bounds.height() / 4, paintRec);
         }
     }
 }
