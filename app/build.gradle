@@ -9,8 +9,8 @@ android {
         applicationId "tech.glasgowneuro.attysscope2"
         minSdkVersion 24
         targetSdkVersion 29
-        versionCode 43
-        versionName "3.0.1"
+        versionCode 44
+        versionName "3.0.2"
     }
     buildTypes {
         release {

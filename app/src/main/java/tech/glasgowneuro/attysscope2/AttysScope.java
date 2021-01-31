@@ -1590,6 +1590,7 @@ public class AttysScope extends AppCompatActivity {
         // starts the recording
         public void startRec(Uri _uri) throws Exception {
             uri = _uri;
+            if (null == uri) return;
             try {
                 Log.d(TAG,"Starting recording. URI = "+uri.toString());
                 textdataFileStream = new PrintWriter(Objects.requireNonNull(getContentResolver().openOutputStream(uri)));
@@ -1615,12 +1616,6 @@ public class AttysScope extends AppCompatActivity {
             }
         }
 
-        public Uri getUri() {
-            return uri;
-        }
-
-        public String getFileName() { return uri.getLastPathSegment(); }
-
         public boolean isRecording() {
             return (textdataFileStream != null);
         }
@@ -1631,8 +1626,12 @@ public class AttysScope extends AppCompatActivity {
             char s = getDataSeparatorChar();
 
             String tmp = String.format(Locale.US, "%e%c", (double) sampleNo / (double) attysService.getAttysComm().getSamplingRateInHz(), s);
-            for (float aData_unfilt : data) {
-                tmp = tmp + String.format(Locale.US, "%e%c", aData_unfilt, s);
+            for (int i=0;i<AttysComm.NCHANNELS;i++) {
+                if (i < AttysComm.INDEX_GPIO0) {
+                    tmp = tmp + String.format(Locale.US, "%e%c", data[i], s);
+                } else {
+                    tmp = tmp + String.format(Locale.US, "%d%c", (int)(data[i]), s);
+                }
             }
             tmp = tmp + String.format(Locale.US, "%e%c", adc1, s);
             tmp = tmp + String.format(Locale.US, "%e", adc2);
