@@ -107,17 +107,15 @@ public class AttysScope extends AppCompatActivity {
     private float highpass1Hz = 0.1F;
     private float highpass2Hz = 0.1F;
 
-    private final int RINGBUFFERSIZE = 1000;
+    private final int RINGBUFFERSIZE = 500;
     private final float[][] ringBuffer = new float[RINGBUFFERSIZE][AttysComm.NCHANNELS];
     private int inPtr = 0;
     private int outPtr = 0;
-    private int nSamplesInBuffer = 0;
     private long timestamp = 0;
 
     public void addFilteredSample(float[] sample) {
         System.arraycopy(sample, 0, ringBuffer[inPtr], 0, sample.length);
         inPtr++;
-        nSamplesInBuffer++;
         if (inPtr == RINGBUFFERSIZE) {
             inPtr = 0;
         }
@@ -490,7 +488,7 @@ public class AttysScope extends AppCompatActivity {
             }
         }
 
-        synchronized public void run() {
+        public void run() {
 
             if (attysService.getAttysComm() != null) {
                 if (attysService.getAttysComm().hasFatalError()) {
@@ -502,19 +500,29 @@ public class AttysScope extends AppCompatActivity {
                 if (!attysService.getAttysComm().hasActiveConnection()) return;
             }
 
-            int nCh = 0;
-            if (attysService.getAttysComm() != null) nCh = AttysComm.NCHANNELS;
+            int n = 0;
+            int tmpOutPtr = outPtr;
+            while (inPtr != tmpOutPtr) {
+                tmpOutPtr++;
+                n++;
+                if (tmpOutPtr == RINGBUFFERSIZE) {
+                    tmpOutPtr = 0;
+                }
+            }
+
+            if (!realtimePlotView.startAddSamples(n)) return;
+
+            final int nCh = AttysComm.NCHANNELS;
             if (attysService.getAttysComm() != null) {
-                float[] tmpSample = new float[nCh];
-                float[] tmpMin = new float[nCh];
-                float[] tmpMax = new float[nCh];
-                float[] tmpTick = new float[nCh];
-                String[] tmpLabels = new String[nCh];
+                final float[] tmpSample = new float[nCh];
+                final float[] tmpMin = new float[nCh];
+                final float[] tmpMax = new float[nCh];
+                final float[] tmpTick = new float[nCh];
+                final String[] tmpLabels = new String[nCh];
                 if (realtimePlotView != null) {
-                    if (!realtimePlotView.startAddSamples(nSamplesInBuffer)) return;
-                    final int n = nSamplesInBuffer;
                     for (int i = 0; ((i < n) && (attysService.getAttysComm() != null)); i++) {
-                        float[] sample = ringBuffer[outPtr];
+                        final float[] sample = new float[nCh];
+                        System.arraycopy(ringBuffer[outPtr], 0, sample, 0, ringBuffer[outPtr].length);
                         outPtr++;
                         if (outPtr == RINGBUFFERSIZE) {
                             outPtr = 0;
@@ -602,9 +610,6 @@ public class AttysScope extends AppCompatActivity {
                         }
                         if (infoView != null) {
                             ygapForInfo = infoView.getInfoHeight();
-//                                if ((Log.isLoggable(TAG, Log.DEBUG)) && (ygapForInfo > 0)) {
-//                                    Log.d(TAG, "ygap=" + ygapForInfo);
-//                                }
                         }
                         if (realtimePlotView != null) {
                             tbCtr--;
@@ -619,7 +624,6 @@ public class AttysScope extends AppCompatActivity {
                             }
                         }
                     }
-                    nSamplesInBuffer = 0;
                     if (realtimePlotView != null) {
                         realtimePlotView.stopAddSamples();
                     }
