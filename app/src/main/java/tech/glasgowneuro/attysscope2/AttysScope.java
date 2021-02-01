@@ -17,6 +17,7 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
@@ -107,7 +108,7 @@ public class AttysScope extends AppCompatActivity {
     private float highpass1Hz = 0.1F;
     private float highpass2Hz = 0.1F;
 
-    private final int RINGBUFFERSIZE = 500;
+    private final int RINGBUFFERSIZE = 1024;
     private final float[][] ringBuffer = new float[RINGBUFFERSIZE][AttysComm.NCHANNELS];
     private int inPtr = 0;
     private int outPtr = 0;
@@ -314,6 +315,11 @@ public class AttysScope extends AppCompatActivity {
                 startService(intent);
                 AttysService.AttysBinder binder = (AttysService.AttysBinder) service;
                 attysService = binder.getService();
+                if (null == attysService) {
+                    Log.e(TAG,"attysService=null in onServiceConnected");
+                    return;
+                }
+                attysService.createAttysComm();
                 initAll();
                 if (attysService.getAttysComm() != null) {
                     attysService.getAttysComm().start();
@@ -634,9 +640,7 @@ public class AttysScope extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "Back button pressed");
-        }
+        Log.d(TAG, "Back button pressed");
         stopAnimation();
         if (!(dataRecorder.isRecording())) {
             if (null != attysService) {
@@ -703,28 +707,12 @@ public class AttysScope extends AppCompatActivity {
 
         infoView = findViewById(R.id.infoview);
 
+        if (AttysComm.findAttysBtDevice() == null) {
+            noAttysFoundAlert();
+        }
+
         startAttysService();
     }
-
-    // this is called whenever the app is starting
-    @Override
-    public void onStart() {
-        super.onStart();
-    }
-
-
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        if (null != attysService) {
-            attysService.getAttysComm().start();
-        }
-        if (null != updatePlotTask) {
-            updatePlotTask.resetAnalysis();
-        }
-    }
-
 
     private void highpass1on() {
         synchronized (highpass) {
@@ -795,6 +783,16 @@ public class AttysScope extends AppCompatActivity {
                         startActivity(i);
                     }
                 })
+                .setNeutralButton("www.attys.tech", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String url = "https://www.attys.tech";
+                        Intent i = new Intent(Intent.ACTION_VIEW);
+                        i.setData(Uri.parse(url));
+                        startActivity(i);
+                        finish();
+                    }
+                })
                 .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         finish();
@@ -849,14 +847,12 @@ public class AttysScope extends AppCompatActivity {
     void initAll() {
         Log.d(TAG, "Starting to init all the settings.");
 
-        attysService.createAttysComm();
-        if (attysService.getAttysComm() == null) {
-            noAttysFoundAlert();
-            Log.d(TAG, "No Attys found!");
-            return;
-        }
+        if (null == attysService) return;
+        if (null == attysService.getAttysComm()) return;
 
         attysService.getAttysComm().disableRingbuffer();
+        attysService.getAttysComm().registerMessageListener(messageListener);
+        attysService.getAttysComm().registerDataListener(dataListener);
 
         signalAnalysis = new SignalAnalysis(attysService.getAttysComm().getSamplingRateInHz());
 
@@ -873,9 +869,6 @@ public class AttysScope extends AppCompatActivity {
         } else if (showMag) {
             theChannelWeDoAnalysis = AttysComm.INDEX_Magnetic_field_X;
         }
-
-        attysService.getAttysComm().registerMessageListener(messageListener);
-        attysService.getAttysComm().registerDataListener(dataListener);
 
         ecg_rr_det = new ECG_rr_det(attysService.getAttysComm().getSamplingRateInHz(), powerlineHz);
 
@@ -954,36 +947,14 @@ public class AttysScope extends AppCompatActivity {
     }
 
     @Override
-    protected void onRestart() {
-        super.onRestart();
-
-        Log.d(TAG, "Restarting");
-        startAnimation();
-        if (!(dataRecorder.isRecording())) {
-            getsetAttysPrefs();
-            attysService.getAttysComm().start();
-        }
-    }
-
-
-    @Override
     public void onPause() {
         super.onPause();
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "Paused");
+            Log.d(TAG, "onPause");
         }
 
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "Stopped");
-        }
+        if (null == attysService) return;
 
         stopAnimation();
 
@@ -993,6 +964,26 @@ public class AttysScope extends AppCompatActivity {
             }
         }
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (null == attysService) return;
+
+        Log.d(TAG,"onResume");
+        if (!(dataRecorder.isRecording())) {
+            getsetAttysPrefs();
+            attysService.start();
+        }
+
+        startAnimation();
+
+        if (null != updatePlotTask) {
+            updatePlotTask.resetAnalysis();
+        }
+    }
+
 
     static final int CHOOSE_DIR_CODE = 1;
     static final int PICK_FILE_CODE = 2;
@@ -1033,21 +1024,21 @@ public class AttysScope extends AppCompatActivity {
     }
 
     static void triggerRequestDirectoryAccess(Activity activity) {
-        if (null == directoryUri) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
 
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION );
 
             activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
-        }
     }
 
     private void enterFilename() {
 
         if (dataRecorder.isRecording()) return;
 
-        triggerRequestDirectoryAccess(this);
+        if (null == directoryUri) {
+            triggerRequestDirectoryAccess(this);
+        }
 
         final EditText filenameEditText = new EditText(this);
         filenameEditText.setSingleLine(true);
@@ -1370,6 +1361,11 @@ public class AttysScope extends AppCompatActivity {
                 shareData();
                 return true;
 
+            case R.id.changefolder:
+                if (dataRecorder.isRecording()) return true;
+                triggerRequestDirectoryAccess(this);
+                return true;
+
             case R.id.sourcecode:
                 String url = "https://github.com/glasgowneuro/AttysScope";
                 Intent i = new Intent(Intent.ACTION_VIEW);
@@ -1386,12 +1382,16 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
-    private void getsetAttysPrefs() {
+    synchronized private void getsetAttysPrefs() {
         byte mux;
+
+        if (null == attysService) return;
+        if (null == attysService.getAttysComm()) return;
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Setting preferences");
         }
+
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(this);
 
@@ -1434,19 +1434,19 @@ public class AttysScope extends AppCompatActivity {
 
         samplingRate = (byte) Integer.parseInt(prefs.getString("samplingrate", "1"));
         if (samplingRate < 0) samplingRate = 0;
-        if (null != attysService.getBtAttysDevice()) {
-            if (null != attysService.getBtAttysDevice().getName()) {
-                if (attysService.getBtAttysDevice().getName().contains("ATTYS2")) {
-                    if (samplingRate > 2) {
-                        samplingRate = 2;
-                    }
-                } else {
-                    if (samplingRate > 1) {
-                        samplingRate = 1;
-                    }
+        BluetoothDevice bluetoothDevice = attysService.getAttysComm().getBluetoothDevice();
+        if (null != bluetoothDevice) {
+            if (bluetoothDevice.getName().contains("ATTYS2")) {
+                if (samplingRate > 2) {
+                    samplingRate = 2;
+                }
+            } else {
+                if (samplingRate > 1) {
+                    samplingRate = 1;
                 }
             }
         }
+
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("samplingrate", String.valueOf(samplingRate));
         editor.apply();
@@ -1594,7 +1594,7 @@ public class AttysScope extends AppCompatActivity {
             try {
                 Log.d(TAG,"Starting recording. URI = "+uri.toString());
                 textdataFileStream = new PrintWriter(Objects.requireNonNull(getContentResolver().openOutputStream(uri)));
-                attysService.getAttysComm().setSampleCounter(0);
+                attysService.getAttysComm().resetSampleCounter();
                 Log.d(TAG,"textdataFileStream = "+textdataFileStream);
             } catch (Exception e) {
                 textdataFileStream = null;

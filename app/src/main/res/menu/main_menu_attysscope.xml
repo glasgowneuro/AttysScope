@@ -217,6 +217,11 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/changefolder"
+        android:title="Change folder"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/preferences"
         android:title="Preferences"
         app:showAsAction="never" />

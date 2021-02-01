@@ -9,11 +9,15 @@ android {
         applicationId "tech.glasgowneuro.attysscope2"
         minSdkVersion 24
         targetSdkVersion 29
-        versionCode 44
-        versionName "3.0.2"
+        versionCode 45
+        versionName "3.0.3"
     }
     buildTypes {
+        debug {
+            manifestPlaceholders = [crashlyticsCollection:"false"]
+        }
         release {
+            manifestPlaceholders = [crashlyticsCollection:"true"]
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
