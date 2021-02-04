@@ -30,6 +30,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.UriPermission;
 import android.content.pm.ActivityInfo;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -60,6 +61,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -81,8 +83,6 @@ public class AttysScope extends AppCompatActivity {
     private final int REFRESH_IN_MS = 50;
 
     private final int HIGHPASSORDER = 2;
-
-    static final String DIRURI = "diruri";
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
@@ -193,6 +193,7 @@ public class AttysScope extends AppCompatActivity {
     private String dataFilename = null;
     public static byte dataSeparator = 0;
     public static Uri directoryUri = null;
+    public static String LASTURI = "lasturi";
 
     private static final String ATTYS_SUBDIR = "attys";
 
@@ -1113,7 +1114,7 @@ public class AttysScope extends AppCompatActivity {
                 SharedPreferences prefs = PreferenceManager
                         .getDefaultSharedPreferences(this);
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(DIRURI, directoryUri.toString());
+                editor.putString(LASTURI, directoryUri.toString());
                 editor.apply();
                 final int takeFlags = resultData.getFlags()
                         & (Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -1133,32 +1134,6 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
-    static void checkDirectoryAccess(Activity activity) {
-        SharedPreferences prefs = PreferenceManager
-                .getDefaultSharedPreferences(activity);
-
-        final String d = prefs.getString(AttysScope.DIRURI,null);
-        if (null != d) {
-            directoryUri = Uri.parse(d);
-            if (null != directoryUri) {
-                try {
-                    Uri u = getUri2Filename(activity,".touch",0);
-                    OutputStream outputStream = activity.getContentResolver().openOutputStream(u);
-                    if (null != outputStream) {
-                        outputStream.write(13);
-                        Log.d(TAG,"Could create test file: "+u.toString()+" so dir still OK.");
-                    } else {
-                        Log.d(TAG, "Stream null: Directory " + u.toString() + " no longer writable");
-                        directoryUri = null;
-                    }
-                } catch (Exception e) {
-                    Log.d(TAG, "Cannot write: Directory " + directoryUri.toString() + " no longer writable");
-                    directoryUri = null;
-                }
-            }
-        }
-    }
-
     static void triggerRequestDirectoryAccess(Activity activity) {
 
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
@@ -1169,11 +1144,30 @@ public class AttysScope extends AppCompatActivity {
         activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
     }
 
+    private void checkPreviousDirPermissions() {
+        final SharedPreferences prefs = PreferenceManager
+                .getDefaultSharedPreferences(this);
+        final ContentResolver resolver = getContentResolver();
+        final List<UriPermission> lou = resolver.getPersistedUriPermissions();
+        for(UriPermission permission : lou) {
+            Log.d(TAG,"Persistent permission: "+permission.getUri().toString());
+            final String lasturistring = prefs.getString(LASTURI, null);
+            if (null != lasturistring) {
+                Uri lasturi = Uri.parse(lasturistring);
+                if ((lasturi.compareTo(permission.getUri()) == 0) && (permission.isWritePermission())) {
+                    directoryUri = permission.getUri();
+                    Log.d(TAG, "Found a previous persistent permission and it's writeable: " +
+                            directoryUri.toString());
+                }
+            }
+        }
+    }
+
     private void enterFilename() {
 
         if (dataRecorder.isRecording()) return;
 
-        checkDirectoryAccess(this);
+        checkPreviousDirPermissions();
 
         if (null == directoryUri) {
             triggerRequestDirectoryAccess(this);
