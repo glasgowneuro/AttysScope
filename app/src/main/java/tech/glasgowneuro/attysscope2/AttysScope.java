@@ -17,20 +17,30 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
@@ -51,6 +61,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
@@ -70,6 +81,8 @@ public class AttysScope extends AppCompatActivity {
     private final int REFRESH_IN_MS = 50;
 
     private final int HIGHPASSORDER = 2;
+
+    static final String DIRURI = "diruri";
 
     private RealtimePlotView realtimePlotView = null;
     private InfoView infoView = null;
@@ -93,6 +106,15 @@ public class AttysScope extends AppCompatActivity {
     private UpdatePlotTask updatePlotTask = null;
 
     private static final String TAG = "AttysScope";
+
+    final String NOTIFICATION_CH = "recorder";
+    final int NOTIFICATION_ID = 888;
+
+    private ForegroundBroadcastReceiver foregroundBroadcastReceiver = null;
+
+    private final static String FOREGROUND = "tech.glasgowneuro.tinnitustailor.FOREGROUND";
+    private PendingIntent fgPendingIntent = null;
+
 
     public Ch2Converter ch2Converter = new Ch2Converter();
 
@@ -638,6 +660,82 @@ public class AttysScope extends AppCompatActivity {
     }
 
 
+    public class ForegroundBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Intent i = new Intent(getBaseContext(), AttysScope.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(i);
+        }
+    }
+
+
+    private void initNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_LOW;
+            NotificationChannel channel = new NotificationChannel(
+                    NOTIFICATION_CH,
+                    getString(R.string.app_name),
+                    importance);
+            channel.setDescription(getString(R.string.app_name));
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (null != nm) {
+                nm.createNotificationChannel(channel);
+                Log.d(TAG,"Created notification channel");
+            } else {
+                Log.d(TAG,"Could not create a notification channel");
+            }
+        }
+
+        fgPendingIntent = PendingIntent.getBroadcast(
+                getBaseContext(),
+                0,
+                new Intent(FOREGROUND),
+                0);
+
+        if (null == foregroundBroadcastReceiver) {
+            foregroundBroadcastReceiver = new ForegroundBroadcastReceiver();
+            getBaseContext().registerReceiver(
+                    foregroundBroadcastReceiver,
+                    new IntentFilter(FOREGROUND));
+        }
+    }
+
+    private void showNotification(double timestamp) {
+        if (null == fgPendingIntent) return;
+        if (null == dataRecorder.uri) return;
+        if (!(dataRecorder.isRecording())) return;
+
+        Log.d(TAG,"Notification: showNotification called.");
+
+        final String message = dataRecorder.uri.getLastPathSegment() +
+                String.format(Locale.US,": %d sec",(int)Math.round(timestamp));
+
+        final NotificationCompat.Builder builder = new NotificationCompat.Builder(
+                getApplicationContext(),
+                NOTIFICATION_CH);
+
+        builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setSmallIcon(R.drawable.ic_attys)
+                .setContentTitle(message)
+                .setContentIntent(fgPendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        notificationManager.notify(NOTIFICATION_ID, builder.build());
+        Log.d(TAG,"Notification is being shown");
+    }
+
+    private void hideNotification() {
+        Log.d(TAG,"Hiding notifications");
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        notificationManager.cancelAll();
+    }
+
+
+
+
+
     @Override
     public void onBackPressed() {
         Log.d(TAG, "Back button pressed");
@@ -712,6 +810,8 @@ public class AttysScope extends AppCompatActivity {
         }
 
         startAttysService();
+
+        initNotification();
     }
 
     private void highpass1on() {
@@ -838,6 +938,11 @@ public class AttysScope extends AppCompatActivity {
             data[AttysComm.INDEX_Analogue_channel_1] = adc1;
             data[AttysComm.INDEX_Analogue_channel_2] = adc2;
             addFilteredSample(data);
+
+            if ((timestamp % 250) == 0) {
+                showNotification((double)samplenumber /
+                        attysService.getAttysComm().getSamplingRateInHz());
+            }
 
             timestamp++;
         }
@@ -1005,6 +1110,11 @@ public class AttysScope extends AppCompatActivity {
                 && resultCode == Activity.RESULT_OK) {
             if (resultData != null) {
                 directoryUri = resultData.getData();
+                SharedPreferences prefs = PreferenceManager
+                        .getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(DIRURI, directoryUri.toString());
+                editor.apply();
                 final int takeFlags = resultData.getFlags()
                         & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                         | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
@@ -1023,18 +1133,47 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
-    static void triggerRequestDirectoryAccess(Activity activity) {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+    static void checkDirectoryAccess(Activity activity) {
+        SharedPreferences prefs = PreferenceManager
+                .getDefaultSharedPreferences(activity);
 
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
+        final String d = prefs.getString(AttysScope.DIRURI,null);
+        if (null != d) {
+            directoryUri = Uri.parse(d);
+            if (null != directoryUri) {
+                try {
+                    Uri u = getUri2Filename(activity,".touch",0);
+                    OutputStream outputStream = activity.getContentResolver().openOutputStream(u);
+                    if (null != outputStream) {
+                        outputStream.write(13);
+                        Log.d(TAG,"Could create test file: "+u.toString()+" so dir still OK.");
+                    } else {
+                        Log.d(TAG, "Stream null: Directory " + u.toString() + " no longer writable");
+                        directoryUri = null;
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Cannot write: Directory " + directoryUri.toString() + " no longer writable");
+                    directoryUri = null;
+                }
+            }
+        }
+    }
+
+    static void triggerRequestDirectoryAccess(Activity activity) {
+
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION );
 
-            activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
+        activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
     }
 
     private void enterFilename() {
 
         if (dataRecorder.isRecording()) return;
+
+        checkDirectoryAccess(this);
 
         if (null == directoryUri) {
             triggerRequestDirectoryAccess(this);
@@ -1111,6 +1250,7 @@ public class AttysScope extends AppCompatActivity {
                 if (dataRecorder.isRecording()) {
                     dataRecorder.stopRec();
                     dataFilename = null;
+                    hideNotification();
                 } else {
                     if (dataFilename != null) {
                         Uri uri = Uri.EMPTY;
