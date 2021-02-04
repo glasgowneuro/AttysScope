@@ -69,6 +69,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -108,13 +109,12 @@ public class AttysScope extends AppCompatActivity {
     private static final String TAG = "AttysScope";
 
     final String NOTIFICATION_CH = "recorder";
-    final int NOTIFICATION_ID = 888;
+    final int NOTIFICATION_ID = (new Random()).nextInt();
 
     private ForegroundBroadcastReceiver foregroundBroadcastReceiver = null;
 
-    private final static String FOREGROUND = "tech.glasgowneuro.tinnitustailor.FOREGROUND";
+    private final static String FOREGROUND = "tech.glasgowneuro.attysscope2.FOREGROUND";
     private PendingIntent fgPendingIntent = null;
-
 
     public Ch2Converter ch2Converter = new Ch2Converter();
 
@@ -707,7 +707,7 @@ public class AttysScope extends AppCompatActivity {
         if (null == dataRecorder.uri) return;
         if (!(dataRecorder.isRecording())) return;
 
-        Log.d(TAG,"Notification: showNotification called.");
+        Log.v(TAG,"Notification: showNotification called.");
 
         final String message = dataRecorder.uri.getLastPathSegment() +
                 String.format(Locale.US,": %d sec",(int)Math.round(timestamp));
@@ -724,7 +724,7 @@ public class AttysScope extends AppCompatActivity {
 
         final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         notificationManager.notify(NOTIFICATION_ID, builder.build());
-        Log.d(TAG,"Notification is being shown");
+        Log.v(TAG,"Notification is being shown");
     }
 
     private void hideNotification() {
