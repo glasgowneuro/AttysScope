@@ -5,12 +5,14 @@ Oscilloscope app for [Attys](http://www.attys.tech)
 ## Features
 
 * Realtime plot of all Attys channels: ADC1,ADC2,Accelerometer & Magnetometer
+* Can record in the background -- even with the lockscreen on
+* Reconnects automatically in case of a temporary connection loss
 * Fourier Spectrum plot
 * RMS and Peak to Peak plots and/or info texts
 * Heartrate over time with heartrate variability stats
-* Save the data in OCTAVE/MATLAB(tm)/PYTHON compatible format
+* Save the data in Python / MATLAB(tm) compatible format
 
-![alt tag](screenshots/ecg_fft_with50Hz.png)
+![alt tag](comboattys.jpg)
 
 ## Link to Google Play Store
 
