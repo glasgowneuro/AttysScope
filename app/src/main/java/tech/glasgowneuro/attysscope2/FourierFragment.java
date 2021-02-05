@@ -302,7 +302,7 @@ public class FourierFragment extends Fragment {
             savedSpectrumSeries.addLast(spectrumSeries.getX(i), spectrumSeries.getY(i));
         }
 
-        AttysScope.triggerRequestDirectoryAccess(getActivity());
+        AttysScope.checkDirPermissions(getActivity());
 
         filenameEditText.setSingleLine(true);
 

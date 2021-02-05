@@ -32,7 +32,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.UriPermission;
 import android.content.pm.ActivityInfo;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -40,6 +39,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.documentfile.provider.DocumentFile;
@@ -61,9 +61,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
@@ -759,6 +757,8 @@ public class AttysScope extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
@@ -1134,7 +1134,7 @@ public class AttysScope extends AppCompatActivity {
         }
     }
 
-    static void triggerRequestDirectoryAccess(Activity activity) {
+    private static void triggerRequestDirectoryAccess(Activity activity) {
 
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
 
@@ -1144,10 +1144,10 @@ public class AttysScope extends AppCompatActivity {
         activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
     }
 
-    private void checkPreviousDirPermissions() {
+    static public void checkDirPermissions(Activity activity) {
         final SharedPreferences prefs = PreferenceManager
-                .getDefaultSharedPreferences(this);
-        final ContentResolver resolver = getContentResolver();
+                .getDefaultSharedPreferences(activity);
+        final ContentResolver resolver = activity.getContentResolver();
         final List<UriPermission> lou = resolver.getPersistedUriPermissions();
         for(UriPermission permission : lou) {
             Log.d(TAG,"Persistent permission: "+permission.getUri().toString());
@@ -1161,17 +1161,16 @@ public class AttysScope extends AppCompatActivity {
                 }
             }
         }
+        if (null == directoryUri) {
+            triggerRequestDirectoryAccess(activity);
+        }
     }
 
     private void enterFilename() {
 
         if (dataRecorder.isRecording()) return;
 
-        checkPreviousDirPermissions();
-
-        if (null == directoryUri) {
-            triggerRequestDirectoryAccess(this);
-        }
+        checkDirPermissions(this);
 
         final EditText filenameEditText = new EditText(this);
         filenameEditText.setSingleLine(true);

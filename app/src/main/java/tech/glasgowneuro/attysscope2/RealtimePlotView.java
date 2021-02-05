@@ -219,8 +219,12 @@ public class RealtimePlotView extends SurfaceView implements SurfaceHolder.Callb
                     if ((xpos % xtic) == 0) {
                         canvas.drawLine(xpos, ygap, xpos, height+ygap, paintYCoord);
                     }
-                    canvas.drawLine(xpos, ypos[i][xpos]+ygap, xpos + 1, ypos[i][xpos + 1]+ygap, paint);
-                    canvas.drawText(label[i], 0F, yZero[i] - 1, paintLabel);
+                    if (xpos > 0) {
+                        canvas.drawLine(
+                                xpos, ypos[i][xpos] + ygap,
+                                xpos + 1, ypos[i][xpos + 1] + ygap, paint);
+                        canvas.drawText(label[i], 0F, yZero[i] - 1, paintLabel);
+                    }
                 }
             }
             xpos++;
