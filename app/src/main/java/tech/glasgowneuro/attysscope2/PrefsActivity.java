@@ -1,29 +1,32 @@
 package tech.glasgowneuro.attysscope2;
 
 import android.os.Bundle;
-import android.preference.PreferenceActivity;
-import android.preference.PreferenceFragment;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceFragmentCompat;
 
-/**
- * Fires up the preferences
- */
-public class PrefsActivity extends PreferenceActivity {
+
+
+
+public class PrefsActivity extends AppCompatActivity {
 
     @Override
-    protected void onCreate(final Bundle savedInstanceState)
-    {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
+        setContentView(R.layout.preferences);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.settings, new SettingsFragment())
+                .commit();
     }
 
-    public static class MyPreferenceFragment extends PreferenceFragment
-    {
+
+    static public class SettingsFragment extends PreferenceFragmentCompat {
+
         @Override
-        public void onCreate(final Bundle savedInstanceState)
-        {
-            super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.preferences);
+        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+            setPreferencesFromResource(R.xml.preferences, rootKey);
         }
+
     }
 
 }

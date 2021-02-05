@@ -19,9 +19,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="tech.glasgowneuro.attysscope2.PrefsActivity"
-            android:theme="@android:style/Theme.Black.NoTitleBar" />
+        <activity android:name="tech.glasgowneuro.attysscope2.PrefsActivity"
+            android:label="Preferences"/>
 
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
