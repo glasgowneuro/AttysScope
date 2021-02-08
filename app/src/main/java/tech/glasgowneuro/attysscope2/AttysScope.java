@@ -97,6 +97,10 @@ public class AttysScope extends AppCompatActivity {
     MenuItem menuItemMains1 = null;
     MenuItem menuItemMains2 = null;
 
+    MenuItem menuItemPref = null;
+    MenuItem menuItemEnterFilename = null;
+    MenuItem menuItemChangeFolder = null;
+
     MenuItem menuItemRec = null;
 
     private AttysService attysService = null;
@@ -1225,9 +1229,18 @@ public class AttysScope extends AppCompatActivity {
         menuItemRec = menu.findItem(R.id.toggleRec);
         setMenuColour(menuItemRec,Color.GRAY);
 
+        menuItemEnterFilename = menu.findItem(R.id.enterFilename);
+        menuItemPref = menu.findItem(R.id.preferences);
+        menuItemChangeFolder = menu.findItem(R.id.changefolder);
+
         return true;
     }
 
+    private void enableMenuitems(boolean doit) {
+        menuItemPref.setEnabled(doit);
+        menuItemEnterFilename.setEnabled(doit);
+        menuItemChangeFolder.setEnabled(doit);
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -1235,8 +1248,10 @@ public class AttysScope extends AppCompatActivity {
         switch (item.getItemId()) {
 
             case R.id.preferences:
-                Intent intent = new Intent(this, PrefsActivity.class);
-                startActivity(intent);
+                if (!(dataRecorder.isRecording())) {
+                    Intent intent = new Intent(this, PrefsActivity.class);
+                    startActivity(intent);
+                }
                 return true;
 
             case R.id.toggleRec:
@@ -1244,12 +1259,14 @@ public class AttysScope extends AppCompatActivity {
                     dataRecorder.stopRec();
                     dataFilename = null;
                     hideNotification();
+                    enableMenuitems(true);
                 } else {
                     if (dataFilename != null) {
                         Uri uri = Uri.EMPTY;
                         try {
                             uri = getUri2Filename(this,dataFilename,dataSeparator);
                             dataRecorder.startRec(uri);
+                            enableMenuitems(false);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not open data file: " + e.getMessage());
@@ -1289,7 +1306,9 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.enterFilename:
-                enterFilename();
+                if (!(dataRecorder.isRecording())) {
+                    enterFilename();
+                }
                 return true;
 
             case R.id.Ch1toggleDC:
