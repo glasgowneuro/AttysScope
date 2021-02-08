@@ -289,7 +289,7 @@ public class AmplitudeFragment extends Fragment {
                     amplitudePlot.setRangeUpperBoundary(1, BoundaryMode.AUTO);
                     amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.AUTO);
                 } else {
-                    Screensize screensize = new Screensize(Objects.requireNonNull(getActivity()).getWindowManager());
+                    Screensize screensize = new Screensize(getContext());
                     amplitudePlot.setRangeLowerBoundary(0, BoundaryMode.FIXED);
                     if (screensize.isTablet()) {
                         amplitudePlot.setRangeStep(StepMode.INCREMENT_BY_VAL, Float.parseFloat(MAXYTXT[position]) / 10);

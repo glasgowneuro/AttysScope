@@ -211,7 +211,7 @@ public class FourierFragment extends Fragment {
 
         spectrumSeries.setTitle(AttysComm.CHANNEL_DESCRIPTION[channel]);
 
-        final Screensize screensize = new Screensize(Objects.requireNonNull(getActivity()).getWindowManager());
+        final Screensize screensize = new Screensize(getContext());
         if (screensize.isTablet()) {
             spectrumPlot.setDomainStep(StepMode.INCREMENT_BY_VAL, 25);
         } else {
