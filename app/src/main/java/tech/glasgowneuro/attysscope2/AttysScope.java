@@ -37,7 +37,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
 
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.NotificationCompat;
@@ -1741,11 +1741,6 @@ public class AttysScope extends AppCompatActivity {
             if (textdataFileStream != null) {
                 textdataFileStream.close();
                 textdataFileStream = null;
-                if (uri != null) {
-                    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                    mediaScanIntent.setData(uri);
-                    sendBroadcast(mediaScanIntent);
-                }
             }
         }
 

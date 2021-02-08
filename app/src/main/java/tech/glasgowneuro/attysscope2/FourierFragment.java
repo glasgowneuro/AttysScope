@@ -287,9 +287,6 @@ public class FourierFragment extends Fragment {
 
         fftFileStream.close();
 
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(uri);
-        Objects.requireNonNull(getActivity()).sendBroadcast(mediaScanIntent);
     }
 
 
