@@ -1614,9 +1614,8 @@ public class AttysScope extends AppCompatActivity {
             Log.d(TAG, "highpass2=" + highpass2Hz);
         }
 
-        for (int i = 0; i < AttysComm.NCHANNELS; i++) {
-            units[i] = AttysComm.CHANNEL_UNITS[i];
-        }
+        System.arraycopy(AttysComm.CHANNEL_UNITS, 0, units, 0, AttysComm.NCHANNELS);
+
         units[AttysComm.INDEX_Analogue_channel_2] = ch2Converter.getUnit();
 
         if (amplitudeFragment != null) {
