@@ -16,7 +16,7 @@ Oscilloscope app for [Attys](http://www.attys.tech)
 
 ## Link to Google Play Store
 
-[https://play.google.com/store/apps/details?id=tech.glasgowneuro.attysscope2]
+[![alt tag](google_play_en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=tech.glasgowneuro.attysscope2)
 
 ## Dataformat
 
