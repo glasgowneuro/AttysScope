@@ -473,15 +473,6 @@ public class AttysScope extends AppCompatActivity {
                                 rectxt = "RECORDING: " + dataFilename;
                             }
                             infoView.drawText(lt, st, rectxt);
-                            if (dataRecorder.isRecording()) {
-                                setMenuColour(menuItemRec, Color.RED);
-                            } else {
-                                if (dataFilename != null) {
-                                    setMenuColour(menuItemRec, Color.GREEN);
-                                } else {
-                                    setMenuColour(menuItemRec, Color.GRAY);
-                                }
-                            }
                         }
                     });
                 }
@@ -1193,6 +1184,7 @@ public class AttysScope extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(),
                                 "Press rec to record to '" + dataFilename + "'",
                                 Toast.LENGTH_SHORT).show();
+                        setRecColour(Color.GREEN);
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -1208,11 +1200,11 @@ public class AttysScope extends AppCompatActivity {
         startActivityForResult(intent, PICK_FILE_CODE);
     }
 
-    private void setMenuColour(MenuItem menuItem, int c) {
-        if (null == menuItem) return;
-        SpannableString s = new SpannableString(menuItem.getTitle());
+    private void setRecColour(int c) {
+        if (null == menuItemRec) return;
+        SpannableString s = new SpannableString(menuItemRec.getTitle());
         s.setSpan(new ForegroundColorSpan(c), 0, s.length(), 0);
-        menuItem.setTitle(s);
+        menuItemRec.setTitle(s);
     }
 
     @Override
@@ -1227,7 +1219,7 @@ public class AttysScope extends AppCompatActivity {
         menuItemMains2 = menu.findItem(R.id.Ch2notch);
 
         menuItemRec = menu.findItem(R.id.toggleRec);
-        setMenuColour(menuItemRec,Color.GRAY);
+        setRecColour(Color.GRAY);
 
         menuItemEnterFilename = menu.findItem(R.id.enterFilename);
         menuItemPref = menu.findItem(R.id.preferences);
@@ -1260,6 +1252,7 @@ public class AttysScope extends AppCompatActivity {
                     dataFilename = null;
                     hideNotification();
                     enableMenuitems(true);
+                    setRecColour(Color.GRAY);
                 } else {
                     if (dataFilename != null) {
                         Uri uri = Uri.EMPTY;
@@ -1267,20 +1260,19 @@ public class AttysScope extends AppCompatActivity {
                             uri = getUri2Filename(this,dataFilename,dataSeparator);
                             dataRecorder.startRec(uri);
                             enableMenuitems(false);
+                            setRecColour(Color.RED);
                         } catch (Exception e) {
                             if (Log.isLoggable(TAG, Log.DEBUG)) {
                                 Log.d(TAG, "Could not open data file: " + e.getMessage());
                             }
+                            setRecColour(Color.GRAY);
+                            dataFilename = null;
                             return true;
-                        }
-                        if (dataRecorder.isRecording()) {
-                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Saving to " + uri.getPath());
-                            }
                         }
                     } else {
                         Toast.makeText(getApplicationContext(),
                                 "To record enter a filename first", Toast.LENGTH_SHORT).show();
+                        setRecColour(Color.GRAY);
                     }
                 }
                 return true;

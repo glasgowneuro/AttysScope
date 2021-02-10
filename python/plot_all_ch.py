@@ -4,7 +4,7 @@
 import numpy as np
 import pylab as pl
 #
-data = np.loadtxt('test_data.tsv');
+data = np.loadtxt('sines6.tsv');
 #
 fig = pl.figure(1);
 #

@@ -32,6 +32,7 @@ import org.apache.commons.math3.transform.TransformType;
 
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.PanZoom;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.StepMode;
 import com.androidplot.xy.XYGraphWidget;
@@ -159,6 +160,9 @@ public class FourierFragment extends Fragment {
                 new LineAndPointFormatter(
                         Color.rgb(100, 255, 255), null, null, null));
 
+        PanZoom panZoom = PanZoom.attach(spectrumPlot, PanZoom.Pan.BOTH, PanZoom.Zoom.STRETCH_BOTH);
+        panZoom.setEnabled(true);
+
         Paint paint = new Paint();
         paint.setColor(Color.argb(128, 0, 255, 0));
         spectrumPlot.getGraph().setDomainGridLinePaint(paint);
@@ -272,7 +276,7 @@ public class FourierFragment extends Fragment {
         Uri uri = Uri.EMPTY;
 
         uri = AttysScope.getUri2Filename(getActivity(),dataFilename,dataSeparator);
-        fftFileStream = new PrintWriter(Objects.requireNonNull(getActivity().getContentResolver().openOutputStream(uri)));
+        fftFileStream = new PrintWriter(Objects.requireNonNull(requireActivity().getContentResolver().openOutputStream(uri)));
 
         char s = AttysScope.getDataSeparatorChar();
 
