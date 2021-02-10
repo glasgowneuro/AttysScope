@@ -1,6 +1,10 @@
 function plot_data(r) {
-    var miny = -1.5E-3;
-    var maxy =  1.5E-3;
+    var acc_miny = -50;
+    var acc_maxy =  50;
+    var mag_miny = -1E-4;
+    var mag_maxy = 1E-4;
+    var adc_miny = -2;
+    var adc_maxy = 2;
 
     var winx = $(window).width() * 0.8;
     var winy = $(window).height() / 4;
@@ -21,8 +25,8 @@ function plot_data(r) {
 	    xlabel: 't/sec',
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [true, false, false, false, false, false, false, false, false, false],
+	    valueRange: [ acc_miny, acc_maxy ],
+	    visibility: [true, false, false, false, false, false, false, false, false, false, false, false, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
                 acc_z.updateOptions({dateWindow: [minX,maxX]});
@@ -44,8 +48,8 @@ function plot_data(r) {
 	    xlabel: 't/sec',
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, true, false, false, false, false, false, false, false, false],
+	    valueRange: [ acc_miny, acc_maxy ],
+	    visibility: [false, true, false, false, false, false, false, false, false, false, false, false, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_z.updateOptions({dateWindow: [minX,maxX]});
@@ -67,8 +71,8 @@ function plot_data(r) {
 	    xlabel: 't/sec',
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, true, false, false, false, false, false, false, false],
+	    valueRange: [ acc_miny, acc_maxy ],
+	    visibility: [false, false, true, false, false, false, false, false, false, false, false, false, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
@@ -90,8 +94,8 @@ function plot_data(r) {
 	    xlabel: 't/sec',
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, false, true, false, false, false, false, false, false],
+	    valueRange: [ mag_miny, mag_maxy ],
+	    visibility: [false, false, false, true, false, false, false, false, false, false, false, false, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
@@ -113,8 +117,8 @@ function plot_data(r) {
 	    xlabel: 't/sec',
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, false, false, true, false, false, false, false, false],
+	    valueRange: [ mag_miny, mag_maxy ],
+	    visibility: [false, false, false, false, true, false, false, false, false, false, false, false, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
@@ -136,8 +140,8 @@ function plot_data(r) {
 	    xlabel: 't/sec',
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, false, false, false, true, false, false, false, false],
+	    valueRange: [ mag_miny, mag_maxy ],
+	    visibility: [false, false, false, false, false, true, false, false, false, false, false, false, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
@@ -153,15 +157,15 @@ function plot_data(r) {
     var adc_1 = new Dygraph(
         document.getElementById("adc_1"),
 	r, {
-	    ylabel: 'ADC 1 / mV',
+	    ylabel: 'ADC 1 / V',
             axes: { y: {axisLabelWidth: 50} },
 	    animatedZooms: true,
 	    xlabel: 't/sec',
             drawPoints: true,
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, false, false, false, false, true, false, false, false],
+	    valueRange: [ adc_miny, adc_maxy ],
+	    visibility: [false, false, false, false, false, false, false, false, false, false, false, true, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
@@ -177,15 +181,15 @@ function plot_data(r) {
     var adc_2 = new Dygraph(
         document.getElementById("adc_2"),
 	r, {
-	    ylabel: 'ADC 2 / mV',
+	    ylabel: 'ADC 2 / V',
             axes: { y: {axisLabelWidth: 50} },
 	    animatedZooms: true,
 	    xlabel: 't/sec',
             drawPoints: true,
 	    width: winx,
 	    height: winy,
-	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, false, false, false, false, false, true, false, false],
+	    valueRange: [ adc_miny, adc_maxy ],
+	    visibility: [false, false, false, false, false, false, false, false, false, false, false, false, true, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
@@ -193,34 +197,34 @@ function plot_data(r) {
                 mag_x.updateOptions({dateWindow: [minX,maxX]});
                 mag_y.updateOptions({dateWindow: [minX,maxX]});
                 mag_z.updateOptions({dateWindow: [minX,maxX]});
-                adc_2.updateOptions({dateWindow: [minX,maxX]});
+                adc_1.updateOptions({dateWindow: [minX,maxX]});
             },
 	}
     );
 
     var reset = function() {
         var rng = adc_1.xAxisExtremes() 
-        acc_1.updateOptions({dateWindow: rng});
-        acc_2.updateOptions({dateWindow: rng});
-        acc_3.updateOptions({dateWindow: rng});
-        mag_1.updateOptions({dateWindow: rng});
-        mag_2.updateOptions({dateWindow: rng});
-        mag_3.updateOptions({dateWindow: rng});
+        acc_x.updateOptions({dateWindow: rng});
+        acc_y.updateOptions({dateWindow: rng});
+        acc_z.updateOptions({dateWindow: rng});
+        mag_x.updateOptions({dateWindow: rng});
+        mag_y.updateOptions({dateWindow: rng});
+        mag_z.updateOptions({dateWindow: rng});
         adc_1.updateOptions({dateWindow: rng});
         adc_2.updateOptions({dateWindow: rng});
     };
 
     var pan = function(dir) {
-        var w = ecg_iii.xAxisRange();
+        var w = adc_1.xAxisRange();
         var scale = w[1] - w[0];
         var amount = scale * 0.25 * dir;
         var rng = [ w[0] + amount, w[1] + amount ];
-        acc_1.updateOptions({dateWindow: rng});
-        acc_2.updateOptions({dateWindow: rng});
-        acc_3.updateOptions({dateWindow: rng});
-        mag_1.updateOptions({dateWindow: rng});
-        mag_2.updateOptions({dateWindow: rng});
-        mag_3.updateOptions({dateWindow: rng});
+        acc_x.updateOptions({dateWindow: rng});
+        acc_y.updateOptions({dateWindow: rng});
+        acc_z.updateOptions({dateWindow: rng});
+        mag_x.updateOptions({dateWindow: rng});
+        mag_y.updateOptions({dateWindow: rng});
+        mag_z.updateOptions({dateWindow: rng});
         adc_1.updateOptions({dateWindow: rng});
         adc_2.updateOptions({dateWindow: rng});
     };

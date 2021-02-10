@@ -36,3 +36,9 @@ The files are tab, comma or space separated text files. The columns are:
  11. Charging
  12. Analogue channel 1 (filtered) in V
  13. Analogue channel 2 (filtered) in V
+
+## Data online viewer
+
+With this [Online Data Viewer](https://glasgowneuro.github.io/AttysScope/) you can view the files recorded with AttysScope. It shows the accelerometer, the magnetometer and the two filtered analogue channels. If you want to customise it just download the files from the `docs` directory and load `index.html` into your favourite browser.
+
+[![alt tag](viewer.png)](https://glasgowneuro.github.io/AttysScope/)
