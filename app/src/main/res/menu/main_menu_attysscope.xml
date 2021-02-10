@@ -10,7 +10,7 @@
     <item
         android:id="@+id/enterFilename"
         android:title="Filename"
-        app:showAsAction="always" />
+        app:showAsAction="always|ifRoom" />
 
     <item
         android:checked="true"
@@ -228,8 +228,7 @@
 
     <item
         android:id="@+id/sourcecode"
-        android:title="Source code"
+        android:title="Online resources"
         app:showAsAction="never" />
 
 </menu>
-
