@@ -6,20 +6,10 @@ function plot_data(r) {
     var winy = $(window).height() / 4;
 
     var axes_opt = {
-              y: {
-                valueFormatter: function(y) {
-                  y = y * 1000;
-                  return y.toPrecision(1);
-                },
-                axisLabelFormatter: function(y) {
-                  y = y * 1000;
-                  return y.toPrecision(1);
-                },
                 axisLabelWidth: 50,
                 ticker: function(min, max, pixels, opts, dygraph, vals) {
-                  return [{v:1E-3, label:"1"}, {v:-1E-3, label:"-1"}, {v:0, label:"0"}];
-                },
-              }
+                  return [{v:1, label:"1"}, {v:-1, label:"-1"}, {v:0, label:"0"}];
+                }
     };
 
     var acc_x = new Dygraph(
@@ -105,7 +95,7 @@ function plot_data(r) {
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
-                mag_x.updateOptions({dateWindow: [minX,maxX]});
+                acc_z.updateOptions({dateWindow: [minX,maxX]});
                 mag_y.updateOptions({dateWindow: [minX,maxX]});
                 mag_z.updateOptions({dateWindow: [minX,maxX]});
                 adc_1.updateOptions({dateWindow: [minX,maxX]});
@@ -128,8 +118,8 @@ function plot_data(r) {
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
+                acc_z.updateOptions({dateWindow: [minX,maxX]});
                 mag_x.updateOptions({dateWindow: [minX,maxX]});
-                mag_y.updateOptions({dateWindow: [minX,maxX]});
                 mag_z.updateOptions({dateWindow: [minX,maxX]});
                 adc_1.updateOptions({dateWindow: [minX,maxX]});
                 adc_2.updateOptions({dateWindow: [minX,maxX]});
@@ -151,9 +141,9 @@ function plot_data(r) {
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
+                acc_z.updateOptions({dateWindow: [minX,maxX]});
                 mag_x.updateOptions({dateWindow: [minX,maxX]});
                 mag_y.updateOptions({dateWindow: [minX,maxX]});
-                mag_z.updateOptions({dateWindow: [minX,maxX]});
                 adc_1.updateOptions({dateWindow: [minX,maxX]});
                 adc_2.updateOptions({dateWindow: [minX,maxX]});
             },
@@ -175,10 +165,10 @@ function plot_data(r) {
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
+                acc_z.updateOptions({dateWindow: [minX,maxX]});
                 mag_x.updateOptions({dateWindow: [minX,maxX]});
                 mag_y.updateOptions({dateWindow: [minX,maxX]});
                 mag_z.updateOptions({dateWindow: [minX,maxX]});
-                adc_1.updateOptions({dateWindow: [minX,maxX]});
                 adc_2.updateOptions({dateWindow: [minX,maxX]});
             },
 	}
@@ -195,14 +185,14 @@ function plot_data(r) {
 	    width: winx,
 	    height: winy,
 	    valueRange: [ miny, maxy ],
-	    visibility: [false, false, false, false, false, false, true, false, false, false],
+	    visibility: [false, false, false, false, false, false, false, true, false, false],
 	    zoomCallback: function(minX, maxX, yRanges) {
                 acc_x.updateOptions({dateWindow: [minX,maxX]});
                 acc_y.updateOptions({dateWindow: [minX,maxX]});
+                acc_z.updateOptions({dateWindow: [minX,maxX]});
                 mag_x.updateOptions({dateWindow: [minX,maxX]});
                 mag_y.updateOptions({dateWindow: [minX,maxX]});
                 mag_z.updateOptions({dateWindow: [minX,maxX]});
-                adc_1.updateOptions({dateWindow: [minX,maxX]});
                 adc_2.updateOptions({dateWindow: [minX,maxX]});
             },
 	}
