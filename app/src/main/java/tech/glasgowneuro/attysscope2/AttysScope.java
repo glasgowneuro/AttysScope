@@ -1234,6 +1234,38 @@ public class AttysScope extends AppCompatActivity {
         menuItemChangeFolder.setEnabled(doit);
     }
 
+    private void toggleRec() {
+        if (dataRecorder.isRecording()) {
+            dataRecorder.stopRec();
+            dataFilename = null;
+            hideNotification();
+            enableMenuitems(true);
+            setRecColour(Color.GRAY);
+        } else {
+            if (dataFilename != null) {
+                Uri uri = Uri.EMPTY;
+                try {
+                    uri = getUri2Filename(this,dataFilename,dataSeparator);
+                    dataRecorder.startRec(uri);
+                    enableMenuitems(false);
+                    setRecColour(Color.RED);
+                } catch (Exception e) {
+                    if (Log.isLoggable(TAG, Log.DEBUG)) {
+                        Log.d(TAG, "Could not open data file: " + e.getMessage());
+                    }
+                    setRecColour(Color.GRAY);
+                    Toast.makeText(getApplicationContext(),
+                            "Could not save the file.", Toast.LENGTH_SHORT).show();
+                    dataFilename = null;
+                }
+            } else {
+                Toast.makeText(getApplicationContext(),
+                        "To record enter a filename first", Toast.LENGTH_SHORT).show();
+                setRecColour(Color.GRAY);
+            }
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
@@ -1247,34 +1279,7 @@ public class AttysScope extends AppCompatActivity {
                 return true;
 
             case R.id.toggleRec:
-                if (dataRecorder.isRecording()) {
-                    dataRecorder.stopRec();
-                    dataFilename = null;
-                    hideNotification();
-                    enableMenuitems(true);
-                    setRecColour(Color.GRAY);
-                } else {
-                    if (dataFilename != null) {
-                        Uri uri = Uri.EMPTY;
-                        try {
-                            uri = getUri2Filename(this,dataFilename,dataSeparator);
-                            dataRecorder.startRec(uri);
-                            enableMenuitems(false);
-                            setRecColour(Color.RED);
-                        } catch (Exception e) {
-                            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                Log.d(TAG, "Could not open data file: " + e.getMessage());
-                            }
-                            setRecColour(Color.GRAY);
-                            dataFilename = null;
-                            return true;
-                        }
-                    } else {
-                        Toast.makeText(getApplicationContext(),
-                                "To record enter a filename first", Toast.LENGTH_SHORT).show();
-                        setRecColour(Color.GRAY);
-                    }
-                }
+                toggleRec();
                 return true;
 
             case R.id.showCh1:
