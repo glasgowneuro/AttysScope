@@ -14,7 +14,7 @@
 
     <item
         android:checked="true"
-        app:showAsAction="never"
+        app:showAsAction="ifRoom"
         android:title="Info texts">
 
         <menu>
@@ -34,7 +34,7 @@
     </item>
 
     <item
-        app:showAsAction="never"
+        app:showAsAction="ifRoom"
         android:title="Info plots">
 
         <menu>
@@ -54,7 +54,7 @@
     </item>
 
     <item android:title="SEC/DIV"
-        app:showAsAction="never">
+        app:showAsAction="ifRoom">
         <menu>
             <item
                 android:id="@+id/tb1"
@@ -213,7 +213,7 @@
 
     <item
         android:id="@+id/filebrowser"
-        android:title="File Browser"
+        android:title="Share files"
         app:showAsAction="never" />
 
     <item
