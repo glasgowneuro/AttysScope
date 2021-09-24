@@ -35,19 +35,16 @@ android {
 
 }
 
-repositories {
-    jcenter()
-}
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.13.1'
+    implementation 'com.halfhp.fig:figlib:1.0.11'
     implementation 'androidx.appcompat:appcompat:1.3.1'
-    implementation 'androidx.media:media:1.4.1'
+    implementation 'androidx.media:media:1.4.2'
     implementation 'androidx.preference:preference:1.1.1'
     implementation group: 'uk.me.berndporr', name:'iirj', version: '1.3'
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-    implementation "com.androidplot:androidplot-core:1.5.7"
+    implementation 'com.androidplot:androidplot-core:1.5.9'
     implementation 'com.google.android.gms:play-services-base:17.6.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
     implementation 'com.google.firebase:firebase-core:19.0.1'

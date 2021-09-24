@@ -2,8 +2,8 @@
 
 buildscript {
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
         maven {
             url 'https://maven.google.com/'
             name 'Google'
@@ -18,8 +18,8 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
     }
     gradle.projectsEvaluated {
         tasks.withType(JavaCompile) {
@@ -31,3 +31,4 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
