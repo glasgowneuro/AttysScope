@@ -130,7 +130,7 @@ public class FourierFragment extends Fragment {
             }
         });
         Spinner spinnerChannel = view.findViewById(R.id.spectrum_channel);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(Objects.requireNonNull(getContext()),
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -310,7 +310,7 @@ public class FourierFragment extends Fragment {
         filenameEditText.setHint("");
         filenameEditText.setText(dataFilename);
 
-        new AlertDialog.Builder(Objects.requireNonNull(getContext()))
+        new AlertDialog.Builder(requireContext())
                 .setTitle("Saving the Fourier spectrum")
                 .setMessage("Enter the filename of the data textfile")
                 .setView(filenameEditText)

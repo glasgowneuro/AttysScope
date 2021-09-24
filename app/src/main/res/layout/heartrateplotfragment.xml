@@ -53,7 +53,7 @@
         android:textColor="#00FFFF"
         android:textSize="14sp" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent">
 
@@ -62,6 +62,8 @@
             style="@style/APDefacto.Dark"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
+            ap:layout_constraintStart_toStartOf="parent"
+            ap:layout_constraintTop_toTopOf="parent"
             ap:domainTitle="domain"
             ap:lineLabelRotationBottom="-45"
             ap:lineLabels="left|bottom"

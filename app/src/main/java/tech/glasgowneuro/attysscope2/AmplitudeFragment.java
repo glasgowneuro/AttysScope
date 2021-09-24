@@ -182,7 +182,8 @@ public class AmplitudeFragment extends Fragment {
         });
 
         Spinner spinnerChannel = view.findViewById(R.id.amplitude_channel);
-        ArrayAdapter<String> adapterChannel = new ArrayAdapter<>(Objects.requireNonNull(getContext()),
+        ArrayAdapter<String> adapterChannel =
+                new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 AttysComm.CHANNEL_DESCRIPTION_SHORT);
         adapterChannel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);

@@ -1111,11 +1111,10 @@ public class AttysScope extends AppCompatActivity {
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(LASTURI, directoryUri.toString());
                 editor.apply();
-                final int takeFlags = resultData.getFlags()
-                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                 ContentResolver resolver = getContentResolver();
-                resolver.takePersistableUriPermission(directoryUri, takeFlags);
+                resolver.takePersistableUriPermission(directoryUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                 Log.d(TAG, "URI=" + directoryUri);
             }
         }

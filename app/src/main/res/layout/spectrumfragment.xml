@@ -61,6 +61,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             ap:domainTitle="domain"
+            ap:layout_constraintStart_toStartOf="parent"
+            ap:layout_constraintTop_toTopOf="parent"
             ap:lineLabelRotationBottom="-45"
             ap:lineLabels="left|bottom"
             ap:rangeTitle="range"
