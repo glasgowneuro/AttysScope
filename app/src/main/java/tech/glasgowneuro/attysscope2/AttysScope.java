@@ -42,6 +42,8 @@ import android.os.IBinder;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
@@ -347,7 +349,7 @@ public class AttysScope extends AppCompatActivity {
                 AttysService.AttysBinder binder = (AttysService.AttysBinder) service;
                 attysService = binder.getService();
                 if (null == attysService) {
-                    Log.e(TAG,"attysService=null in onServiceConnected");
+                    Log.e(TAG, "attysService=null in onServiceConnected");
                     return;
                 }
                 attysService.createAttysComm();
@@ -681,9 +683,9 @@ public class AttysScope extends AppCompatActivity {
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (null != nm) {
                 nm.createNotificationChannel(channel);
-                Log.d(TAG,"Created notification channel");
+                Log.d(TAG, "Created notification channel");
             } else {
-                Log.d(TAG,"Could not create a notification channel");
+                Log.d(TAG, "Could not create a notification channel");
             }
         }
 
@@ -706,10 +708,10 @@ public class AttysScope extends AppCompatActivity {
         if (null == dataRecorder.uri) return;
         if (!(dataRecorder.isRecording())) return;
 
-        Log.v(TAG,"Notification: showNotification called.");
+        Log.v(TAG, "Notification: showNotification called.");
 
         final String message = dataRecorder.uri.getLastPathSegment() +
-                String.format(Locale.US,": %d sec",(int)Math.round(timestamp));
+                String.format(Locale.US, ": %d sec", (int) Math.round(timestamp));
 
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(
                 getApplicationContext(),
@@ -723,17 +725,14 @@ public class AttysScope extends AppCompatActivity {
 
         final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         notificationManager.notify(NOTIFICATION_ID, builder.build());
-        Log.v(TAG,"Notification is being shown");
+        Log.v(TAG, "Notification is being shown");
     }
 
     private void hideNotification() {
-        Log.d(TAG,"Hiding notifications");
+        Log.d(TAG, "Hiding notifications");
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         notificationManager.cancelAll();
     }
-
-
-
 
 
     @Override
@@ -750,41 +749,47 @@ public class AttysScope extends AppCompatActivity {
         startActivity(startMain);
     }
 
-    private void bluetoothNeeded() {
-        alertDialog = new AlertDialog.Builder(this)
-                .setTitle("Bluetooth permissions essential")
-                .setMessage("Before you can use the Attys you need to allow bluetooth access.")
-                .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        finish();
-                    }
-                })
-                .show();
-    }
-
-
-    private final ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (!isGranted) {
-                    bluetoothNeeded();
+    private final ActivityResultLauncher<String[]> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), isGranted -> {
+                // isGranted is a map of the permissions (Strings) to boolean values.
+                if (isGranted.containsValue(false)) {
+                    finish();
+                }
+                if (AttysComm.findAttysBtDevice() == null) {
+                    noAttysFoundAlert();
                 }
             });
 
-    private void requestPermissions(String perm) {
-        if (!(ContextCompat.checkSelfPermission(getBaseContext(),perm) ==
-                PackageManager.PERMISSION_GRANTED)) {
-            requestPermissionLauncher.launch(perm);
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    private void requestPermissionsAndroid12() {
+        final String[] ANDROID_12_PERMISSIONS = new String[]{
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT
+        };
+        for(String p:ANDROID_12_PERMISSIONS) {
+            if (!(ContextCompat.checkSelfPermission(getBaseContext(), p) ==
+                    PackageManager.PERMISSION_GRANTED)) {
+                requestPermissionLauncher.launch(ANDROID_12_PERMISSIONS);
+                return;
+            }
         }
     }
 
+
     private void requestBTpermissions() {
-        requestPermissions(Manifest.permission.BLUETOOTH_CONNECT);
-        requestPermissions(Manifest.permission.BLUETOOTH_SCAN);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requestPermissionsAndroid12();
+        } else {
+            if (AttysComm.findAttysBtDevice() == null) {
+                noAttysFoundAlert();
+            }
+        }
     }
 
     /**
      * Called when the activity is first created.
      */
+    @RequiresApi(api = Build.VERSION_CODES.S)
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -839,10 +844,6 @@ public class AttysScope extends AppCompatActivity {
         infoView = findViewById(R.id.infoview);
 
         requestBTpermissions();
-
-        if (AttysComm.findAttysBtDevice() == null) {
-            noAttysFoundAlert();
-        }
 
         startAttysService();
 
@@ -916,6 +917,7 @@ public class AttysScope extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         Intent i = new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS);
                         startActivity(i);
+                        finish();
                     }
                 })
                 .setNeutralButton("www.attys.tech", new DialogInterface.OnClickListener() {
@@ -975,7 +977,7 @@ public class AttysScope extends AppCompatActivity {
             addFilteredSample(data);
 
             if ((timestamp % 250) == 0) {
-                showNotification((double)samplenumber /
+                showNotification((double) samplenumber /
                         attysService.getAttysComm().getSamplingRateInHz());
             }
 
@@ -1111,7 +1113,7 @@ public class AttysScope extends AppCompatActivity {
 
         if (null == attysService) return;
 
-        Log.d(TAG,"onResume");
+        Log.d(TAG, "onResume");
         if (!(dataRecorder.isRecording())) {
             getsetAttysPrefs();
             attysService.start();
@@ -1172,7 +1174,7 @@ public class AttysScope extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
 
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION );
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
         activity.startActivityForResult(intent, CHOOSE_DIR_CODE);
     }
@@ -1182,8 +1184,8 @@ public class AttysScope extends AppCompatActivity {
                 .getDefaultSharedPreferences(activity);
         final ContentResolver resolver = activity.getContentResolver();
         final List<UriPermission> lou = resolver.getPersistedUriPermissions();
-        for(UriPermission permission : lou) {
-            Log.d(TAG,"Persistent permission: "+permission.getUri().toString());
+        for (UriPermission permission : lou) {
+            Log.d(TAG, "Persistent permission: " + permission.getUri().toString());
             final String lasturistring = prefs.getString(LASTURI, null);
             if (null != lasturistring) {
                 Uri lasturi = Uri.parse(lasturistring);
@@ -1283,7 +1285,7 @@ public class AttysScope extends AppCompatActivity {
             if (dataFilename != null) {
                 Uri uri = Uri.EMPTY;
                 try {
-                    uri = getUri2Filename(this,dataFilename,dataSeparator);
+                    uri = getUri2Filename(this, dataFilename, dataSeparator);
                     dataRecorder.startRec(uri);
                     enableMenuitems(false);
                     setRecColour(Color.RED);
@@ -1608,7 +1610,7 @@ public class AttysScope extends AppCompatActivity {
         }
 
         dataSeparator = (byte) (Integer.parseInt(prefs.getString("data_separator", "0")));
-        Log.d(TAG,"Data separator = "+dataSeparator+", suff:"+getFileSuffix());
+        Log.d(TAG, "Data separator = " + dataSeparator + ", suff:" + getFileSuffix());
 
         int fullscaleAcc = Integer.parseInt(prefs.getString("accFullscale", "1"));
 
@@ -1623,13 +1625,15 @@ public class AttysScope extends AppCompatActivity {
         if (samplingRate < 0) samplingRate = 0;
         BluetoothDevice bluetoothDevice = attysService.getAttysComm().getBluetoothDevice();
         if (null != bluetoothDevice) {
-            if (bluetoothDevice.getName().contains("ATTYS2")) {
-                if (samplingRate > 2) {
-                    samplingRate = 2;
-                }
-            } else {
-                if (samplingRate > 1) {
-                    samplingRate = 1;
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                if (bluetoothDevice.getName().contains("ATTYS2")) {
+                    if (samplingRate > 2) {
+                        samplingRate = 2;
+                    }
+                } else {
+                    if (samplingRate > 1) {
+                        samplingRate = 1;
+                    }
                 }
             }
         }
