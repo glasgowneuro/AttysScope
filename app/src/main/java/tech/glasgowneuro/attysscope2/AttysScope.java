@@ -16,6 +16,7 @@
 
 package tech.glasgowneuro.attysscope2;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -32,11 +33,16 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.UriPermission;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
 import androidx.appcompat.app.AppCompatDelegate;
@@ -685,7 +691,7 @@ public class AttysScope extends AppCompatActivity {
                 getBaseContext(),
                 0,
                 new Intent(FOREGROUND),
-                0);
+                PendingIntent.FLAG_IMMUTABLE);
 
         if (null == foregroundBroadcastReceiver) {
             foregroundBroadcastReceiver = new ForegroundBroadcastReceiver();
@@ -744,6 +750,37 @@ public class AttysScope extends AppCompatActivity {
         startActivity(startMain);
     }
 
+    private void bluetoothNeeded() {
+        alertDialog = new AlertDialog.Builder(this)
+                .setTitle("Bluetooth permissions essential")
+                .setMessage("Before you can use the Attys you need to allow bluetooth access.")
+                .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        finish();
+                    }
+                })
+                .show();
+    }
+
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (!isGranted) {
+                    bluetoothNeeded();
+                }
+            });
+
+    private void requestPermissions(String perm) {
+        if (!(ContextCompat.checkSelfPermission(getBaseContext(),perm) ==
+                PackageManager.PERMISSION_GRANTED)) {
+            requestPermissionLauncher.launch(perm);
+        }
+    }
+
+    private void requestBTpermissions() {
+        requestPermissions(Manifest.permission.BLUETOOTH_CONNECT);
+        requestPermissions(Manifest.permission.BLUETOOTH_SCAN);
+    }
 
     /**
      * Called when the activity is first created.
@@ -800,6 +837,8 @@ public class AttysScope extends AppCompatActivity {
                 });
 
         infoView = findViewById(R.id.infoview);
+
+        requestBTpermissions();
 
         if (AttysComm.findAttysBtDevice() == null) {
             noAttysFoundAlert();
