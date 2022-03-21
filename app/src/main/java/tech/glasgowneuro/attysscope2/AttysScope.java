@@ -361,7 +361,7 @@ public class AttysScope extends AppCompatActivity {
 
             public void onServiceDisconnected(ComponentName className) {
                 if (attysService != null) {
-                    attysService.stop();
+                    attysService.stopAttysComm();
                 }
                 attysService = null;
             }
@@ -375,7 +375,7 @@ public class AttysScope extends AppCompatActivity {
         dataRecorder.stopRec();
         if (serviceConnection == null) return;
         if (attysService != null) {
-            attysService.stop();
+            attysService.stopAttysComm();
         }
         unbindService(serviceConnection);
         stopService(new Intent(getBaseContext(), AttysService.class));
@@ -393,7 +393,7 @@ public class AttysScope extends AppCompatActivity {
                             Toast.makeText(getApplicationContext(),
                                     "Bluetooth connection problem", Toast.LENGTH_SHORT).show();
                             if (attysService != null) {
-                                attysService.stop();
+                                attysService.stopAttysComm();
                             }
                             progress.setVisibility(View.GONE);
                             finish();
@@ -741,7 +741,7 @@ public class AttysScope extends AppCompatActivity {
         stopAnimation();
         if (!(dataRecorder.isRecording())) {
             if (null != attysService) {
-                attysService.stop();
+                attysService.stopAttysComm();
             }
         }
         Intent startMain = new Intent(Intent.ACTION_MAIN);
@@ -1102,7 +1102,7 @@ public class AttysScope extends AppCompatActivity {
 
         if (!(dataRecorder.isRecording())) {
             if (null != attysService) {
-                attysService.stop();
+                attysService.stopAttysComm();
             }
         }
     }
@@ -1116,7 +1116,7 @@ public class AttysScope extends AppCompatActivity {
         Log.d(TAG, "onResume");
         if (!(dataRecorder.isRecording())) {
             getsetAttysPrefs();
-            attysService.start();
+            attysService.startAttysComm();
         }
 
         startAnimation();
