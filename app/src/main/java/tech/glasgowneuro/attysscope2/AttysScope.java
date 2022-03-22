@@ -352,7 +352,6 @@ public class AttysScope extends AppCompatActivity {
                     Log.e(TAG, "attysService=null in onServiceConnected");
                     return;
                 }
-                attysService.createAttysComm();
                 initAll();
                 if (attysService.getAttysComm() != null) {
                     attysService.getAttysComm().start();
