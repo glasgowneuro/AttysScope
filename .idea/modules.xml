@@ -4,6 +4,9 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/AttysScope.iml" filepath="$PROJECT_DIR$/.idea/modules/AttysScope.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/AttysScope.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/AttysScope.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/AttysScope.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/AttysScope.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/AttysScope.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/AttysScope.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/AttysScope.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/AttysScope.app.unitTest.iml" />
     </modules>
   </component>
 </project>
