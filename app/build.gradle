@@ -7,10 +7,10 @@ android {
 
     defaultConfig {
         applicationId "tech.glasgowneuro.attysscope2"
-        minSdkVersion 26
+        minSdkVersion 30
         targetSdkVersion 33
-        versionCode 56
-        versionName "3.1.4"
+        versionCode 57
+        versionName "3.1.5"
     }
     buildTypes {
         debug {
@@ -41,7 +41,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.media:media:1.6.0'
-    implementation 'androidx.preference:preference:1.2.0'
+    implementation 'androidx.preference:preference:1.2.1'
     implementation group: 'uk.me.berndporr', name:'iirj', version: '1.5'
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     implementation 'com.androidplot:androidplot-core:1.5.9'
@@ -49,6 +49,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.firebase:firebase-core:21.1.1'
     implementation 'com.google.firebase:firebase-analytics:21.3.0'
-    implementation 'com.google.firebase:firebase-crashlytics:18.3.7'
+    implementation 'com.google.firebase:firebase-crashlytics:18.4.0'
 }
 
