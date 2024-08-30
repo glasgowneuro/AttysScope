@@ -698,7 +698,8 @@ public class AttysScope extends AppCompatActivity {
             foregroundBroadcastReceiver = new ForegroundBroadcastReceiver();
             getBaseContext().registerReceiver(
                     foregroundBroadcastReceiver,
-                    new IntentFilter(FOREGROUND));
+                    new IntentFilter(FOREGROUND),
+                    Context.RECEIVER_NOT_EXPORTED);
         }
     }
 
